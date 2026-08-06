@@ -1,11 +1,10 @@
 # One-time deterministic import; the workflow deletes itself after success.
-# Triggered on 2026-08-06 after the dedicated repository was confirmed.
 name: bootstrap-import-corrected
 
 on:
   push:
     paths:
-      - ".github/workflows/bootstrap-import-corrected.yml"
+      - "bootstrap/trigger.txt"
   workflow_dispatch:
 
 permissions:
