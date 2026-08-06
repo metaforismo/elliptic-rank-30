@@ -1,0 +1,77 @@
+name: search-marked-j0-e8
+
+on:
+  push:
+    paths:
+      - "search/sage_solve_j0_e8_sections.py"
+      - ".github/workflows/search-marked-j0-e8.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  solve:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        mu: ["3", "4", "5", "3/2", "4/3"]
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Solve the complete minimal-section scheme
+        shell: bash
+        run: |
+          set -euo pipefail
+          slug=$(printf '%s' '${{ matrix.mu }}' | tr '/' '_')
+          mkdir -p search/results
+          timeout 3h sage -python search/sage_solve_j0_e8_sections.py \
+            --mu '${{ matrix.mu }}' \
+            --output "search/results/j0_e8_mu_${slug}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: j0-e8-mu-${{ strategy.job-index }}
+          path: search/results/*.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: solve
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: j0-e8-mu-*
+          merge-multiple: true
+          path: search/results
+      - name: Build compact exact summary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for p in sorted(Path('search/results').glob('j0_e8_mu_*.json')):
+              d=json.loads(p.read_text())
+              rows.append({
+                  'file':p.name,
+                  'status':d.get('status'),
+                  'mu':d.get('mu'),
+                  'j_legendre':d.get('j_legendre'),
+                  'scheme_degree':d.get('scheme_degree'),
+                  'rational_section_pair_count':d.get('rational_section_pair_count'),
+                  'elapsed_seconds':d.get('elapsed_seconds'),
+                  'variety_error':d.get('variety_error'),
+              })
+          Path('search/marked_j0_e8_summary.json').write_text(json.dumps({'results':rows},indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results search/marked_j0_e8_summary.json
+          git commit -m "Record exact marked j0 E8 section search" || exit 0
+          git push
