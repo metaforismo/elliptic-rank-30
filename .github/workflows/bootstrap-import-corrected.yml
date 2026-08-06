@@ -1,9 +1,11 @@
+# One-time deterministic import; the workflow deletes itself after success.
 name: bootstrap-import-corrected
 
 on:
   push:
     paths:
       - ".github/workflows/bootstrap-import-corrected.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -46,9 +48,8 @@ jobs:
             bootstrap/payload.part.007.01.02 \
             bootstrap/payload.part.007.01.03 \
             > /tmp/elliptic-rank-30-source.tar.xz.b64
-
           test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz.b64)" = "147468"
-          echo "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b  /tmp/ellipt-rank-30-source.tar.xz.b64" | sed 's/ellipt-rank/elliptic-rank/' | sha256sum -c -
+          echo "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b  /tmp/elliptic-rank-30-source.tar.xz.b64" | sha256sum -c -
           base64 -d /tmp/elliptic-rank-30-source.tar.xz.b64 > /tmp/elliptic-rank-30-source.tar.xz
           test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz)" = "110600"
           echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  /tmp/elliptic-rank-30-source.tar.xz" | sha256sum -c -
