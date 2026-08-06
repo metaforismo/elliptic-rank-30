@@ -1,0 +1,78 @@
+name: search-norm31-seeds
+
+on:
+  push:
+    paths:
+      - "search/sage_norm31_seed_search.py"
+      - ".github/workflows/search-norm31-seeds.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  search:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {prime: 67, seed: 2026080767}
+          - {prime: 73, seed: 2026080773}
+          - {prime: 79, seed: 2026080779}
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact finite-field norm identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          timeout 4h sage -python search/sage_norm31_seed_search.py \
+            --prime '${{ matrix.prime }}' --seed '${{ matrix.seed }}' \
+            --curves 100 --subset-attempts 200 \
+            --output 'search/results/norm31_p${{ matrix.prime }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: norm31-p${{ matrix.prime }}
+          path: search/results/*.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: search
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: norm31-p*
+          merge-multiple: true
+          path: search/results
+      - name: Record exact seeds and honest lift score
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; best=None
+          for p in sorted(Path('search/results').glob('norm31_p*.json')):
+              d=json.loads(p.read_text())
+              b=d.get('best_centered_lift')
+              score=b and b['centered_lift']['rational_linear_factor_count']
+              rows.append({'file':p.name,'prime':d['prime'],'seed_count':d['seed_count'],'best_Q_linear_factor_count':score})
+              if b and (best is None or score>best['centered_lift']['rational_linear_factor_count']):
+                  best={'source':p.name,**b}
+          Path('search/norm31_seed_summary.json').write_text(json.dumps({
+              'results':rows,'best_centered_lift':best,
+              'truth_note':'no characteristic-zero or rank claim unless 31 rational roots and independence are separately certified'
+          },indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results search/norm31_seed_summary.json
+          git commit -m "Record exact finite-field 31-zero norm seeds" || exit 0
+          git push
