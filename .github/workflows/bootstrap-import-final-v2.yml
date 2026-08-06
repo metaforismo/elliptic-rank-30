@@ -1,0 +1,84 @@
+name: bootstrap-import-final-v2
+
+on:
+  push:
+    paths:
+      - ".github/workflows/bootstrap-import-final-v2.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct deterministic source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            bootstrap/payload.part.000.00 \
+            bootstrap/payload.part.000.01 \
+            bootstrap/payload.part.000.02 \
+            bootstrap/payload.part.000.03 \
+            bootstrap/payload.part.000.04 \
+            bootstrap/payload.part.001 \
+            bootstrap/payload.part.002.00 \
+            bootstrap/payload.part.002.01 \
+            bootstrap/payload.part.003 \
+            bootstrap/payload.part.004.00 \
+            bootstrap/payload.part.004.01 \
+            bootstrap/payload.part.005 \
+            bootstrap/payload.part.006.00 \
+            bootstrap/payload.part.006.01 \
+            bootstrap/payload.part.006.02 \
+            bootstrap/payload.part.006.03 \
+            bootstrap/payload.part.006.04.00 \
+            bootstrap/payload.part.006.04.01 \
+            bootstrap/payload.part.006.04.02 \
+            bootstrap/payload.part.006.04.03 \
+            bootstrap/payload.part.007.00.00 \
+            bootstrap/payload.part.007.00.01 \
+            bootstrap/payload.part.007.00.02 \
+            bootstrap/payload.part.007.00.03 \
+            bootstrap/payload.part.007.01.00 \
+            bootstrap/payload.part.007.01.01 \
+            bootstrap/payload.part.007.01.02 \
+            bootstrap/payload.part.007.01.03 \
+            > /tmp/elliptic-rank-30-source.tar.xz.b64
+
+          test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz.b64)" = "147468"
+          echo "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b  /tmp/elliptic-rank-30-source.tar.xz.b64" | sha256sum -c -
+          base64 -d /tmp/elliptic-rank-30-source.tar.xz.b64 > /tmp/elliptic-rank-30-source.tar.xz
+          test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz)" = "110600"
+          echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  /tmp/elliptic-rank-30-source.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/elliptic-rank-30-source.tar.xz
+          rm -rf bootstrap
+          rm -f .github/workflows/bootstrap-import.yml
+          rm -f .github/workflows/bootstrap-import-final.yml
+          rm -f .github/workflows/bootstrap-import-final-v2.yml
+
+      - name: Verify imported research package
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 verify_exact.py
+          python3 rank_packet_obstruction_tests.py
+          python3 -m unittest discover -s tests -v
+          sha256sum -c MANIFEST.sha256
+
+      - name: Commit canonical project tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --stat
+          git commit -m "Import canonical rank-30 research pipeline"
+          git push
