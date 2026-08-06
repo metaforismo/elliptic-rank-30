@@ -1,10 +1,9 @@
-# One-time deterministic import; the workflow deletes itself after success.
+# One-time deterministic import; this workflow deletes itself after success.
 name: bootstrap-import-corrected
 
 on:
-  push:
-    paths:
-      - "bootstrap/trigger.txt"
+  schedule:
+    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -72,7 +71,7 @@ jobs:
             -delete
           find . -type d -name __pycache__ -prune -exec rm -rf {} +
 
-      - name: Verify exact baseline and packet theorem
+      - name: Verify exact baseline and packet theorems
         shell: bash
         run: |
           set -euo pipefail
@@ -83,6 +82,9 @@ jobs:
           python3 verify_exact.py
           python3 rank_packet_obstruction_tests.py
           python3 research/packet3_certificate.py --output certificates/packet3_certificate.json
+          if test -f research/packet4_certificate.py; then
+            python3 research/packet4_certificate.py --output certificates/packet4_certificate.json
+          fi
           python3 -m unittest discover -s tests -v
 
       - name: Rebuild and verify manifest
