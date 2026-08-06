@@ -22,8 +22,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          printf '%s\n' '--- bootstrap files in concatenation order ---'
+          find bootstrap -maxdepth 1 -type f -name 'payload.part.*' -printf '%f %s\n' | sort
           cat bootstrap/payload.part.* > /tmp/elliptic-rank-30-source.tar.xz.b64
+          printf '%s\n' '--- reconstructed base64 ---'
+          wc -c /tmp/elliptic-rank-30-source.tar.xz.b64
+          sha256sum /tmp/elliptic-rank-30-source.tar.xz.b64
+          echo "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b  /tmp/elliptic-rank-30-source.tar.xz.b64" | sha256sum -c -
           base64 -d /tmp/elliptic-rank-30-source.tar.xz.b64 > /tmp/elliptic-rank-30-source.tar.xz
+          wc -c /tmp/elliptic-rank-30-source.tar.xz
+          sha256sum /tmp/elliptic-rank-30-source.tar.xz
           echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  /tmp/elliptic-rank-30-source.tar.xz" | sha256sum -c -
           tar -xJf /tmp/elliptic-rank-30-source.tar.xz
           rm -rf bootstrap
