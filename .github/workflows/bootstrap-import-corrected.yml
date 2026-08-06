@@ -1,0 +1,106 @@
+name: bootstrap-import-corrected
+
+on:
+  push:
+    paths:
+      - ".github/workflows/bootstrap-import-corrected.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct the verified source archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            bootstrap/payload.part.000 \
+            bootstrap/payload.part.001 \
+            bootstrap/payload.part.002.00 \
+            bootstrap/payload.part.002.tail \
+            bootstrap/payload.part.003 \
+            bootstrap/payload.part.004 \
+            bootstrap/payload.part.005 \
+            bootstrap/payload.part.006.00 \
+            bootstrap/payload.part.006.01 \
+            bootstrap/payload.part.006.02 \
+            bootstrap/payload.part.006.03 \
+            bootstrap/payload.part.006.04.00 \
+            bootstrap/payload.part.006.04.01 \
+            bootstrap/payload.part.006.04.02 \
+            bootstrap/payload.part.006.04.03 \
+            bootstrap/payload.part.007.00.00 \
+            bootstrap/payload.part.007.00.01 \
+            bootstrap/payload.part.007.00.02 \
+            bootstrap/payload.part.007.00.03 \
+            bootstrap/payload.part.007.01.00 \
+            bootstrap/payload.part.007.01.01 \
+            bootstrap/payload.part.007.01.02 \
+            bootstrap/payload.part.007.01.03 \
+            > /tmp/elliptic-rank-30-source.tar.xz.b64
+
+          test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz.b64)" = "147468"
+          echo "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b  /tmp/ellipt-rank-30-source.tar.xz.b64" | sed 's/ellipt-rank/elliptic-rank/' | sha256sum -c -
+          base64 -d /tmp/elliptic-rank-30-source.tar.xz.b64 > /tmp/elliptic-rank-30-source.tar.xz
+          test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz)" = "110600"
+          echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  /tmp/elliptic-rank-30-source.tar.xz" | sha256sum -c -
+          tar -xJf /tmp/elliptic-rank-30-source.tar.xz
+
+      - name: Remove one-time transport files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf bootstrap
+          rm -f .github/workflows/bootstrap-import.yml
+          rm -f .github/workflows/bootstrap-import-final.yml
+          rm -f .github/workflows/bootstrap-import-final-v2.yml
+          rm -f .github/workflows/bootstrap-import-corrected.yml
+          rm -f .github/workflows/history-cleanup.yml
+          rm -f .github/workflows/apply-packet3-theorem.yml
+          find paper -maxdepth 1 -type f \
+            \( -name '*.aux' -o -name '*.log' -o -name '*.out' -o -name '*.toc' -o -name '*.fls' -o -name '*.fdb_latexmk' -o -name '*.synctex.gz' \) \
+            -delete
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+
+      - name: Verify exact baseline and packet theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f curve.json
+          test -f points.json
+          test -f verify_exact.py
+          test -f paper/paper.tex
+          python3 verify_exact.py
+          python3 rank_packet_obstruction_tests.py
+          python3 research/packet3_certificate.py --output certificates/packet3_certificate.json
+          python3 -m unittest discover -s tests -v
+
+      - name: Rebuild and verify manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f \
+            ! -path './.git/*' \
+            ! -name 'MANIFEST.sha256' \
+            -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > MANIFEST.sha256
+          sha256sum -c MANIFEST.sha256
+
+      - name: Commit the canonical project tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --stat
+          git commit -m "Import the verified certificate-first research package"
+          git push
