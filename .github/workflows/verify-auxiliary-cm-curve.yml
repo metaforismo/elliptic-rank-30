@@ -1,0 +1,34 @@
+name: verify-auxiliary-cm-curve
+
+on:
+  push:
+    paths:
+      - "search/verify_auxiliary_cm_curve.sage.py"
+      - ".github/workflows/verify-auxiliary-cm-curve.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove rank and torsion
+        shell: bash
+        run: |
+          set -euo pipefail
+          sage -python search/verify_auxiliary_cm_curve.sage.py
+      - name: Commit the exact certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/auxiliary_cm_curve_rank0.json
+          git commit -m "Certify the auxiliary CM descent curve has rank zero" || exit 0
+          git push
