@@ -1,0 +1,71 @@
+name: search-split-e8-pencils
+
+on:
+  push:
+    paths:
+      - "search/sage_search_split_e8_pencils.py"
+      - ".github/workflows/search-split-e8-pencils.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  search:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        seed: [20260807, 20260808, 20260809, 20260810]
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Search general-position pencils
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          timeout 3h sage -python search/sage_search_split_e8_pencils.py \
+            --limit 80 --seed '${{ matrix.seed }}' \
+            --output 'search/results/split_e8_seed_${{ matrix.seed }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: split-e8-${{ matrix.seed }}
+          path: search/results/*.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: search
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: split-e8-*
+          merge-multiple: true
+          path: search/results
+      - name: Select first exact winner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; winner=None
+          for p in sorted(Path('search/results').glob('split_e8_seed_*.json')):
+              d=json.loads(p.read_text())
+              rows.append({'file':p.name,'status':d['status'],'attempts':len(d['attempts'])})
+              if winner is None and d.get('winner'):
+                  winner={'source':p.name,**d['winner']}
+          Path('search/split_e8_summary.json').write_text(json.dumps({'runs':rows,'winner':winner},indent=2,sort_keys=True)+'\n')
+          if winner is None:
+              raise SystemExit('no exact split-E8 winner found')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results search/split_e8_summary.json
+          git commit -m "Certify a split E8 rational elliptic surface" || exit 0
+          git push
