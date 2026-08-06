@@ -1,0 +1,35 @@
+name: construct-split-e8-pencil
+
+on:
+  push:
+    paths:
+      - "search/sage_cubic_pencil_e8.py"
+      - ".github/workflows/construct-split-e8-pencil.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  construct:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construct and certify the split E8 surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          timeout 2h sage -python search/sage_cubic_pencil_e8.py
+      - name: Commit exact result
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/cubic_pencil_e8.json
+          git commit -m "Record split E8 cubic-pencil construction" || exit 0
+          git push
