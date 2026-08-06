@@ -1,0 +1,78 @@
+name: scan-split-e8-packets-finite-field
+
+on:
+  push:
+    paths:
+      - "search/sage_scan_split_e8_packets_finite_field.py"
+      - ".github/workflows/scan-split-e8-packets-finite-field.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {prime: 5, seed: 2026080705, surfaces: 20}
+          - {prime: 7, seed: 2026080707, surfaces: 16}
+          - {prime: 11, seed: 2026080711, surfaces: 10}
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan exact packet ranks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          timeout 5h sage -python search/sage_scan_split_e8_packets_finite_field.py \
+            --prime '${{ matrix.prime }}' --seed '${{ matrix.seed }}' \
+            --surfaces '${{ matrix.surfaces }}' \
+            --output 'search/results/packet_scan_p${{ matrix.prime }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packet-scan-p${{ matrix.prime }}
+          path: search/results/*.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: packet-scan-p*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate without promoting characteristic-p evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; best=None
+          for p in sorted(Path('search/results').glob('packet_scan_p*.json')):
+              d=json.loads(p.read_text())
+              b=d.get('best')
+              row={'file':p.name,'prime':d['prime'],'best_total':b and b['packet']['total_rank']}
+              rows.append(row)
+              if b and (best is None or b['packet']['total_rank']>best['packet']['total_rank']):
+                  best={'source':p.name,**b}
+          Path('search/finite_field_packet_scan_summary.json').write_text(
+              json.dumps({'results':rows,'best':best,
+                          'truth_note':'discovery evidence in finite characteristic only'},
+                         indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results search/finite_field_packet_scan_summary.json
+          git commit -m "Record exact finite-field packet-rank scans" || exit 0
+          git push
