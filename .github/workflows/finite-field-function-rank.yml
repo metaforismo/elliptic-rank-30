@@ -1,0 +1,67 @@
+name: finite-field-function-rank
+
+on:
+  push:
+    paths:
+      - "search/sage_finite_field_function_rank.py"
+      - ".github/workflows/finite-field-function-rank.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rank:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [5, 11, 17, 23]
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute function-field ranks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          timeout 90m sage -python search/sage_finite_field_function_rank.py \
+            --prime '${{ matrix.prime }}' --mu 3 \
+            --output 'search/results/function_rank_p${{ matrix.prime }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: function-rank-p${{ matrix.prime }}
+          path: search/results/*.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: rank
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: function-rank-p*
+          merge-multiple: true
+          path: search/results
+      - name: Commit results
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for p in sorted(Path('search/results').glob('function_rank_p*.json')):
+              d=json.loads(p.read_text())
+              rows.append({'prime':d['prime'],'curves':d['curves']})
+          Path('search/finite_field_function_rank_summary.json').write_text(json.dumps({'results':rows},indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results search/finite_field_function_rank_summary.json
+          git commit -m "Record finite-field function-field rank experiment" || exit 0
+          git push
