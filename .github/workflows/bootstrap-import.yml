@@ -24,6 +24,8 @@ jobs:
           set -euo pipefail
           printf '%s\n' '--- bootstrap files in concatenation order ---'
           find bootstrap -maxdepth 1 -type f -name 'payload.part.*' -printf '%f %s\n' | sort
+          printf '%s\n' '--- bootstrap SHA-256 values ---'
+          sha256sum bootstrap/payload.part.*
           cat bootstrap/payload.part.* > /tmp/elliptic-rank-30-source.tar.xz.b64
           printf '%s\n' '--- reconstructed base64 ---'
           wc -c /tmp/elliptic-rank-30-source.tar.xz.b64
