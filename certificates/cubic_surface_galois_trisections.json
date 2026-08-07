@@ -9,6 +9,38 @@
   },
   "e8_norm_six_vector_count": 6720,
   "e8_root_count": 240,
+  "example_twice_euclidean_coordinates": {
+    "alpha": [
+      -2,
+      -2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "beta": [
+      -2,
+      0,
+      -2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "v": [
+      -4,
+      -2,
+      -2,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
   "geometric_conclusion": "Every norm-six trisection system is the pullback of the anticanonical hyperplane system on a smooth cubic surface. The elliptic pencil is projection from the 3-secant line through the three contracted section points.",
   "inner_product_one_neighbors_per_root": 56,
   "intersection_checks": {
