@@ -1,0 +1,21 @@
+{
+  "best": null,
+  "results": [
+    {
+      "best_total": null,
+      "file": "packet_scan_p11.json",
+      "prime": 11
+    },
+    {
+      "best_total": null,
+      "file": "packet_scan_p5.json",
+      "prime": 5
+    },
+    {
+      "best_total": null,
+      "file": "packet_scan_p7.json",
+      "prime": 7
+    }
+  ],
+  "truth_note": "discovery evidence in finite characteristic only"
+}
