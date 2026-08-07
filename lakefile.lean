@@ -2,7 +2,7 @@ import Lake
 
 open Lake DSL
 
-package «elliptic-rank-30» where
+package EllipticRank30 where
   leanOptions := #[
     ⟨`autoImplicit, false⟩,
     ⟨`warningAsError, true⟩
