@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "Please cite the living paper and repository when using this research package."
+title: "Certificate-First Search for an Elliptic Curve of Rank at Least 30"
+type: software
+authors:
+  - family-names: Giannicola
+    given-names: Francesco
+repository-code: "https://github.com/metaforismo/elliptic-rank-30"
+license: MIT
+date-released: 2026-08-07
+version: "0.1-research"
