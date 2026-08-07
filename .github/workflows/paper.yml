@@ -5,19 +5,26 @@ on:
     paths:
       - 'paper/**'
       - 'research/**'
+      - 'formalization/**'
+      - 'EllipticRank30.lean'
+      - 'EllipticRank30/**'
       - '.github/workflows/paper.yml'
   push:
     branches: [main]
     paths:
       - 'paper/**'
       - 'research/**'
+      - 'formalization/**'
+      - 'EllipticRank30.lean'
+      - 'EllipticRank30/**'
       - '.github/workflows/paper.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -26,14 +33,15 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             texlive-latex-base texlive-latex-recommended \
-            texlive-latex-extra texlive-fonts-recommended
+            texlive-latex-extra texlive-fonts-recommended \
+            lmodern poppler-utils
       - name: Compile the living paper
         run: |
           set -euo pipefail
           pdflatex -interaction=nonstopmode -halt-on-error \
-            -jobname=paper -output-directory=paper paper/source/main.tex
+            -jobname=paper -output-directory=paper paper/paper.tex
           pdflatex -interaction=nonstopmode -halt-on-error \
-            -jobname=paper -output-directory=paper paper/source/main.tex
+            -jobname=paper -output-directory=paper paper/paper.tex
           ! grep -E 'Overfull \\hbox|Overfull \\vbox' paper/paper.log
           test -s paper/paper.pdf
           pdfinfo paper/paper.pdf | grep -E '^Pages:'
@@ -43,3 +51,28 @@ jobs:
           name: living-paper
           path: paper/paper.pdf
           if-no-files-found: error
+
+  preserve-on-main:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]'
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: living-paper
+          path: paper
+      - name: Commit the canonical PDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s paper/paper.pdf
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper/paper.pdf
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Rebuild the canonical living paper"
+          git pull --rebase origin main
+          git push origin HEAD:main
