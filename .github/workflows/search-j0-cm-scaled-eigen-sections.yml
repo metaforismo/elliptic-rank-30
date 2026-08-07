@@ -1,0 +1,129 @@
+name: search-j0-cm-scaled-eigen-sections
+
+on:
+  push:
+    paths:
+      - "search/sage_solve_j0_cm_scaled_eigen_sections.py"
+      - ".github/workflows/search-j0-cm-scaled-eigen-sections.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  solve:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {mu: "2", scale: "36"}
+          - {mu: "2", scale: "4"}
+          - {mu: "2", scale: "9"}
+          - {mu: "2", scale: "12"}
+          - {mu: "2", scale: "18"}
+          - {mu: "2", scale: "27"}
+          - {mu: "2", scale: "48"}
+          - {mu: "2", scale: "108"}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 210
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Solve one scaled Eisenstein eigen-section scheme
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p search/results
+          timeout 200m sage -python search/sage_solve_j0_cm_scaled_eigen_sections.py \
+            --mu '${{ matrix.mu }}' --scale '${{ matrix.scale }}' \
+            --output 'search/results/j0_cm_scaled_mu${{ matrix.mu }}_c${{ matrix.scale }}.json' \
+            2>&1 | tee 'search/results/j0_cm_scaled_mu${{ matrix.mu }}_c${{ matrix.scale }}.log'
+      - name: Preserve a fail-closed result record
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          path='search/results/j0_cm_scaled_mu${{ matrix.mu }}_c${{ matrix.scale }}.json'
+          if [ ! -f "$path" ]; then
+            python3 - <<PY
+          import json
+          open('$path','w').write(json.dumps({
+            'status':'worker_failed_without_json','mu':'${{ matrix.mu }}',
+            'scale':'${{ matrix.scale }}','truth_status':'no mathematical claim'
+          },indent=2,sort_keys=True)+'\n')
+          PY
+          fi
+          python3 - <<PY
+          import json
+          d=json.load(open('$path'))
+          print(json.dumps({k:d.get(k) for k in (
+            'status','mu','scale','total_eigen_sections','error','elapsed_seconds'
+          )},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: j0-cm-scaled-mu${{ matrix.mu }}-c${{ matrix.scale }}
+          path: search/results/j0_cm_scaled_mu${{ matrix.mu }}_c${{ matrix.scale }}.*
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: solve
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: j0-cm-scaled-*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate exact scaled-CM evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; sections=[]
+          for path in sorted(Path('search/results').glob('j0_cm_scaled_*.json')):
+              d=json.loads(path.read_text())
+              rows.append({
+                  'file':path.name,'status':d.get('status'),'mu':d.get('mu'),
+                  'scale':d.get('scale'),'base_curve':d.get('base_curve'),
+                  'total_eigen_sections':d.get('total_eigen_sections'),
+                  'error':d.get('error'),'elapsed_seconds':d.get('elapsed_seconds'),
+                  'branches':[{
+                      'E':b.get('E'),'status':b.get('status'),
+                      'scheme_degree':b.get('scheme_degree'),
+                      'solution_count':b.get('solution_count'),
+                      'variety_error':b.get('variety_error')}
+                      for b in d.get('branches',[])]})
+              for section in d.get('sections',[]):
+                  sections.append({'source':path.name,'mu':d.get('mu'),
+                                   'scale':d.get('scale'),**section})
+          out={
+              'status':'pass' if rows else 'no_artifacts','runs':rows,
+              'total_eigen_sections':sum(row.get('total_eigen_sections') or 0 for row in rows),
+              'positive_rank_primary_scale':36,
+              'sections':sections,
+              'truth_status':'exact Q(sqrt(-3)) eigen-sections; rational descent and independence require separate certificates'}
+          Path('search/j0_cm_scaled_eigen_section_summary.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'status':out['status'],'total_eigen_sections':out['total_eigen_sections']
+          },sort_keys=True))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/j0_cm_scaled_* search/j0_cm_scaled_eigen_section_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record scaled CM eigen-section searches"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
