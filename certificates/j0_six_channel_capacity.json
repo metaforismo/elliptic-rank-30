@@ -1,0 +1,128 @@
+{
+  "P_mu_at_minus_one_quarter": "(mu - 2)**2*(mu + 1)**2*(2*mu - 1)**2*(mu**2 - mu + 1)**3/(64*mu**2*(mu - 1)**2)",
+  "P_mu_discriminant": "mu**2*(mu - 2)**2*(mu - 1)**2*(mu + 1)**2*(2*mu - 1)**2*(mu**2 - mu + 1)**6",
+  "P_mu_factorization": "-(-mu**2 + mu + v)*(mu**2 - mu + 1)**3*(mu**2*v + mu - 1)*(mu**2*v - 2*mu*v - mu + v)/(mu**2*(mu - 1)**2)",
+  "author": "Francesco Giannicola",
+  "automatic_rational_surface_rank_sum": 14,
+  "capacity_vector": [
+    4,
+    6,
+    4,
+    4,
+    6,
+    6
+  ],
+  "channels": [
+    {
+      "a6_multiplier": "v^0*(1+4v)^0",
+      "chi": 1,
+      "cubic_character": 0,
+      "degree_a6": 3,
+      "fibres": [
+        {"count": 3, "euler": 2, "locus": "three roots of P_mu(v)", "order_a6": 1, "root_rank": 0, "type": "II"},
+        {"count": 1, "euler": 6, "locus": "v=infinity", "order_a6": 3, "root_rank": 4, "type": "I0*"}
+      ],
+      "geometric_rank_capacity": 4,
+      "h11": 10,
+      "infinity_order_a6": 3,
+      "picard_maximality_automatic": true,
+      "quadratic_character": 0,
+      "root_rank": 4
+    },
+    {
+      "a6_multiplier": "v^2*(1+4v)^0",
+      "chi": 1,
+      "cubic_character": 1,
+      "degree_a6": 5,
+      "fibres": [
+        {"count": 3, "euler": 2, "locus": "three roots of P_mu(v)", "order_a6": 1, "root_rank": 0, "type": "II"},
+        {"count": 1, "euler": 4, "locus": "v=0", "order_a6": 2, "root_rank": 2, "type": "IV"},
+        {"count": 1, "euler": 2, "locus": "v=infinity", "order_a6": 1, "root_rank": 0, "type": "II"}
+      ],
+      "geometric_rank_capacity": 6,
+      "h11": 10,
+      "infinity_order_a6": 1,
+      "picard_maximality_automatic": true,
+      "quadratic_character": 0,
+      "root_rank": 2
+    },
+    {
+      "a6_multiplier": "v^4*(1+4v)^0",
+      "chi": 2,
+      "cubic_character": 2,
+      "degree_a6": 7,
+      "fibres": [
+        {"count": 3, "euler": 2, "locus": "three roots of P_mu(v)", "order_a6": 1, "root_rank": 0, "type": "II"},
+        {"count": 1, "euler": 8, "locus": "v=0", "order_a6": 4, "root_rank": 6, "type": "IV*"},
+        {"count": 1, "euler": 10, "locus": "v=infinity", "order_a6": 5, "root_rank": 8, "type": "II*"}
+      ],
+      "geometric_rank_capacity": 4,
+      "h11": 20,
+      "infinity_order_a6": 5,
+      "picard_maximality_automatic": false,
+      "quadratic_character": 0,
+      "root_rank": 14
+    },
+    {
+      "a6_multiplier": "v^0*(1+4v)^3",
+      "chi": 1,
+      "cubic_character": 0,
+      "degree_a6": 6,
+      "fibres": [
+        {"count": 3, "euler": 2, "locus": "three roots of P_mu(v)", "order_a6": 1, "root_rank": 0, "type": "II"},
+        {"count": 1, "euler": 6, "locus": "1+4v=0", "order_a6": 3, "root_rank": 4, "type": "I0*"}
+      ],
+      "geometric_rank_capacity": 4,
+      "h11": 10,
+      "infinity_order_a6": 0,
+      "picard_maximality_automatic": true,
+      "quadratic_character": 1,
+      "root_rank": 4
+    },
+    {
+      "a6_multiplier": "v^2*(1+4v)^3",
+      "chi": 2,
+      "cubic_character": 1,
+      "degree_a6": 8,
+      "fibres": [
+        {"count": 3, "euler": 2, "locus": "three roots of P_mu(v)", "order_a6": 1, "root_rank": 0, "type": "II"},
+        {"count": 1, "euler": 4, "locus": "v=0", "order_a6": 2, "root_rank": 2, "type": "IV"},
+        {"count": 1, "euler": 6, "locus": "1+4v=0", "order_a6": 3, "root_rank": 4, "type": "I0*"},
+        {"count": 1, "euler": 8, "locus": "v=infinity", "order_a6": 4, "root_rank": 6, "type": "IV*"}
+      ],
+      "geometric_rank_capacity": 6,
+      "h11": 20,
+      "infinity_order_a6": 4,
+      "picard_maximality_automatic": false,
+      "quadratic_character": 1,
+      "root_rank": 12
+    },
+    {
+      "a6_multiplier": "v^4*(1+4v)^3",
+      "chi": 2,
+      "cubic_character": 2,
+      "degree_a6": 10,
+      "fibres": [
+        {"count": 3, "euler": 2, "locus": "three roots of P_mu(v)", "order_a6": 1, "root_rank": 0, "type": "II"},
+        {"count": 1, "euler": 8, "locus": "v=0", "order_a6": 4, "root_rank": 6, "type": "IV*"},
+        {"count": 1, "euler": 6, "locus": "1+4v=0", "order_a6": 3, "root_rank": 4, "type": "I0*"},
+        {"count": 1, "euler": 4, "locus": "v=infinity", "order_a6": 2, "root_rank": 2, "type": "IV"}
+      ],
+      "geometric_rank_capacity": 6,
+      "h11": 20,
+      "infinity_order_a6": 2,
+      "picard_maximality_automatic": false,
+      "quadratic_character": 1,
+      "root_rank": 12
+    }
+  ],
+  "character_decomposition": "Over Qbar(v), the C2 x C3 packet is the direct sum of the six sextic-twist channels with a6 multipliers v^(2i)*(1+4v)^(3epsilon).",
+  "excluded_markings": ["0", "1", "1/2", "2", "-1"],
+  "family": "generic marked j=0 E8 family with cyclic cubic genus-one base",
+  "k3_capacity_vector": [4, 6, 6],
+  "rank_30_criterion": "The three K3 channels must simultaneously have Picard number 20; the three rational elliptic channels are geometrically Picard maximal automatically.",
+  "status": "pass",
+  "three_rational_roots": ["mu*(mu - 1)", "(1 - mu)/mu**2", "mu/(mu - 1)**2"],
+  "total_geometric_rank_capacity": 30,
+  "truth_status": "new intermediate theorem; rational descent and explicit sections remain open"
+}
