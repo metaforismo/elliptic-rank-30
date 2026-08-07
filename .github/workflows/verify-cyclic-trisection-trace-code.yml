@@ -1,0 +1,42 @@
+name: verify-cyclic-trisection-trace-code
+
+on:
+  push:
+    paths:
+      - "research/cyclic_trisection_trace_code_certificate.py"
+      - "certificates/cyclic_trisection_trace_code.json"
+      - "tests/test_cyclic_trisection_trace_code.py"
+      - ".github/workflows/verify-cyclic-trisection-trace-code.yml"
+  pull_request:
+    paths:
+      - "research/cyclic_trisection_trace_code_certificate.py"
+      - "certificates/cyclic_trisection_trace_code.json"
+      - "tests/test_cyclic_trisection_trace_code.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Regenerate the exact certificate
+        run: python3 research/cyclic_trisection_trace_code_certificate.py
+      - name: Run the focused tests
+        run: python3 -m unittest tests.test_cyclic_trisection_trace_code -v
+      - name: Commit the canonical generated JSON
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/cyclic_trisection_trace_code.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Regenerate the cyclic trisection trace-code certificate"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
