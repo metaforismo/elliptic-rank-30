@@ -1,0 +1,101 @@
+\section{Hessian reduction of the cyclic locus}
+
+Let $X=\{F=0\}\subset\mathbf P^3$ be the marked cubic surface attached to a
+minimal trace class, and let $\ell$ be the 3-secant line through the three
+contracted section points.  A hyperplane $H$ not containing $\ell$ determines
+\[
+q=H\cap\ell,
+\qquad
+C_H=X\cap H,
+\]
+and the trisection map is projection of the plane cubic $C_H$ from $q$.
+
+\subsection{The invariant polar form}
+
+Write $F(v)=T(v,v,v)$ for the symmetric trilinear polarization.  For
+$q\notin X$, put
+\[
+a=F(q),
+\qquad
+\lambda_q(u)=T(q,q,u),
+\]
+and define
+\[
+\boxed{
+B_q(u,v)
+=aT(q,u,v)-\lambda_q(u)\lambda_q(v).
+}
+\]
+This form descends to the three-dimensional quotient $V/\langle q\rangle$.
+If $H=\langle q,W\rangle$, then in coordinates on $H$ with
+$q=(1:0:0)$ the restricted cubic is
+\[
+F_H=ax^3+x^2L(y,z)+xQ(y,z)+C(y,z).
+\]
+The substitution
+\[
+x=X-\frac{L}{3a}
+\]
+removes the $X^2$ term.  Projection is cyclic precisely when the remaining
+mixed quadratic vanishes:
+\[
+\boxed{3aQ-L^2=0.}
+\]
+In invariant form,
+\[
+\boxed{B_q|_W=0.}
+\]
+
+\subsection{The Hessian criterion}
+
+In a basis beginning with $q$, write
+\[
+M_q=
+\begin{pmatrix}
+a&\lambda^T\\
+\lambda&Q_q
+\end{pmatrix}
+\]
+for the matrix of $T(q,-,-)$.  The matrix of $B_q$ on the quotient is
+$aQ_q-\lambda\lambda^T$.  The block determinant formula gives
+\[
+\boxed{
+\det B_q=a^2\det M_q.
+}
+\]
+Since the Hessian matrix of $F$ at $q$ is $6M_q$,
+\[
+\boxed{
+\det B_q=0
+\iff q\in\operatorname{Hess}(X).
+}
+\]
+Over an algebraic closure, a symmetric form on a three-dimensional space has
+a two-dimensional totally isotropic subspace exactly when it is singular.
+Therefore a geometrically cyclic hyperplane section is equivalent to a point
+$q\in\ell\cap\operatorname{Hess}(X)$, outside $X$, together with a maximal
+isotropic plane of $B_q$.
+
+\subsection{A finite quartic search}
+
+The Hessian of a cubic surface is quartic.  If $\ell$ is not contained in it,
+there are at most four possible projection centres.  At a generic rank-two
+Hessian point, the form $B_q$ has exactly two maximal isotropic planes over the
+algebraic closure.  Thus a generic trace class has at most
+\[
+\boxed{8}
+\]
+geometrically cyclic hyperplane sections.
+
+For a maximal ternary trace code with $240$ minimal classes, the continuous
+hyperplane search collapses to at most
+\[
+\boxed{240\cdot8=1920}
+\]
+explicit candidates.  Each is then tested for rational descent, smoothness,
+avoidance of the elliptic discriminant, and positive rational rank.
+
+This is the current decisive representation.  The search is no longer an
+unstructured square-discriminant condition in a projective three-space.  It is
+one Hessian quartic restricted to one 3-secant line, followed by the solution
+of a rank-two quadratic form.
