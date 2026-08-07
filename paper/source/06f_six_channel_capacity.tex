@@ -1,0 +1,79 @@
+\section{The six-channel capacity criterion}
+
+The degeneration at $\mu=2$ does not occur for a generic rational marking.
+Let
+\[
+a=\mu^2-\mu+1,
+\qquad
+b=\frac{a^3}{\mu(\mu-1)},
+\qquad
+P_\mu(v)=b^2v^2-a^3(v+1)^3.
+\]
+Exact factorization gives
+\[
+P_\mu(v)=
+-\frac{a^3}{\mu^2(\mu-1)^2}
+\bigl(v-\mu(\mu-1)\bigr)
+\bigl(\mu^2v+\mu-1\bigr)
+\bigl((\mu-1)^2v-\mu\bigr).
+\]
+Thus the three roots are rational. They are distinct and avoid $0$ and
+$-1/4$ outside
+\[
+\mu\in\left\{0,1,\frac12,2,-1\right\}.
+\]
+
+Over an algebraic closure, the full cyclic cubic genus-one base is obtained
+by adjoining $u^3=cv$ and $\sqrt{1+4v}$. The $C_3\times C_2$ character
+decomposition consists of the six sextic-twist channels
+\[
+E_{i,\varepsilon}:\quad
+ y^2=x^3+v^{2i}(1+4v)^{3\varepsilon}P_\mu(v),
+\qquad i=0,1,2,
+\quad\varepsilon=0,1.
+\]
+
+\begin{theorem}[Six-channel capacity]
+Away from the five degenerate markings, the geometric Mordell--Weil rank
+capacities of the six channels are
+\[
+\boxed{(4,6,4,4,6,6)}.
+\]
+Their sum is exactly thirty. The three rational elliptic surface channels
+have exact geometric ranks $4,6,4$. Consequently the full packet has
+geometric rank thirty if and only if the three K3 channels have Picard number
+twenty, equivalently if they attain ranks
+\[
+\boxed{4,6,6}.
+\]
+\end{theorem}
+
+\begin{proof}
+The roots of $P_\mu$, $0$, $-1/4$, and infinity are distinct. Applying the
+Kodaira table to the exponents of
+$v^{2i}(1+4v)^{3\varepsilon}P_\mu(v)$ gives the following root ranks:
+\[
+4,\ 2,\ 14,\ 4,\ 12,\ 12.
+\]
+The corresponding arithmetic genera are
+\[
+1,\ 1,\ 2,\ 1,\ 2,\ 2.
+\]
+Since $h^{1,1}=10\chi$ over $\mathbf P^1$, Shioda--Tate gives the capacity
+vector $(4,6,4,4,6,6)$. Rational elliptic surfaces have Picard number ten,
+so the three $\chi=1$ bounds are attained automatically. The remaining
+sixteen directions are attained precisely when each K3 surface has Picard
+number twenty.
+\end{proof}
+
+This is the first exact reduction of the rank-thirty target to three finite
+Picard-maximality tests. The scale $c$ affects rational descent and the rank
+of the genus-one base but not the geometric capacity vector.
+
+\subsection{Finite-field rejection sieve}
+
+For each rational marking, the three K3 channels are reduced at several good
+primes and their exact finite-function-field geometric ranks are computed.
+Any rank below $(4,6,6)$ rejects the marking. A survivor is not a proof of
+characteristic-zero rank: it is promoted only after explicit sections and an
+independent height certificate are constructed.
