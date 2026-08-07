@@ -1,0 +1,73 @@
+{
+  "a": "3",
+  "b": "27/2",
+  "base_curve": "u^3=36*t*(t-1)",
+  "branches": [
+    {
+      "E": "3*w",
+      "groebner_basis_size": 4,
+      "ideal_dimension": 0,
+      "scheme_degree": 27,
+      "sections": [],
+      "solution_count": 0,
+      "status": "pass",
+      "univariate_factors": [
+        {
+          "degree": 27,
+          "factors": [
+            [
+              "A^3 + 1/248832",
+              3
+            ],
+            [
+              "A^3 + 1/62208",
+              3
+            ],
+            [
+              "A^9 + 1081/20736*A^6 - 35/1289945088*A^3 + 1/240734712102912",
+              1
+            ]
+          ],
+          "variable": "A"
+        }
+      ]
+    },
+    {
+      "E": "-3*w",
+      "groebner_basis_size": 4,
+      "ideal_dimension": 0,
+      "scheme_degree": 27,
+      "sections": [],
+      "solution_count": 0,
+      "status": "pass",
+      "univariate_factors": [
+        {
+          "degree": 27,
+          "factors": [
+            [
+              "A^3 + 1/248832",
+              3
+            ],
+            [
+              "A^3 + 1/62208",
+              3
+            ],
+            [
+              "A^9 + 1081/20736*A^6 - 35/1289945088*A^3 + 1/240734712102912",
+              1
+            ]
+          ],
+          "variable": "A"
+        }
+      ]
+    }
+  ],
+  "elapsed_seconds": 5.635332822799683,
+  "field": "Q(sqrt(-3))",
+  "mu": "2",
+  "scale": "36",
+  "sections": [],
+  "status": "pass",
+  "total_eigen_sections": 0,
+  "truth_status": "exact Eisenstein eigen-sections; rational descent and independence remain open"
+}

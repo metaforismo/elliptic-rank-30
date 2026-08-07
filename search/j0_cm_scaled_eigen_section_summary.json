@@ -1,0 +1,290 @@
+{
+  "positive_rank_primary_scale": 36,
+  "runs": [
+    {
+      "base_curve": "u^3=108*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 5.7225964069366455,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c108.json",
+      "mu": "2",
+      "scale": "108",
+      "status": "pass",
+      "total_eigen_sections": 0
+    },
+    {
+      "base_curve": "u^3=12*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 4.173816442489624,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c12.json",
+      "mu": "2",
+      "scale": "12",
+      "status": "pass",
+      "total_eigen_sections": 0
+    },
+    {
+      "base_curve": "u^3=18*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 3.6726980209350586,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c18.json",
+      "mu": "2",
+      "scale": "18",
+      "status": "pass",
+      "total_eigen_sections": 0
+    },
+    {
+      "base_curve": "u^3=27*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 3,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 3,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 5.987957239151001,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c27.json",
+      "mu": "2",
+      "scale": "27",
+      "status": "pass",
+      "total_eigen_sections": 6
+    },
+    {
+      "base_curve": "u^3=36*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 5.635332822799683,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c36.json",
+      "mu": "2",
+      "scale": "36",
+      "status": "pass",
+      "total_eigen_sections": 0
+    },
+    {
+      "base_curve": "u^3=4*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 4.582460165023804,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c4.json",
+      "mu": "2",
+      "scale": "4",
+      "status": "pass",
+      "total_eigen_sections": 0
+    },
+    {
+      "base_curve": "u^3=48*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 4.2037529945373535,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c48.json",
+      "mu": "2",
+      "scale": "48",
+      "status": "pass",
+      "total_eigen_sections": 0
+    },
+    {
+      "base_curve": "u^3=9*t*(t-1)",
+      "branches": [
+        {
+          "E": "3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        },
+        {
+          "E": "-3*w",
+          "scheme_degree": 27,
+          "solution_count": 0,
+          "status": "pass",
+          "variety_error": null
+        }
+      ],
+      "elapsed_seconds": 5.930679559707642,
+      "error": null,
+      "file": "j0_cm_scaled_mu2_c9.json",
+      "mu": "2",
+      "scale": "9",
+      "status": "pass",
+      "total_eigen_sections": 0
+    }
+  ],
+  "sections": [
+    {
+      "A": "-1/27",
+      "B": "2",
+      "C": "1/243*w",
+      "D": "-5/18*w",
+      "E": "3*w",
+      "mu": "2",
+      "scale": "27",
+      "source": "j0_cm_scaled_mu2_c27.json",
+      "x": "u*((-1/27)*u^3+(2))",
+      "y": "(1/243*w)*u^6+(-5/18*w)*u^3+(3*w)"
+    },
+    {
+      "A": "1/54*w + 1/54",
+      "B": "-w - 1",
+      "C": "1/243*w",
+      "D": "-5/18*w",
+      "E": "3*w",
+      "mu": "2",
+      "scale": "27",
+      "source": "j0_cm_scaled_mu2_c27.json",
+      "x": "u*((1/54*w + 1/54)*u^3+(-w - 1))",
+      "y": "(1/243*w)*u^6+(-5/18*w)*u^3+(3*w)"
+    },
+    {
+      "A": "-1/54*w + 1/54",
+      "B": "w - 1",
+      "C": "1/243*w",
+      "D": "-5/18*w",
+      "E": "3*w",
+      "mu": "2",
+      "scale": "27",
+      "source": "j0_cm_scaled_mu2_c27.json",
+      "x": "u*((-1/54*w + 1/54)*u^3+(w - 1))",
+      "y": "(1/243*w)*u^6+(-5/18*w)*u^3+(3*w)"
+    },
+    {
+      "A": "-1/27",
+      "B": "2",
+      "C": "-1/243*w",
+      "D": "5/18*w",
+      "E": "-3*w",
+      "mu": "2",
+      "scale": "27",
+      "source": "j0_cm_scaled_mu2_c27.json",
+      "x": "u*((-1/27)*u^3+(2))",
+      "y": "(-1/243*w)*u^6+(5/18*w)*u^3+(-3*w)"
+    },
+    {
+      "A": "1/54*w + 1/54",
+      "B": "-w - 1",
+      "C": "-1/243*w",
+      "D": "5/18*w",
+      "E": "-3*w",
+      "mu": "2",
+      "scale": "27",
+      "source": "j0_cm_scaled_mu2_c27.json",
+      "x": "u*((1/54*w + 1/54)*u^3+(-w - 1))",
+      "y": "(-1/243*w)*u^6+(5/18*w)*u^3+(-3*w)"
+    },
+    {
+      "A": "-1/54*w + 1/54",
+      "B": "w - 1",
+      "C": "-1/243*w",
+      "D": "5/18*w",
+      "E": "-3*w",
+      "mu": "2",
+      "scale": "27",
+      "source": "j0_cm_scaled_mu2_c27.json",
+      "x": "u*((-1/54*w + 1/54)*u^3+(w - 1))",
+      "y": "(-1/243*w)*u^6+(5/18*w)*u^3+(-3*w)"
+    }
+  ],
+  "status": "pass",
+  "total_eigen_sections": 6,
+  "truth_status": "exact Q(sqrt(-3)) eigen-sections; rational descent and independence require separate certificates"
+}

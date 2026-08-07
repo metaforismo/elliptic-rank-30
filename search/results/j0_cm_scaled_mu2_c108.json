@@ -1,0 +1,89 @@
+{
+  "a": "3",
+  "b": "27/2",
+  "base_curve": "u^3=108*t*(t-1)",
+  "branches": [
+    {
+      "E": "3*w",
+      "groebner_basis_size": 4,
+      "ideal_dimension": 0,
+      "scheme_degree": 27,
+      "sections": [],
+      "solution_count": 0,
+      "status": "pass",
+      "univariate_factors": [
+        {
+          "degree": 27,
+          "factors": [
+            [
+              "A^3 + 1/12*A^2 - 1/3888*A + 1/5038848",
+              1
+            ],
+            [
+              "A^3 + (-1/24*w - 1/24)*A^2 + (-1/7776*w + 1/7776)*A + 1/5038848",
+              1
+            ],
+            [
+              "A^3 + (1/24*w - 1/24)*A^2 + (1/7776*w + 1/7776)*A + 1/5038848",
+              1
+            ],
+            [
+              "A^3 + 1/20155392",
+              3
+            ],
+            [
+              "A^3 + 1/5038848",
+              3
+            ]
+          ],
+          "variable": "A"
+        }
+      ]
+    },
+    {
+      "E": "-3*w",
+      "groebner_basis_size": 4,
+      "ideal_dimension": 0,
+      "scheme_degree": 27,
+      "sections": [],
+      "solution_count": 0,
+      "status": "pass",
+      "univariate_factors": [
+        {
+          "degree": 27,
+          "factors": [
+            [
+              "A^3 + 1/12*A^2 - 1/3888*A + 1/5038848",
+              1
+            ],
+            [
+              "A^3 + (-1/24*w - 1/24)*A^2 + (-1/7776*w + 1/7776)*A + 1/5038848",
+              1
+            ],
+            [
+              "A^3 + (1/24*w - 1/24)*A^2 + (1/7776*w + 1/7776)*A + 1/5038848",
+              1
+            ],
+            [
+              "A^3 + 1/20155392",
+              3
+            ],
+            [
+              "A^3 + 1/5038848",
+              3
+            ]
+          ],
+          "variable": "A"
+        }
+      ]
+    }
+  ],
+  "elapsed_seconds": 5.7225964069366455,
+  "field": "Q(sqrt(-3))",
+  "mu": "2",
+  "scale": "108",
+  "sections": [],
+  "status": "pass",
+  "total_eigen_sections": 0,
+  "truth_status": "exact Eisenstein eigen-sections; rational descent and independence remain open"
+}

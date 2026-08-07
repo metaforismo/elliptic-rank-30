@@ -1,0 +1,89 @@
+{
+  "a": "3",
+  "b": "27/2",
+  "base_curve": "u^3=4*t*(t-1)",
+  "branches": [
+    {
+      "E": "3*w",
+      "groebner_basis_size": 4,
+      "ideal_dimension": 0,
+      "scheme_degree": 27,
+      "sections": [],
+      "solution_count": 0,
+      "status": "pass",
+      "univariate_factors": [
+        {
+          "degree": 27,
+          "factors": [
+            [
+              "A^3 + 27/4*A^2 - 27/16*A + 27/256",
+              1
+            ],
+            [
+              "A^3 + (-27/8*w - 27/8)*A^2 + (-27/32*w + 27/32)*A + 27/256",
+              1
+            ],
+            [
+              "A^3 + (27/8*w - 27/8)*A^2 + (27/32*w + 27/32)*A + 27/256",
+              1
+            ],
+            [
+              "A^3 + 27/1024",
+              3
+            ],
+            [
+              "A^3 + 27/256",
+              3
+            ]
+          ],
+          "variable": "A"
+        }
+      ]
+    },
+    {
+      "E": "-3*w",
+      "groebner_basis_size": 4,
+      "ideal_dimension": 0,
+      "scheme_degree": 27,
+      "sections": [],
+      "solution_count": 0,
+      "status": "pass",
+      "univariate_factors": [
+        {
+          "degree": 27,
+          "factors": [
+            [
+              "A^3 + 27/4*A^2 - 27/16*A + 27/256",
+              1
+            ],
+            [
+              "A^3 + (-27/8*w - 27/8)*A^2 + (-27/32*w + 27/32)*A + 27/256",
+              1
+            ],
+            [
+              "A^3 + (27/8*w - 27/8)*A^2 + (27/32*w + 27/32)*A + 27/256",
+              1
+            ],
+            [
+              "A^3 + 27/1024",
+              3
+            ],
+            [
+              "A^3 + 27/256",
+              3
+            ]
+          ],
+          "variable": "A"
+        }
+      ]
+    }
+  ],
+  "elapsed_seconds": 4.582460165023804,
+  "field": "Q(sqrt(-3))",
+  "mu": "2",
+  "scale": "4",
+  "sections": [],
+  "status": "pass",
+  "total_eigen_sections": 0,
+  "truth_status": "exact Eisenstein eigen-sections; rational descent and independence remain open"
+}
