@@ -1,10 +1,17 @@
-# Living paper
+# Living research paper
 
-`paper.tex` and `paper.pdf` are the single continuously maintained research
-paper.  The author is **Francesco Giannicola**.  Do not create numbered paper
-copies; use Git history for prior states.
+The maintained manuscript is:
 
-Every theorem in the paper must point to an executable certificate or give a
-complete mathematical proof.  Experimental sections must distinguish exact
-computation, characteristic-p evidence, heuristic ranking, and unresolved
-work.
+- `paper.tex` — canonical generated entry point;
+- `paper.pdf` — compiled PDF;
+- `source/` — modular LaTeX sources.
+
+The author is **Francesco Giannicola**.
+
+The paper is updated in place. Do not create `paper_v2`, `paper_v3`, or other
+versioned copies; historical states belong in Git history. The PDF build is
+fail-closed: it checks the author, the explicit truth-status phrase, and a
+minimum page count before committing the generated artifact.
+
+Current truth status: **new intermediate theorem**. No curve with thirty
+certified independent rational points is claimed.
