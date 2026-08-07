@@ -1,0 +1,39 @@
+{
+  "character_one": {
+    "coefficient_equations": [
+      "C^2=A^3",
+      "2CD=3A^2B-a^3",
+      "D^2+2CE=3AB^2+b^2-3a^3",
+      "2DE=B^3-3a^3",
+      "E^2=-a^3"
+    ],
+    "minimum_constant_field": "contains sqrt(-a)=sqrt(-q(mu))",
+    "no_Q_rational_eigen_section": true,
+    "x_ansatz": "u*(A*u^3+B)",
+    "y_ansatz": "C*u^6+D*u^3+E"
+  },
+  "character_two": {
+    "conclusion": "empty over the algebraic closure for a nonzero",
+    "u12_equation": "C^2=0",
+    "u9_equation_after_C_zero": "a^3=0",
+    "x_ansatz": "A*u^2",
+    "y_ansatz": "C*u^6+D*u^3+E"
+  },
+  "cm_compatible_locus": {
+    "equation": "mu^2-mu+1=3s^2",
+    "field": "Q(sqrt(-3))",
+    "rational_point": [
+      "2",
+      "1"
+    ]
+  },
+  "cubic_base_curve": "y^2=x^3+b^2*u^6-a^3*(u^3+1)^3",
+  "status": "pass",
+  "symbolic_checks": {
+    "character_one_five_equations": true,
+    "character_two_leading_obstruction": true,
+    "cm_locus_has_rational_point": true,
+    "q_mu_positive_completion_of_square": true
+  },
+  "truth_status": "new restricted obstruction; no rank-30 curve claimed"
+}
