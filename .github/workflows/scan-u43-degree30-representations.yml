@@ -1,0 +1,156 @@
+name: scan-u43-degree30-representations
+
+on:
+  push:
+    paths:
+      - "research/u43_degree30_scan.g"
+      - ".github/workflows/scan-u43-degree30-representations.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install GAP and CTblLib
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gap gap-character-tables
+      - name: Scan relevant U4(3) central extensions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p certificates
+          gap -q research/u43_degree30_scan.g > certificates/u43_degree30_scan.tsv
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          tables = {}
+          complex_rows = {}
+          rational_rows = {}
+          for raw in Path("certificates/u43_degree30_scan.tsv").read_text().splitlines():
+              fields = raw.strip().split("|")
+              if not fields or not fields[0]:
+                  continue
+              kind = fields[0]
+              if kind == "TABLE":
+                  _, ni, name, order, class_count = fields
+                  ni = int(ni)
+                  tables[ni] = {
+                      "name": name,
+                      "order": int(order),
+                      "class_count": int(class_count),
+                      "complex_characters": [],
+                      "rationalized_characters": [],
+                  }
+              elif kind == "COMPLEX":
+                  _, ni, ci, degree, indicator = fields
+                  key = (int(ni), int(ci))
+                  row = {
+                      "character_index": int(ci),
+                      "degree": int(degree),
+                      "frobenius_schur_indicator": int(indicator),
+                      "order_three_classes": [],
+                  }
+                  complex_rows[key] = row
+                  tables[int(ni)]["complex_characters"].append(row)
+              elif kind == "CCLASS":
+                  _, ni, ci, class_index, square_index, fixed = fields
+                  complex_rows[(int(ni), int(ci))]["order_three_classes"].append({
+                      "class_index": int(class_index),
+                      "square_class_index": int(square_index),
+                      "fixed_multiplicity": int(fixed),
+                  })
+              elif kind == "RATIONAL":
+                  _, ni, ri, degree = fields
+                  key = (int(ni), int(ri))
+                  row = {
+                      "rationalized_character_index": int(ri),
+                      "degree": int(degree),
+                      "order_three_classes": [],
+                  }
+                  rational_rows[key] = row
+                  tables[int(ni)]["rationalized_characters"].append(row)
+              elif kind == "RCLASS":
+                  _, ni, ri, class_index, square_index, fixed = fields
+                  rational_rows[(int(ni), int(ri))]["order_three_classes"].append({
+                      "class_index": int(class_index),
+                      "square_class_index": int(square_index),
+                      "fixed_multiplicity": int(fixed),
+                  })
+              else:
+                  raise SystemExit(f"unknown record: {raw!r}")
+
+          ordered = [tables[i] for i in sorted(tables)]
+          rational_matches = []
+          complex_matches = []
+          for table in ordered:
+              for char in table["rationalized_characters"]:
+                  if char["degree"] == 30:
+                      matches = [c for c in char["order_three_classes"] if c["fixed_multiplicity"] == 8]
+                      if matches:
+                          rational_matches.append({
+                              "table": table["name"],
+                              "rationalized_character_index": char["rationalized_character_index"],
+                              "classes": matches,
+                          })
+              for char in table["complex_characters"]:
+                  if char["degree"] == 15:
+                      matches = [c for c in char["order_three_classes"] if c["fixed_multiplicity"] == 4]
+                      if matches:
+                          complex_matches.append({
+                              "table": table["name"],
+                              "character_index": char["character_index"],
+                              "frobenius_schur_indicator": char["frobenius_schur_indicator"],
+                              "classes": matches,
+                          })
+
+          out = {
+              "status": "pass",
+              "tables": ordered,
+              "rationalized_degree30_fixed8_matches": rational_matches,
+              "complex_degree15_fixed4_matches": complex_matches,
+              "truth_note": (
+                  "This is a character-theoretic compatibility scan. It does not "
+                  "identify the integral lattice representation without an explicit "
+                  "representation or a Schur-index/integral-form certificate."
+              ),
+          }
+          Path("certificates/u43_degree30_scan.json").write_text(
+              json.dumps(out, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps({
+              "table_count": len(ordered),
+              "rationalized_degree30_fixed8_matches": len(rational_matches),
+              "complex_degree15_fixed4_matches": len(complex_matches),
+          }, sort_keys=True))
+          PY
+          python3 -m json.tool certificates/u43_degree30_scan.json >/dev/null
+      - uses: actions/upload-artifact@v4
+        with:
+          name: u43-degree30-representation-scan
+          path: |
+            certificates/u43_degree30_scan.tsv
+            certificates/u43_degree30_scan.json
+          if-no-files-found: error
+      - name: Preserve the exact representation scan
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/u43_degree30_scan.tsv certificates/u43_degree30_scan.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record the broad U4(3) degree-30 representation scan"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
