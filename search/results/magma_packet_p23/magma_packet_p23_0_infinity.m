@@ -1,0 +1,18 @@
+SetColumns(0);
+F := GF(23);
+K<t> := FunctionField(F);
+a4 := K!(F!19) + K!(F!22)*t + K!(F!6)*t^2;
+a6 := K!(F!8) + K!(F!3)*t + K!(F!12)*t^2 + K!(F!15)*t^3 + K!(F!2)*t^4 + t^5;
+E := EllipticCurve([K|0,t^2,0,a4,a6]);
+assert Discriminant(E) ne 0;
+d := K!(t-F!0);
+Et := QuadraticTwist(E,d);
+assert Discriminant(Et) ne 0;
+AI := AnalyticInformation(Et);
+print "R30_MAGMA_VERSION", GetVersion();
+print "R30_PRIME", 23;
+print "R30_CHARACTER", "0|infinity";
+print "R30_ANALYTIC_INFORMATION", AI;
+print "R30_ARITHMETIC_RANK", AI[1];
+print "R30_GEOMETRIC_RANK", AI[2];
+print "R30_PACKET_PROBE_PASS";

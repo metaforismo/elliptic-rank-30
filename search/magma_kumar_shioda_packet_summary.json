@@ -1,0 +1,73 @@
+{
+  "best": null,
+  "runs": [
+    {
+      "channel_ranks": [
+        null,
+        null,
+        null
+      ],
+      "channel_statuses": [
+        "exception",
+        "fail",
+        "exception"
+      ],
+      "file": "magma_packet_p23.json",
+      "packet_score": null,
+      "prime": 23,
+      "status": "incomplete",
+      "support": [
+        "0",
+        "1",
+        "infinity"
+      ],
+      "twist_rank_sum": null
+    },
+    {
+      "channel_ranks": [
+        null,
+        null,
+        null
+      ],
+      "channel_statuses": [
+        "exception",
+        "fail",
+        "fail"
+      ],
+      "file": "magma_packet_p29.json",
+      "packet_score": null,
+      "prime": 29,
+      "status": "incomplete",
+      "support": [
+        "0",
+        "1",
+        "infinity"
+      ],
+      "twist_rank_sum": null
+    },
+    {
+      "channel_ranks": [
+        null,
+        null,
+        null
+      ],
+      "channel_statuses": [
+        "exception",
+        "fail",
+        "fail"
+      ],
+      "file": "magma_packet_p31.json",
+      "packet_score": null,
+      "prime": 31,
+      "status": "incomplete",
+      "support": [
+        "0",
+        "1",
+        "infinity"
+      ],
+      "twist_rank_sum": null
+    }
+  ],
+  "status": "pass",
+  "truth_note": "Magma finite-characteristic rank data only; no characteristic-zero or rank-30 lower-bound claim"
+}
