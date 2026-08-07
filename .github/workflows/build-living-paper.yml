@@ -2,6 +2,7 @@ name: build-living-paper
 
 on:
   push:
+    branches: [main]
     paths:
       - "paper/source/**"
       - "paper/paper.tex"
@@ -20,7 +21,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: build-living-paper-${{ github.ref }}
@@ -28,9 +29,12 @@ concurrency:
 
 jobs:
   build:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Install the reproducible LaTeX toolchain
         shell: bash
         run: |
@@ -71,3 +75,15 @@ jobs:
           name: living-paper
           path: paper/paper.pdf
           if-no-files-found: error
+      - name: Persist the canonical paper on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add paper/paper.tex paper/paper.pdf
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Build the canonical Francesco Giannicola research paper"
+          git pull --rebase origin main
+          git push origin HEAD:main
