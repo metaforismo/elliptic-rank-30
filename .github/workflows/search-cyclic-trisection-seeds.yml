@@ -1,0 +1,143 @@
+name: search-cyclic-trisection-seeds
+
+on:
+  push:
+    paths:
+      - "search/normalize_kumar_shioda_certificate.py"
+      - "search/sage_search_cyclic_trisection_seeds.py"
+      - ".github/workflows/search-cyclic-trisection-seeds.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: search-cyclic-trisection-seeds-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  search:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [5, 7, 11]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Normalize the certified split-E8 input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          sage -python search/normalize_kumar_shioda_certificate.py \
+            --source certificates/kumar_shioda_split_e8_certificate.json \
+            --output search/results/kumar_shioda_normalized.json
+      - name: Search irreducible square-discriminant cubics
+        id: search
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          timeout 75m sage -python search/sage_search_cyclic_trisection_seeds.py \
+            --prime '${{ matrix.prime }}' --max-hits 25 \
+            --normalized search/results/kumar_shioda_normalized.json \
+            --output 'search/results/cyclic_trisection_seeds_p${{ matrix.prime }}.json' \
+            2>&1 | tee 'search/results/cyclic_trisection_seeds_p${{ matrix.prime }}.log'
+      - name: Preserve a fail-closed result record
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          prime='${{ matrix.prime }}'
+          path=Path(f'search/results/cyclic_trisection_seeds_p{prime}.json')
+          if not path.exists():
+              path.write_text(json.dumps({
+                  'status':'worker_failed_without_json',
+                  'prime':int(prime),
+                  'truth_status':'no mathematical claim',
+              },indent=2,sort_keys=True)+'\n')
+          data=json.loads(path.read_text())
+          if data.get('status') not in {'pass','error','worker_failed_without_json'}:
+              raise SystemExit(f'unrecognized worker status: {data.get("status")}')
+          print(json.dumps({
+              'prime':data.get('prime'),
+              'status':data.get('status'),
+              'checked':data.get('checked_parameter_tuples'),
+              'hits':data.get('hit_count'),
+              'error':data.get('error'),
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cyclic-trisection-seeds-p${{ matrix.prime }}
+          path: |
+            search/results/kumar_shioda_normalized.json
+            search/results/cyclic_trisection_seeds_p${{ matrix.prime }}.json
+            search/results/cyclic_trisection_seeds_p${{ matrix.prime }}.log
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: search
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cyclic-trisection-seeds-p*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate exact discovery evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; hits=[]
+          for path in sorted(Path('search/results').glob('cyclic_trisection_seeds_p*.json')):
+              data=json.loads(path.read_text())
+              row={
+                  'file':path.name,
+                  'prime':data.get('prime'),
+                  'status':data.get('status'),
+                  'checked':data.get('checked_parameter_tuples'),
+                  'hit_count':data.get('hit_count'),
+                  'error':data.get('error'),
+              }
+              rows.append(row)
+              for hit in data.get('hits',[]):
+                  hits.append({'prime':data.get('prime'),'source':path.name,**hit})
+          hits.sort(key=lambda h:(h.get('extension_genus') != 1,h.get('prime'),h.get('a0'),h.get('a1'),h.get('b0'),h.get('b1')))
+          out={
+              'status':'pass' if rows else 'no_artifacts',
+              'runs':rows,
+              'total_hits':len(hits),
+              'genus_one_hits':sum(h.get('extension_genus')==1 for h in hits),
+              'top_hits':hits[:100],
+              'truth_status':'finite-characteristic lifting seeds only; no Q(t) or rank-30 claim',
+          }
+          Path('search/cyclic_trisection_seed_summary.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:out[k] for k in ('status','total_hits','genus_one_hits')},sort_keys=True))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/cyclic_trisection_seeds_p*.json \
+                  search/results/cyclic_trisection_seeds_p*.log \
+                  search/results/kumar_shioda_normalized.json \
+                  search/cyclic_trisection_seed_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record cyclic trisection lifting-seed scans"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
