@@ -1,0 +1,26 @@
+{
+  "characteristic_exclusions": [
+    2,
+    3
+  ],
+  "depressed_cubic": {
+    "discriminant": "-4p^3-27q^2",
+    "p": "B-A^2/3",
+    "q": "2A^3/27-AB/3+C"
+  },
+  "kummer_hash": "unordered pair {[d],[d]^-1} in K(zeta3)^*/K(zeta3)^{*3}",
+  "lagrange_cubes": {
+    "R_cubed": "(-27q+3s*sqrt(-3))/2",
+    "S_cubed": "(-27q-3s*sqrt(-3))/2",
+    "product": "-27p^3",
+    "sum": "-27q"
+  },
+  "status": "pass",
+  "symbolic_checks": {
+    "depression_formula": true,
+    "resolvent_discriminant_equals_minus_27_Delta": true,
+    "resolvent_product_mod_relations": true,
+    "resolvent_sum": true
+  },
+  "truth_status": "exact algebraic reduction; no rank-30 curve claimed"
+}
