@@ -1,25 +1,152 @@
 {
-  "matching_entries": [],
+  "matching_complex_entries": [],
+  "matching_rationalized_entries": [],
   "status": "pass",
   "tables": [
     {
       "class_count": 64,
-      "degree_30_characters": [],
+      "degree_30_complex_characters": [],
       "group_order": "39191040",
+      "rationalized_characters_degree_at_most_60": [
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 1
+        },
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 2
+        },
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 3
+        },
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 4
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 5
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 6
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 7
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 8
+        }
+      ],
       "table": "3_2.U4(3).(2^2)_{133}"
     },
     {
       "class_count": 65,
-      "degree_30_characters": [],
+      "degree_30_complex_characters": [],
       "group_order": "19595520",
+      "rationalized_characters_degree_at_most_60": [
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 1
+        },
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 2
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 3
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 4
+        }
+      ],
       "table": "3_2.U4(3).2_3"
     },
     {
       "class_count": 47,
-      "degree_30_characters": [],
+      "degree_30_complex_characters": [],
       "group_order": "19595520",
+      "rationalized_characters_degree_at_most_60": [
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 1
+        },
+        {
+          "degree": 1,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 2
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 3
+        },
+        {
+          "degree": 21,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 4
+        },
+        {
+          "degree": 35,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 5
+        },
+        {
+          "degree": 35,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 6
+        },
+        {
+          "degree": 35,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 7
+        },
+        {
+          "degree": 35,
+          "has_fixed_rank_8_class": false,
+          "order_three_classes": [],
+          "rationalized_character_index": 8
+        }
+      ],
       "table": "3_2.U4(3).2_1"
     }
   ],
-  "truth_note": "Character-table compatibility only. A fixed multiplicity of 8 does not by itself construct an integral lattice automorphism, an elliptic surface, or a rank-30 Mordell-Weil group."
+  "truth_note": "Character-table compatibility only. Rationalization sums Galois orbits of complex characters; Schur-index and integral-lattice realization checks remain separate."
 }
