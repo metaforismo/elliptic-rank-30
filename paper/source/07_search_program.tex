@@ -1,0 +1,106 @@
+\section{Executable search program}
+
+The search is organized around proof objects rather than scores.  Every
+candidate record stores exact coefficients, rational points, local data,
+height information, subgroup rank, regulator, saturation status, software
+versions, provenance, and a content hash.
+
+\subsection{Workstream A: the second rank-$17$ K3 fibration}
+
+The successful rank-$29$ specialization arose from a second rank-$17$
+fibration on the record K3 surface.  The ideal reproduction input consists of
+its exact $\Q(t)$ Weierstrass model, all seventeen labelled sections, their
+Shioda Gram matrix, the bad-parameter locus, and the coordinate transformation
+to the published record fibre.  Until those data are available in executable
+form, the project does not replace them with a guessed family.
+
+Once ingested, the search will:
+\begin{enumerate}[leftmargin=*]
+\item express the twelve extra rank-$29$ directions relative to the generic lattice;
+\item enumerate low-height multisections and group them by Galois character;
+\item compute same-character multiplicities and hidden product twists;
+\item sieve specializations by quotient-height visibility, local solubility, and certification cost;
+\item test independence incrementally by local reductions and Schur complements.
+\end{enumerate}
+
+\subsection{Workstream B: cubic trace-code packets}
+
+This is the main new constructive route.
+
+\begin{enumerate}[leftmargin=*]
+\item Start from the certified split $E_8$ rational elliptic surface.
+\item Enumerate the $2240$ maximal isotropic trace codes in $E_8/3E_8$.
+\item For each code, process its $240$ minimal trisection classes.
+\item Compute a basis of each four-dimensional linear system $|D_v|$.
+\item Eliminate the surface coordinates to obtain the cubic extension of $\Q(t)$.
+\item Require a square cubic discriminant and exactly three smooth branch values.
+\item Compute the genus-one normalization and prove positive rational rank.
+\item Canonicalize covers and group trisections defining the same cover.
+\item Build the Hermitian Gram matrix of every group and retain rank-eleven packets.
+\item Determine the ternary gluing code, projected determinant, and saturation.
+\item Construct all thirty generic sections explicitly.
+\item Specialize at rational points of the base and produce the final equation-and-points certificate.
+\end{enumerate}
+
+A code is discarded only with a recorded exact reason: empty cyclic locus,
+wrong ramification, branch collision with the discriminant, base rank zero,
+insufficient Hermitian rank, nonintegral projected lattice, or failed descent.
+
+\subsection{Workstream C: split norm identities}
+
+Search for exact identities
+\[
+A(x)^2-R(x)B(x)^2
+=c\prod_{i=1}^{31}(x-r_i),
+\qquad r_i\in\Q.
+\]
+Finite-field solutions are used only as lifting seeds.  A candidate is promoted
+only when all thirty-one roots split over $\Q$, the corresponding points are
+listed exactly, and the relation module is proved to have rank one.
+
+\subsection{Workstream D: characteristic-$p$ discovery}
+
+Reductions modulo carefully selected primes can reveal high Picard rank,
+character packets, and candidate trisections.  They are discovery evidence,
+not characteristic-zero rank proofs.  A configuration is promoted only after
+explicit lifting and exact substitution over $\Q(t)$.
+
+\subsection{Multi-stage sieve}
+
+For each specialization or packet, the sieve records a vector rather than one
+opaque score:
+\[
+(\text{forced rank},\;\text{auxiliary genus},\;\text{base rank},\;
+\text{successive minima},\;\text{Selmer room},\;\text{coefficient height},\;
+\text{certificate cost}).
+\]
+Mestre--Nagao and Frobenius scores are cheap filters.  They never count as
+mathematical evidence for rank.
+
+\subsection{Incremental independence}
+
+Given independent $P_1,\ldots,P_r$ and a new point $P$, the pipeline:
+\begin{enumerate}[leftmargin=*]
+\item verifies $P\in E(\Q)$ exactly;
+\item rejects duplicates, negatives, torsion, and known combinations;
+\item tests modular dependence at good primes;
+\item computes the projected quotient height;
+\item updates the Gram determinant with interval-certified precision;
+\item preserves the complete transformation and search provenance.
+\end{enumerate}
+The full basis is not recomputed from scratch after every point.
+
+\subsection{Smallest decisive experiment}
+
+The next exact experiment is the minimal-shell trace-code scan:
+\[
+\boxed{
+\text{one split }E_8\text{ surface},
+\quad2240\text{ maximal ternary codes},
+\quad240\text{ trisection classes per code}.
+}
+\]
+The first objective is not immediately thirty sections.  It is one cyclic
+positive-rank genus-one cover carrying at least two distinct trisection orbits.
+That establishes that the incidence fibres can have multiplicity greater than
+one.  The search then escalates the Hermitian rank of the fibre toward eleven.
