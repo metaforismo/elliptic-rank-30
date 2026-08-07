@@ -1,0 +1,48 @@
+{
+  "e8_gram_determinant": 1,
+  "e8_norm6_vector_count": 6720,
+  "maximal_spaces_through_each_nonzero_isotropic_vector": 80,
+  "maximal_totally_isotropic_4_spaces": 2240,
+  "mod3_quadratic_space": {
+    "dimension": 8,
+    "field": 3,
+    "type": "plus",
+    "witt_index": 4
+  },
+  "nonzero_isotropic_vectors_mod3": 2240,
+  "nonzero_vectors_per_maximal_space": 80,
+  "norm6_lifts_per_nonzero_isotropic_vector": 3,
+  "norm6_trisection_classes_per_maximal_space": 240,
+  "orbit_height_formula": {
+    "difference_gram": [
+      [12, -6],
+      [-6, 12]
+    ],
+    "difference_height": 12,
+    "difference_lattice": "A2(6)",
+    "pairing_of_distinct_conjugates": "2m",
+    "projected_gram": [
+      [4, -2],
+      [-2, 4]
+    ],
+    "projected_height": 4,
+    "projected_lattice": "A2(2)",
+    "projected_pairing": -2,
+    "section_height": "6+2m",
+    "trace_height": "18(m+1)"
+  },
+  "search_reduction": "An integral projected packet has trace residues in a totally isotropic four-space, reducing the minimal shell from 6720 to 240 classes.",
+  "shell_counts_for_intersection_m_0_through_7": {
+    "0": 6720,
+    "1": 60480,
+    "2": 181680,
+    "3": 490560,
+    "4": 846720,
+    "5": 1632960,
+    "6": 1975680,
+    "7": 3981600
+  },
+  "status": "pass",
+  "theorem": "cyclic cubic trisection trace-code geometry",
+  "truth_status": "new intermediate theorem; no rank-30 curve claimed"
+}
