@@ -1,0 +1,78 @@
+name: magma-probe-j0-s3-twist
+
+on:
+  push:
+    paths:
+      - "search/magma_free_j0_s3_twist_probe.py"
+      - ".github/workflows/magma-probe-j0-s3-twist.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [11, 13, 17]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe the representative S3 packet twist
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results/j0_s3_p${{ matrix.prime }}
+          python3 search/magma_free_j0_s3_twist_probe.py \
+            --prime '${{ matrix.prime }}' --mus '2,3,4,5,6,7' \
+            --output-dir 'search/results/j0_s3_p${{ matrix.prime }}' \
+            --summary 'search/results/j0_s3_p${{ matrix.prime }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: j0-s3-twist-p${{ matrix.prime }}
+          path: |
+            search/results/j0_s3_p${{ matrix.prime }}.json
+            search/results/j0_s3_p${{ matrix.prime }}/
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: probe
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: j0-s3-twist-p*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate the exact finite-field evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path('search/results').glob('j0_s3_p*.json')):
+              d=json.loads(path.read_text())
+              rows.append({'file':path.name,'prime':d.get('prime'),'runs':[
+                  {'mu':r.get('mu'),'status':r.get('status'),'rank':r.get('rank'),
+                   'geometric_rank':r.get('geometric_rank'),'warning':r.get('warning')}
+                  for r in d.get('runs',[])]})
+          out={'status':'pass' if rows else 'no_artifacts','runs':rows,
+               'truth_note':'finite-characteristic exact rank evidence only; no Q(t) promotion'}
+          Path('search/j0_s3_twist_probe_summary.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/j0_s3_p*.json search/results/j0_s3_p*/ search/j0_s3_twist_probe_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record S3-equivariant j0 twist probes"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
