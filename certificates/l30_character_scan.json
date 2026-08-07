@@ -1,0 +1,25 @@
+{
+  "matching_entries": [],
+  "status": "pass",
+  "tables": [
+    {
+      "class_count": 64,
+      "degree_30_characters": [],
+      "group_order": "39191040",
+      "table": "3_2.U4(3).(2^2)_{133}"
+    },
+    {
+      "class_count": 65,
+      "degree_30_characters": [],
+      "group_order": "19595520",
+      "table": "3_2.U4(3).2_3"
+    },
+    {
+      "class_count": 47,
+      "degree_30_characters": [],
+      "group_order": "19595520",
+      "table": "3_2.U4(3).2_1"
+    }
+  ],
+  "truth_note": "Character-table compatibility only. A fixed multiplicity of 8 does not by itself construct an integral lattice automorphism, an elliptic surface, or a rank-30 Mordell-Weil group."
+}
