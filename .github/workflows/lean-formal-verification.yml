@@ -23,14 +23,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   verify:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Reject local proof placeholders
         shell: bash
         run: |
@@ -49,6 +52,16 @@ jobs:
               raise SystemExit('\n'.join(bad))
           print(f'checked {len(files)} Lean source files: no local placeholders')
           PY
+      - name: Materialize the pinned Lake manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | \
+            sh -s -- -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake --version
+          lake update
+          test -s lake-manifest.json
       - uses: leanprover/lean-action@v1
         with:
           build: true
@@ -58,3 +71,15 @@ jobs:
           leanchecker: true
           nanoda: true
           nanoda-allow-sorry: false
+      - name: Preserve the manifest on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add lake-manifest.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Pin the verified Lake dependency graph"
+          git pull --rebase origin main
+          git push origin HEAD:main
