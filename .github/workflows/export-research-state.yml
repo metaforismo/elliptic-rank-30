@@ -1,0 +1,40 @@
+name: export-research-state
+
+on:
+  push:
+    paths:
+      - ".github/workflows/export-research-state.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build a complete offline research bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p export
+          git bundle create export/elliptic-rank-30.bundle --all
+          git rev-parse HEAD > export/HEAD.txt
+          git status --porcelain=v1 > export/status.txt
+          git ls-files -z | sort -z | tr '\0' '\n' > export/tracked-files.txt
+          if test -d bootstrap; then
+            tar -cJf export/bootstrap-current.tar.xz bootstrap
+          fi
+          sha256sum export/* > export/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elliptic-rank-30-offline-state
+          path: export/
+          if-no-files-found: error
+          retention-days: 7
