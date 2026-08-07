@@ -15,15 +15,27 @@
   "norm6_trisection_classes_per_maximal_space": 240,
   "orbit_height_formula": {
     "difference_gram": [
-      [12, -6],
-      [-6, 12]
+      [
+        12,
+        -6
+      ],
+      [
+        -6,
+        12
+      ]
     ],
     "difference_height": 12,
     "difference_lattice": "A2(6)",
     "pairing_of_distinct_conjugates": "2m",
     "projected_gram": [
-      [4, -2],
-      [-2, 4]
+      [
+        4,
+        -2
+      ],
+      [
+        -2,
+        4
+      ]
     ],
     "projected_height": 4,
     "projected_lattice": "A2(2)",
@@ -38,9 +50,9 @@
     "2": 181680,
     "3": 490560,
     "4": 846720,
-    "5": 1632960,
-    "6": 1975680,
-    "7": 3981600
+    "5": 1635120,
+    "6": 2311680,
+    "7": 3931200
   },
   "status": "pass",
   "theorem": "cyclic cubic trisection trace-code geometry",
