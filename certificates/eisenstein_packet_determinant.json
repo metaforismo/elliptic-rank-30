@@ -1,0 +1,27 @@
+{
+  "exact_arithmetic_checks": {
+    "nontrivial_off_diagonal_example": true,
+    "one_orbit_trace_form": true,
+    "two_orbit_block_diagonal": true
+  },
+  "field": "Q(zeta3)",
+  "field_discriminant_absolute_value": 3,
+  "general_formulas": {
+    "difference_lattice_determinant": "3^n Norm(det H)",
+    "projected_lattice_determinant": "3^(-n) Norm(det H)",
+    "rank30_n11": "Norm(det H)/27",
+    "with_invariant_E8_3": "3^(8-n) Norm(det H)"
+  },
+  "one_orbit": {
+    "difference_determinant": 108,
+    "difference_gram": [
+      [12, -6],
+      [-6, 12]
+    ],
+    "hermitian_determinant_norm": 36,
+    "hermitian_gram": [["6"]],
+    "projected_determinant": 12
+  },
+  "status": "pass",
+  "truth_status": "new intermediate theorem; no rank-30 curve claimed"
+}
