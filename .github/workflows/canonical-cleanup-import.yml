@@ -17,6 +17,7 @@ jobs:
   import:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,111 +30,184 @@ jobs:
           git pull --rebase origin "$GITHUB_REF_NAME"
           cat > /tmp/reconstruct_bootstrap.py <<'PY'
           from __future__ import annotations
-          import base64, io, itertools, json, re, shutil, tarfile, tempfile, zipfile
+
+          import base64
+          import io
+          import itertools
+          import json
+          import re
+          import shutil
+          import tarfile
+          import tempfile
+          import zipfile
           from pathlib import Path
 
-          REQUIRED={'curve.json','points.json','verify_exact.py','verify_sage.py','verify_magma.m'}
+          REQUIRED = {
+              "curve.json",
+              "points.json",
+              "verify_exact.py",
+              "verify_sage.py",
+              "verify_magma.m",
+          }
 
-          def natural_key(path):
-              return [int(x) if x.isdigit() else x for x in re.split(r'(\d+)',path.name)]
+          def natural_key(path: Path):
+              return [
+                  int(piece) if piece.isdigit() else piece
+                  for piece in re.split(r"(\d+)", path.name)
+              ]
 
-          def candidates(root,index):
-              stem=f'payload.part.{index:03d}'
-              direct=root/stem
-              descendants=sorted(
-                  [p for p in root.iterdir() if p.is_file() and p.name.startswith(stem+'.')],
-                  key=natural_key,
+          def part_candidates(root: Path, index: int):
+              stem = f"payload.part.{index:03d}"
+              files = sorted(
+                  [
+                      path
+                      for path in root.iterdir()
+                      if path.is_file()
+                      and (path.name == stem or path.name.startswith(stem + "."))
+                  ],
+                  key=lambda path: (0 if path.name == stem else 1, natural_key(path)),
               )
-              leaves=[p for p in descendants if not any(q.name.startswith(p.name+'.') for q in descendants)]
-              rows=[]
-              if direct.exists(): rows.append((direct.name,direct.read_bytes()))
-              if leaves:
-                  leaf_data=b''.join(p.read_bytes() for p in leaves)
-                  rows.append(('+'.join(p.name for p in leaves),leaf_data))
-                  if direct.exists(): rows.append((direct.name+'+'+'+'.join(p.name for p in leaves),direct.read_bytes()+leaf_data))
-              groups={}
-              for p in descendants:
-                  suffix=p.name[len(stem)+1:]
-                  groups.setdefault(suffix.split('.')[0],[]).append(p)
-              chunks=[]; labels=[]
-              for top in sorted(groups,key=lambda s:int(s) if s.isdigit() else 10**9):
-                  child=root/(stem+'.'+top)
-                  group=groups[top]
-                  child_desc=[p for p in group if p!=child]
-                  child_leaves=[p for p in child_desc if not any(q.name.startswith(p.name+'.') for q in child_desc)]
-                  if child.exists(): chunks.append(child.read_bytes()); labels.append(child.name)
-                  elif child_leaves:
-                      child_leaves=sorted(child_leaves,key=natural_key)
-                      chunks.append(b''.join(p.read_bytes() for p in child_leaves))
-                      labels.append('+'.join(p.name for p in child_leaves))
-              if chunks:
-                  data=b''.join(chunks)
-                  rows.append(('+'.join(labels),data))
-                  if direct.exists(): rows.append((direct.name+'+'+'+'.join(labels),direct.read_bytes()+data))
-              out=[]; seen=set()
-              for label,data in rows:
-                  if data not in seen: seen.add(data); out.append((label,data))
-              return out
+              if not files:
+                  return []
 
-          def variants(data):
-              yield 'raw',data
-              compact=b''.join(data.split())
+              unique = []
+              seen = set()
+              for path in files:
+                  data = b"".join(path.read_bytes().split())
+                  if data in seen:
+                      continue
+                  seen.add(data)
+                  unique.append((path.name, data))
+
+              candidates = []
+              candidate_data = set()
+              # The migration fragments contain a mixture of complete chunks,
+              # duplicate subdivisions, and tails.  Enumerate every ordered
+              # subsequence so combinations such as `part.002 + part.002.tail`
+              # are tested explicitly.
+              for mask in range(1, 1 << len(unique)):
+                  chosen = [unique[pos] for pos in range(len(unique)) if mask & (1 << pos)]
+                  data = b"".join(item[1] for item in chosen)
+                  if data in candidate_data:
+                      continue
+                  candidate_data.add(data)
+                  candidates.append(("+".join(item[0] for item in chosen), data))
+
+              # Try shorter and filename-simpler candidates first.
+              candidates.sort(key=lambda row: (len(row[1]), row[0].count("+"), row[0]))
+              return candidates
+
+          def decoded_variants(data: bytes):
+              compact = b"".join(data.split())
               for pad in range(4):
-                  try: yield 'base64',base64.b64decode(compact+b'='*pad,validate=False)
-                  except Exception: pass
+                  try:
+                      decoded = base64.b64decode(compact + b"=" * pad, validate=True)
+                  except Exception:
+                      continue
+                  if decoded.startswith(b"\xfd7zXZ\x00"):
+                      yield "base64-xz", decoded
+              if data.startswith((b"PK\x03\x04", b"\xfd7zXZ\x00")):
+                  yield "raw", data
 
-          def extract(data,dest):
-              if zipfile.is_zipfile(io.BytesIO(data)):
-                  with zipfile.ZipFile(io.BytesIO(data)) as z: z.extractall(dest)
-                  return 'zip'
+          def extract(data: bytes, destination: Path):
+              stream = io.BytesIO(data)
+              if zipfile.is_zipfile(stream):
+                  stream.seek(0)
+                  with zipfile.ZipFile(stream) as archive:
+                      archive.extractall(destination)
+                  return "zip"
+              stream.seek(0)
               try:
-                  with tarfile.open(fileobj=io.BytesIO(data),mode='r:*') as t: t.extractall(dest)
-                  return 'tar'
-              except Exception: return None
+                  with tarfile.open(fileobj=stream, mode="r:*") as archive:
+                      archive.extractall(destination)
+                  return "tar"
+              except Exception:
+                  return None
 
-          def locate(dest):
-              for p in [dest]+[x for x in dest.rglob('*') if x.is_dir()]:
-                  if REQUIRED <= {x.name for x in p.iterdir()}: return p
+          def locate(destination: Path):
+              directories = [destination] + [
+                  path for path in destination.rglob("*") if path.is_dir()
+              ]
+              for directory in directories:
+                  names = {path.name for path in directory.iterdir()}
+                  if REQUIRED <= names:
+                      return directory
               return None
 
-          bootstrap=Path('bootstrap')
+          bootstrap = Path("bootstrap")
           if not bootstrap.exists():
-              raise SystemExit('bootstrap directory is absent; refusing an ambiguous import')
-          groups=[]
+              raise SystemExit("bootstrap directory is absent; refusing an ambiguous import")
+
+          groups = []
           for index in range(100):
-              rows=candidates(bootstrap,index)
-              if not rows:
-                  if groups: break
+              candidates = part_candidates(bootstrap, index)
+              if not candidates:
+                  if groups:
+                      break
                   continue
-              groups.append(rows)
-          for attempt,combo in enumerate(itertools.product(*groups),1):
-              raw=b''.join(item[1] for item in combo)
-              for encoding,data in variants(raw):
-                  with tempfile.TemporaryDirectory() as td:
-                      dest=Path(td)
-                      archive=extract(data,dest)
-                      if not archive: continue
-                      root=locate(dest)
-                      if not root: continue
-                      target=Path('/tmp/canonical-rank30')
-                      if target.exists(): shutil.rmtree(target)
-                      shutil.copytree(root,target)
-                      plan={
-                          'status':'pass','attempts':attempt,'encoding':encoding,
-                          'archive':archive,'parts':[x[0] for x in combo],
-                          'file_count':sum(1 for p in root.rglob('*') if p.is_file()),
+              groups.append(candidates)
+
+          if not groups:
+              raise SystemExit("no bootstrap payload fragments were found")
+
+          combinations = 1
+          for group in groups:
+              combinations *= len(group)
+          print(
+              json.dumps(
+                  {
+                      "part_groups": len(groups),
+                      "candidate_counts": [len(group) for group in groups],
+                      "combination_count": combinations,
+                  },
+                  sort_keys=True,
+              )
+          )
+
+          for attempt, combination in enumerate(itertools.product(*groups), 1):
+              raw = b"".join(item[1] for item in combination)
+              for encoding, data in decoded_variants(raw):
+                  with tempfile.TemporaryDirectory() as temporary:
+                      destination = Path(temporary)
+                      archive_kind = extract(data, destination)
+                      if not archive_kind:
+                          continue
+                      root = locate(destination)
+                      if root is None:
+                          continue
+                      target = Path("/tmp/canonical-rank30")
+                      if target.exists():
+                          shutil.rmtree(target)
+                      shutil.copytree(root, target)
+                      plan = {
+                          "status": "pass",
+                          "attempt": attempt,
+                          "encoding": encoding,
+                          "archive": archive_kind,
+                          "parts": [item[0] for item in combination],
+                          "file_count": sum(1 for path in root.rglob("*") if path.is_file()),
                       }
-                      Path('/tmp/reconstruction-plan.json').write_text(json.dumps(plan,indent=2)+'\n')
-                      print(json.dumps(plan,sort_keys=True))
+                      Path("/tmp/reconstruction-plan.json").write_text(
+                          json.dumps(plan, indent=2, sort_keys=True) + "\n"
+                      )
+                      print(json.dumps(plan, sort_keys=True))
                       raise SystemExit(0)
-          raise SystemExit('could not reconstruct a valid canonical package')
+
+          raise SystemExit(
+              f"could not reconstruct a valid canonical package after {combinations} combinations"
+          )
           PY
+
           python3 /tmp/reconstruct_bootstrap.py
           for required in curve.json points.json verify_exact.py verify_sage.py verify_magma.m; do
             test -f "/tmp/canonical-rank30/$required"
           done
+
           rsync -a --ignore-existing --exclude '.git/' /tmp/canonical-rank30/ ./
+          mkdir -p evidence
           cp /tmp/reconstruction-plan.json evidence/bootstrap-reconstruction-plan.json
+
+          python3 verify_exact.py
 
           rm -rf bootstrap
           rm -f \
@@ -146,7 +220,6 @@ jobs:
             .github/workflows/issue-bootstrap-dispatch.yml \
             .github/workflows/canonical-cleanup-import.yml
 
-          python3 verify_exact.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
