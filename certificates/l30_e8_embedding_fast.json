@@ -1,0 +1,18 @@
+{
+  "algorithm": "PARI qfminim plus exact bitset Dynkin search",
+  "candidate_lattice": "3.U4(3).2^2",
+  "central_limit": 6660,
+  "central_vectors_tried": 6660,
+  "determinant": "14348907",
+  "dimension": 30,
+  "elapsed_seconds": 57.42750263214111,
+  "embedding_found": false,
+  "enumeration_seconds": 0.5197687149047852,
+  "expected_determinant": "14348907",
+  "norm6_vector_count": 13320,
+  "norm6_vectors_up_to_sign": 6660,
+  "pattern_nodes_tested": 33035400,
+  "relation_rows_cached": 6660,
+  "status": "no_embedding",
+  "truth_note": "This is a lattice compatibility computation, not a Mordell-Weil realization or an elliptic-curve rank certificate."
+}
