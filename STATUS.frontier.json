@@ -1,0 +1,22 @@
+{
+  "as_of": "2026-08-07",
+  "author": "Francesco Giannicola",
+  "target": "an elliptic curve over Q with at least 30 rigorously independent rational points",
+  "truth_status": "new intermediate theorem",
+  "certified_record_reproduced": 29,
+  "rank_30_candidate": false,
+  "universal_upper_bound": false,
+  "exact_new_results": [
+    "symmetric split V4 packet obstruction over real fields",
+    "torsion packet capacity bounds: at most 22 with rational 2-torsion and at most 14 with rational 3-torsion",
+    "Riemann-Roch one-function visibility barrier: a split degree-30 near-square spans rank at most 29",
+    "minimal single-function construction target is a 31-zero norm equation"
+  ],
+  "active_constructive_tracks": [
+    "marked cyclic j=0 exact section schemes and CM descent",
+    "split E8 cubic pencils and three-channel quadratic packets",
+    "finite-field exact packet-rank laboratory with characteristic-zero lifting gate",
+    "31-zero polynomial norm identities"
+  ],
+  "promotion_rule": "No rank-30 claim without an explicit curve, 30 complete rational points, exact substitution, rigorous independence, heights, saturation, provenance, hashes, and second-system verification."
+}
