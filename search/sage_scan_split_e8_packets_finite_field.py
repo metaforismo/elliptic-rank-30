@@ -18,7 +18,7 @@ from pathlib import Path
 
 def cubic_basis(R):
     X,Y,Z=R.gens()
-    return [X^3,X^2*Y,X^2*Z,X*Y^2,X*Y*Z,X*Z^2,Y^3,Y^2*Z,Y*Z^2,Z^3]
+    return [X**3,X**2*Y,X**2*Z,X*Y**2,X*Y*Z,X*Z**2,Y**3,Y**2*Z,Y*Z**2,Z**3]
 
 
 def convert(cubic,O):
