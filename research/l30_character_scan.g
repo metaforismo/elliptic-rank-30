@@ -15,7 +15,6 @@ for ti in [1..Length(tables)] do
   fi;
   irr := Irr(tbl);
   orders := OrdersClassRepresentatives(tbl);
-  names := ClassNames(tbl);
   pm2 := PowerMap(tbl, 2);
   if ti > 1 then Print(",\n"); fi;
   Print("    {\n");
@@ -46,9 +45,7 @@ for ti in [1..Length(tables)] do
           firstclass := false;
           Print("            {\n");
           Print("              \"class_index\": ", i, ",\n");
-          Print("              \"class_name\": \"", names[i], "\",\n");
           Print("              \"square_class_index\": ", pm2[i], ",\n");
-          Print("              \"square_class_name\": \"", names[pm2[i]], "\",\n");
           Print("              \"fixed_multiplicity\": ", fixed, ",\n");
           if fixed = 8 then
             Print("              \"matches_cyclic_cubic_requirement\": true\n");
