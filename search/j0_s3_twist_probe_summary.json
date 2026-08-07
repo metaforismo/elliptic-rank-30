@@ -143,6 +143,114 @@
           "warning": "The computation exceeded the time limit and so was terminated prematurely."
         }
       ]
+    },
+    {
+      "file": "j0_s3_p19.json",
+      "prime": 19,
+      "runs": [
+        {
+          "geometric_rank": null,
+          "mu": 3,
+          "rank": null,
+          "status": "exception",
+          "warning": null
+        },
+        {
+          "geometric_rank": null,
+          "mu": 4,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        },
+        {
+          "geometric_rank": null,
+          "mu": 5,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        }
+      ]
+    },
+    {
+      "file": "j0_s3_p23.json",
+      "prime": 23,
+      "runs": [
+        {
+          "geometric_rank": null,
+          "mu": 3,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        },
+        {
+          "geometric_rank": null,
+          "mu": 4,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        },
+        {
+          "geometric_rank": null,
+          "mu": 5,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        }
+      ]
+    },
+    {
+      "file": "j0_s3_p29.json",
+      "prime": 29,
+      "runs": [
+        {
+          "geometric_rank": null,
+          "mu": 3,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        },
+        {
+          "geometric_rank": null,
+          "mu": 4,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        },
+        {
+          "geometric_rank": null,
+          "mu": 5,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        }
+      ]
+    },
+    {
+      "file": "j0_s3_p31.json",
+      "prime": 31,
+      "runs": [
+        {
+          "geometric_rank": null,
+          "mu": 3,
+          "rank": null,
+          "status": "exception",
+          "warning": null
+        },
+        {
+          "geometric_rank": null,
+          "mu": 4,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        },
+        {
+          "geometric_rank": null,
+          "mu": 5,
+          "rank": null,
+          "status": "fail",
+          "warning": "The computation exceeded the time limit and so was terminated prematurely."
+        }
+      ]
     }
   ],
   "status": "pass",

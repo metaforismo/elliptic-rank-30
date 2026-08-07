@@ -1,0 +1,51 @@
+{
+  "best": {
+    "elapsed_seconds": 60.737754344940186,
+    "geometric_rank": null,
+    "http_status": 200,
+    "mu": 3,
+    "output_tail": "",
+    "prime": 23,
+    "rank": null,
+    "status": "fail",
+    "warning": "The computation exceeded the time limit and so was terminated prematurely."
+  },
+  "prime": 23,
+  "runs": [
+    {
+      "elapsed_seconds": 60.737754344940186,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 3,
+      "output_tail": "",
+      "prime": 23,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "elapsed_seconds": 60.690016984939575,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 4,
+      "output_tail": "",
+      "prime": 23,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "elapsed_seconds": 60.62070679664612,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 5,
+      "output_tail": "",
+      "prime": 23,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    }
+  ],
+  "status": "pass",
+  "truth_note": "finite-characteristic exact rank data only; no Q(t) lower-bound claim"
+}
