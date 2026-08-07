@@ -1,0 +1,85 @@
+\section{The hidden quadratic twist and a rank-twelve ceiling}
+
+The minimal-scale obstruction is a symptom of a stronger geometric failure.
+For every nonzero rational $c$, the complete marked $\mu=2$ cubic-base family
+has geometric generic rank at most twelve.
+
+Put $v=t(t-1)=u^3/c$. The coefficient factors as
+\[
+\frac{729}{4}v^2-27(v+1)^3
+=-\frac{27}{4}(v-2)^2(4v+1).
+\]
+Since $t$ satisfies
+\[
+t^2-t-\frac{u^3}{c}=0,
+\]
+the function field of the genus-one base is
+\[
+\Q(C_c)=\Q\left(u,\sqrt{1+\frac{4u^3}{c}}\right).
+\]
+The Mordell--Weil space therefore decomposes into the invariant curve over
+$\Q(u)$ and its quadratic twist by
+\[
+D_c(u)=1+\frac{4u^3}{c}.
+\]
+
+\begin{theorem}[Rank-twelve ceiling for the marked cubic family]
+For every $c\in\Q^*$,
+\[
+\rank E(\overline{\Q}(C_c))\le12.
+\]
+Consequently a rank-thirty specialization inside this family would require an
+exceptional rank jump of at least eighteen.
+\end{theorem}
+
+\begin{proof}
+The invariant surface has coefficient
+\[
+-\frac{27}{4}
+\left(\frac{u^3}{c}-2\right)^2
+\left(\frac{4u^3}{c}+1\right).
+\]
+It is a K3 surface with three fibres of type $IV$, three of type $II$, and an
+$I_0^*$ fibre at infinity. The total root rank is
+\[
+3\cdot2+4=10,
+\]
+so Shioda--Tate and $\rho\le h^{1,1}=20$ give invariant rank at most eight.
+The Euler number check is
+\[
+3\cdot4+3\cdot2+6=24.
+\]
+
+For a short $j=0$ model, quadratic twisting multiplies $a_6$ by $D_c^3$.
+The twist coefficient is therefore
+\[
+-\frac{27}{4}
+\left(\frac{u^3}{c}-2\right)^2
+\left(\frac{4u^3}{c}+1\right)^4.
+\]
+This is a $\chi=3$ elliptic surface with three fibres of type $IV$ and three
+of type $IV^*$. Its root rank is
+\[
+3\cdot2+3\cdot6=24.
+\]
+Since $h^{1,1}=30$, its Mordell--Weil rank is at most
+\[
+30-2-24=4.
+\]
+Its Euler number is $3\cdot4+3\cdot8=36$. The quadratic-extension rank
+decomposition now gives the bound $8+4=12$.
+\end{proof}
+
+This calculation shows why the ambient Hodge capacity of a degree-three
+elliptic base is not enough: repeated factors create reducible fibres whose
+root lattices consume eighteen of the twenty-two hoped-for trace-zero
+directions. The $\mu=2$ marked family should therefore no longer be treated
+as a primary generic rank-thirty candidate.
+
+\subsection{New setting}
+
+The cyclic-cubic programme now moves along the CM-compatible marking conic
+$q(\mu)=3s^2$ and applies the hidden-quadratic fibre-cost test before any
+section search. Only parameters whose invariant and twist eigenspaces retain
+combined capacity at least thirty are promoted to the expensive trisection
+incidence stage.
