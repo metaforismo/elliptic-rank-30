@@ -1,0 +1,105 @@
+\section{Marked cubic surfaces and outer Galois points}
+
+The trace-code theorem becomes substantially more concrete in the minimal
+norm-six shell.
+
+\subsection{Unique decomposition of a norm-six trace}
+
+Every $v\in E_8$ with $v^2=6$ has a unique unordered decomposition
+\[
+\boxed{v=\alpha+\beta}
+\]
+where $\alpha$ and $\beta$ are roots with
+\[
+\alpha^2=\beta^2=2,
+\qquad
+\langle\alpha,\beta\rangle=1.
+\]
+Indeed, a root $\alpha$ occurs precisely when $\langle v,\alpha\rangle=3$,
+for then $v-\alpha$ is again a root.  There can be at most two such roots,
+and they are complementary.  Counting gives the same result: each of the
+$240$ roots has $56$ roots of inner product one, so the number of unordered
+pairs is
+\[
+\frac{240\cdot56}{2}=6720,
+\]
+exactly the size of the norm-six shell.
+
+Let $S_\alpha,S_\beta$ be the corresponding root sections.  They are pairwise
+disjoint from each other and from $O$, because
+\[
+S_\alpha\cdot S_\beta
+=1-\langle\alpha,\beta\rangle=0.
+\]
+The minimal trisection divisor satisfies
+\[
+\boxed{
+D_v=F+O+S_\alpha+S_\beta.
+}
+\]
+
+\subsection{Anticanonical cubic-surface model}
+
+Contract the three disjoint $(-1)$-curves
+\[
+O,\quad S_\alpha,\quad S_\beta
+\]
+to obtain $\varphi:S\to X$.  Since $K_S=-F$,
+\[
+K_S=\varphi^*K_X+O+S_\alpha+S_\beta
+\]
+and hence
+\[
+\boxed{D_v=\varphi^*(-K_X).}
+\]
+The surface $X$ is a smooth degree-three del Pezzo surface.  Its
+anticanonical system embeds it as a smooth cubic surface in $\mathbf P^3$, and
+$|D_v|$ is the pullback of the hyperplane system.
+
+Let $p_0,p_1,p_2$ be the images of the three contracted sections.  The
+elliptic pencil $|F|$ is the strict transform of anticanonical hyperplanes
+through all three points.  Since this system is one-dimensional, the points
+are collinear.  Their line $\ell$ is not contained in $X$, and
+\[
+\ell\cap X=p_0+p_1+p_2.
+\]
+
+For a hyperplane $H$ not containing $\ell$, the curve
+\[
+C_H=X\cap H
+\]
+is a plane cubic and the induced trisection map is projection from
+\[
+q_H=H\cap\ell.
+\]
+Thus the Riemann--Roch search is equivalent to a marked cubic-surface problem.
+
+\subsection{Cyclicity is an outer Galois-point condition}
+
+The degree-three projection $C_H\to\mathbf P^1$ is cyclic exactly when $q_H$
+is an outer Galois point of the plane cubic.  Over an algebraic closure, one
+can then choose coordinates with
+\[
+q_H=(1:0:0),
+\qquad
+C_H:\quad X^3+G_3(Y,Z)=0.
+\]
+The deck transformation is $X\mapsto\zeta_3X$.  In particular,
+\[
+\boxed{j(C_H)=0.}
+\]
+Conversely, the displayed outer-Galois form gives a cyclic cubic trisection.
+Descent to $\Q$ and positive rational rank remain separate arithmetic tests.
+
+The new exact search is therefore:
+\begin{enumerate}[leftmargin=*]
+\item recover the unique root pair for each trace class;
+\item construct the marked cubic surface $(X,\ell)$;
+\item solve for hyperplanes whose moving projection centre is an outer Galois point;
+\item retain smooth $j=0$ curves with positive rational rank;
+\item group distinct trace classes producing the same cover and compute their Hermitian rank.
+\end{enumerate}
+
+The first decisive milestone is one common cyclic cover arising from two
+distinct trace classes.  The final target is eleven Hermitian-independent
+classes over one positive-rank cover.
