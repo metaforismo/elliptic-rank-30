@@ -8,21 +8,21 @@ characteristic polynomial
     (x - 1)^8 (x^2 + x + 1)^11.
 
 PARI ``qfauto`` computes exact lattice automorphisms from the catalogue Gram
-matrix.  GAP samples exact group elements and powers them to order three.  A
-successful element is then checked entirely over ZZ, including the fixed
-lattice, orthogonal complement, gluing index, and determinant identities.
+matrix. Deterministic random words in these generators are projected to their
+order-three parts. A successful element is checked entirely over ZZ, including
+the fixed lattice, orthogonal complement, gluing index, and determinant
+identities.
 """
 from __future__ import annotations
 
 import argparse
 import importlib.util
 import json
+import random
 import time
 from pathlib import Path
 
-from sage.all import (
-    Matrix, PolynomialRing, QQ, ZZ, identity_matrix, lcm, libgap, pari,
-)
+from sage.all import Matrix, PolynomialRing, ZZ, identity_matrix, lcm, pari
 
 ROOT = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location(
@@ -39,14 +39,6 @@ def primitive_integer_kernel(A):
     return (denominator * Kq).change_ring(ZZ).saturation()
 
 
-def gap_matrix(A):
-    return libgap.Matrix(libgap.Rationals, [[int(x) for x in row] for row in A.rows()])
-
-
-def sage_matrix(A):
-    return Matrix(ZZ, [[int(x) for x in row] for row in A.sage()])
-
-
 def short_vector_data(G, bound=6):
     res = pari(G).qfminim(ZZ(bound), None, 0)
     total = int(res[0])
@@ -55,14 +47,22 @@ def short_vector_data(G, bound=6):
     return total, pairs
 
 
+def random_word(rng, choices, identity, minimum=12, maximum=48):
+    result = identity
+    for _ in range(rng.randint(minimum, maximum)):
+        result = result * choices[rng.randrange(len(choices))]
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--trials", type=int, default=500)
+    parser.add_argument("--trials", type=int, default=1000)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
     started = time.time()
     G = BASE.gram_matrix()
+    identity = identity_matrix(ZZ, 30)
     out = {
         "status": "started",
         "candidate_lattice": "3.U4(3).2^2",
@@ -88,41 +88,47 @@ def main():
         if A.transpose() * G * A != G:
             raise AssertionError("qfauto generator does not preserve the Gram matrix")
 
+    inverse_generators = []
+    for A in generators:
+        inverse = A.inverse()
+        if any(entry.denominator() != 1 for entry in inverse.list()):
+            raise AssertionError("a qfauto generator is not unimodular")
+        inverse_generators.append(inverse.change_ring(ZZ))
+    choices = generators + inverse_generators
+
     out["qfauto_seconds"] = time.time() - started
     out["automorphism_group_order"] = str(group_order)
     out["generator_count"] = len(generators)
     out["generator_determinants"] = [int(A.det()) for A in generators]
-
-    gap_group = libgap.Group([gap_matrix(A) for A in generators])
-    if int(libgap.Size(gap_group)) != group_order:
-        raise AssertionError("GAP and PARI group orders disagree")
 
     R = PolynomialRing(ZZ, "x")
     x = R.gen()
     wanted_charpoly = (x - 1)**8 * (x**2 + x + 1)**11
     chosen = None
     trial_records = []
+    rng = random.Random(20260807)
 
-    libgap.Reset(libgap.GlobalMersenneTwister, 20260807)
+    # If W lies in the automorphism group, then B=W^(|G|/3) satisfies B^3=1.
+    # Nonidentity B therefore has exact order three. This avoids constructing
+    # the full matrix group in GAP while preserving exactness.
     for trial in range(1, args.trials + 1):
-        random_element = libgap.Random(gap_group)
-        order = int(libgap.Order(random_element))
-        if order % 3 != 0:
+        word = random_word(rng, choices, identity)
+        candidate = word ** (group_order // 3)
+        if candidate == identity:
             continue
-        candidate = random_element ** (order // 3)
-        if int(libgap.Order(candidate)) != 3:
-            continue
-        A = sage_matrix(candidate)
-        fixed_rank = 30 - (A - identity_matrix(ZZ, 30)).rank()
-        cp = R(A.charpoly())
+        if candidate**3 != identity:
+            raise AssertionError("the projected matrix does not have order three")
+        if candidate.transpose() * G * candidate != G:
+            raise AssertionError("the projected matrix is not a lattice isometry")
+        fixed_rank = 30 - (candidate - identity).rank()
+        cp = R(candidate.charpoly())
         trial_records.append({
             "trial": trial,
-            "source_element_order": order,
             "fixed_rank": int(fixed_rank),
             "characteristic_polynomial": str(cp),
         })
         if fixed_rank == 8 and cp == wanted_charpoly:
-            chosen = A
+            chosen = candidate
             break
 
     out["order_three_elements_tested"] = len(trial_records)
@@ -140,18 +146,11 @@ def main():
             "elapsed_seconds")}, sort_keys=True))
         return 0
 
-    if chosen**3 != identity_matrix(ZZ, 30):
-        raise AssertionError("chosen matrix does not have order dividing three")
-    if chosen == identity_matrix(ZZ, 30):
-        raise AssertionError("chosen matrix is the identity")
-    if chosen.transpose() * G * chosen != G:
-        raise AssertionError("chosen order-three matrix is not a lattice isometry")
-
-    fixed_basis = primitive_integer_kernel(chosen - identity_matrix(ZZ, 30))
+    fixed_basis = primitive_integer_kernel(chosen - identity)
     fixed_gram = fixed_basis * G * fixed_basis.transpose()
     fixed_target = BASE.e8_cartan_scaled()
     fixed_isom = pari(fixed_gram).qfisom(pari(fixed_target))
-    if len(fixed_isom) == 0:
+    if fixed_isom == 0:
         raise AssertionError("fixed lattice is not isometric to E8(3)")
     fixed_total, fixed_pairs = short_vector_data(fixed_gram, 6)
 
@@ -167,23 +166,26 @@ def main():
 
     out.update({
         "status": "pass",
-        "order_three_matrix_rows": [[int(x) for x in row] for row in chosen.rows()],
+        "order_three_matrix_rows": [[int(v) for v in row] for row in chosen.rows()],
         "characteristic_polynomial": str(chosen.charpoly()),
         "fixed_rank": int(fixed_basis.nrows()),
-        "fixed_basis_rows": [[int(x) for x in row] for row in fixed_basis.rows()],
-        "fixed_gram": [[int(x) for x in row] for row in fixed_gram.rows()],
+        "fixed_basis_rows": [[int(v) for v in row] for row in fixed_basis.rows()],
+        "fixed_gram": [[int(v) for v in row] for row in fixed_gram.rows()],
         "fixed_determinant": str(fixed_gram.det()),
         "fixed_isometric_to_E8_3": True,
+        "fixed_isometry_matrix": [
+            [int(v) for v in row] for row in Matrix(ZZ, fixed_isom.sage()).rows()
+        ],
         "fixed_norm_at_most_6_vector_count": fixed_total,
         "fixed_norm_at_most_6_pairs_stored": fixed_pairs,
         "complement_rank": int(complement_basis.nrows()),
         "complement_basis_rows": [
-            [int(x) for x in row] for row in complement_basis.rows()
+            [int(v) for v in row] for row in complement_basis.rows()
         ],
-        "complement_gram": [[int(x) for x in row] for row in complement_gram.rows()],
+        "complement_gram": [[int(v) for v in row] for row in complement_gram.rows()],
         "complement_determinant": str(complement_gram.det()),
         "complement_smith_diagonal": [
-            str(x) for x in complement_gram.smith_form()[0].diagonal()
+            str(v) for v in complement_gram.smith_form()[0].diagonal()
         ],
         "complement_norm_at_most_6_vector_count": complement_total,
         "complement_norm_at_most_6_pairs_stored": complement_pairs,
