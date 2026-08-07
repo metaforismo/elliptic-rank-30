@@ -1,0 +1,35 @@
+name: certify-cyclic-cubic-equivariant-h2
+
+on:
+  push:
+    paths:
+      - "research/cyclic_cubic_equivariant_h2.sage.py"
+      - ".github/workflows/certify-cyclic-cubic-equivariant-h2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  certify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify the full equivariant H2 lattice and Lefschetz trace
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p certificates
+          sage -python research/cyclic_cubic_equivariant_h2.sage.py \
+            --output certificates/cyclic_cubic_equivariant_h2.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cyclic-cubic-equivariant-h2
+          path: certificates/cyclic_cubic_equivariant_h2.json
+          if-no-files-found: error
