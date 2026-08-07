@@ -1,0 +1,108 @@
+\section{Galois-character packets and exact failed routes}
+
+\subsection{Multiquadratic branch codes}
+
+Let $K=\Q(t)$, let $D\subset K^\times/K^{\times2}$ be a $k$-dimensional
+space of independent geometric squareclasses, and put
+\[
+L_D=K(\sqrt d:d\in D).
+\]
+Let $C_D$ be the smooth projective curve with function field $L_D$, and let
+$b$ be the total number of geometric branch points.
+
+The branch-parity vector of a rational function has even weight.  Since
+$\mathbf P^1_{\overline{\Q}}$ has no nontrivial unramified double cover, the
+branch map embeds $D$ into the even-weight code on $b$ coordinates.  Hence
+\[
+\boxed{k\le b-1.}
+\]
+Every branch point has inertia group of order two.  Riemann--Hurwitz gives,
+for $k\ge2$,
+\[
+\boxed{g(C_D)=1+2^{k-2}(b-4).}
+\]
+Therefore
+\[
+g(C_D)\ge1+2^{k-2}(k-3).
+\]
+Thirteen independent quadratic characters require at least fourteen branch
+points and hence genus at least
+\[
+1+2^{11}(14-4)=20481.
+\]
+Low genus is already lost at the fourth independent character.
+
+\subsection{The complete twist packet}
+
+After tensoring with $\Q$, character idempotents give the exact decomposition
+\[
+E(L_D)\otimes\Q
+\cong
+\bigoplus_{d\in D}E^d(K)\otimes\Q.
+\]
+Distinct character summands are orthogonal under the canonical height.  In the
+biquadratic case,
+\[
+\rank E(K(\sqrt{d_1},\sqrt{d_2}))
+=
+\rank E(K)+\rank E^{d_1}(K)+\rank E^{d_2}(K)+\rank E^{d_1d_2}(K).
+\]
+The product-twist channel is often omitted when a search records only the two
+multisections used to define the cover.
+
+A single character can carry more than one direction.  The repository
+contains an exact family where one nontrivial quadratic eigenspace has rank at
+least three.  Thus the branch-code theorem bounds the number of low-genus
+characters, not the total rank of their Mordell--Weil packets.
+
+\subsection{A long and useful failed route}
+
+The first proposed mechanism started with a rank-$17$ K3 fibration, constructed
+thirteen quadratic multisections, and attempted to split all thirteen over one
+low-genus base.  It seemed capable of forcing $17+13=30$.
+
+The genus formula proves that the intended low-genus family cannot arise from
+thirteen independent squareclasses.  This is the smallest decisive
+obstruction: the fourth independent character already forces genus at least
+five.
+
+\subsection{What the failure reveals}
+
+The useful surviving data are:
+\begin{itemize}[leftmargin=*]
+\item the squareclass of every multisection;
+\item all sections in the same character channel;
+\item every product-twist channel;
+\item the exact Shioda Gram matrix within each channel;
+\item branch support, auxiliary genus, and global-solubility data.
+\end{itemize}
+The search object is therefore a complete \emph{Galois-character height
+packet}, not a list of individually constructed points.
+
+\subsection{One-function visibility barrier}
+
+Let $f$ be a rational function on an elliptic curve with divisor
+\[
+(f)=P_1+\cdots+P_N-NO.
+\]
+Since a principal divisor maps to the identity in $\operatorname{Pic}^0(E)$,
+\[
+\boxed{P_1+\cdots+P_N=O.}
+\]
+Consequently, a construction producing exactly thirty rational points as the
+zeros of one function has a forced integral dependence and can span rank at
+most twenty-nine.
+
+For a short Weierstrass equation $y^2=R(x)$ and a function
+$f=A(x)+yB(x)$, the norm is
+\[
+\operatorname{Norm}(f)=A(x)^2-R(x)B(x)^2.
+\]
+The corrected one-function target is therefore a split degree-$31$ identity
+\[
+A(x)^2-R(x)B(x)^2
+=c\prod_{i=1}^{31}(x-r_i),
+\qquad r_i\in\Q.
+\]
+The thirty-one points have one unavoidable relation, leaving room for rank
+thirty.  This remains an independent exact construction track.
