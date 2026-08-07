@@ -1,0 +1,77 @@
+name: apply-hessian-paper-section
+
+on:
+  push:
+    paths:
+      - ".github/workflows/apply-hessian-paper-section.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Insert the Hessian chapter
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          python3 - <<'PY'
+          from pathlib import Path
+          path=Path('paper/source/main.tex')
+          text=path.read_text()
+          if '\\input{paper/source/06b_hessian_reduction}' not in text:
+              if '\\input{paper/source/06a_cubic_surface}\n' in text:
+                  text=text.replace(
+                      '\\input{paper/source/06a_cubic_surface}\n',
+                      '\\input{paper/source/06a_cubic_surface}\n\\input{paper/source/06b_hessian_reduction}\n',
+                      1,
+                  )
+              else:
+                  marker='\\input{paper/source/06_trace_codes}\n'
+                  if marker not in text:
+                      raise SystemExit('trace-code chapter marker not found')
+                  text=text.replace(
+                      marker,
+                      marker+'\\input{paper/source/06a_cubic_surface}\n\\input{paper/source/06b_hessian_reduction}\n',
+                      1,
+                  )
+              path.write_text(text)
+          PY
+          rm -f .github/workflows/apply-hessian-paper-section.yml
+      - name: Install LaTeX
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk texlive-latex-base texlive-latex-recommended \
+            texlive-latex-extra texlive-fonts-recommended lmodern poppler-utils
+      - name: Build and preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp paper/source/main.tex paper/paper.tex
+          rm -rf paper/build && mkdir -p paper/build
+          latexmk -pdf -interaction=nonstopmode -halt-on-error \
+            -output-directory=paper/build paper/paper.tex
+          cp paper/build/paper.pdf paper/paper.pdf
+          pdftotext paper/paper.pdf /tmp/paper.txt
+          grep -F 'Francesco Giannicola' /tmp/paper.txt
+          grep -F 'Hessian reduction' /tmp/paper.txt
+          grep -F 'new intermediate theorem' /tmp/paper.txt
+          rm -rf paper/build
+      - name: Persist the new chapter and PDF
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Add the Hessian outer-Galois reduction to the paper"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
