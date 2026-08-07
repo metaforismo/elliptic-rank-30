@@ -4,15 +4,23 @@ on:
   push:
     paths:
       - "paper/source/**"
+      - "paper/paper.tex"
+      - "formalization/**"
+      - "EllipticRank30.lean"
+      - "EllipticRank30/**"
       - ".github/workflows/build-living-paper.yml"
   pull_request:
     paths:
       - "paper/source/**"
+      - "paper/paper.tex"
+      - "formalization/**"
+      - "EllipticRank30.lean"
+      - "EllipticRank30/**"
       - ".github/workflows/build-living-paper.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: build-living-paper-${{ github.ref }}
@@ -20,16 +28,13 @@ concurrency:
 
 jobs:
   build:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Install the reproducible LaTeX toolchain
         shell: bash
         run: |
-          sudo apt-get update
+          sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             latexmk texlive-latex-base texlive-latex-recommended \
             texlive-latex-extra texlive-fonts-recommended lmodern \
@@ -43,22 +48,26 @@ jobs:
           mkdir -p paper/build
           latexmk -pdf -interaction=nonstopmode -halt-on-error \
             -output-directory=paper/build paper/paper.tex
+          test -s paper/build/paper.pdf
+          if grep -E 'Overfull \\hbox|Overfull \\vbox' paper/build/paper.log; then
+            echo 'The paper contains overfull boxes.' >&2
+            exit 1
+          fi
+          if grep -E 'LaTeX Warning:.*undefined' paper/build/paper.log; then
+            echo 'The paper contains unresolved LaTeX references or citations.' >&2
+            exit 1
+          fi
           cp paper/build/paper.pdf paper/paper.pdf
           pdftotext paper/paper.pdf /tmp/paper.txt
           grep -F "Francesco Giannicola" /tmp/paper.txt
           grep -F "new intermediate theorem" /tmp/paper.txt
-          test "$(pdfinfo paper/paper.pdf | awk '/^Pages:/ {print $2}')" -ge 8
+          grep -F "Lean verification" /tmp/paper.txt
+          pages="$(pdfinfo paper/paper.pdf | awk '/^Pages:/ {print $2}')"
+          test "$pages" -ge 25
+          echo "paper_pages=$pages"
           rm -rf paper/build
-      - name: Persist the source entry point and PDF
-        if: github.event_name == 'push'
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -f .github/workflows/paper.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add paper/paper.tex paper/paper.pdf .github/workflows/paper.yml
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Build the Francesco Giannicola research paper"
-          git pull --rebase origin "$GITHUB_REF_NAME"
-          git push origin HEAD:"$GITHUB_REF_NAME"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: living-paper
+          path: paper/paper.pdf
+          if-no-files-found: error
