@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: main-readiness-${{ github.ref }}
@@ -24,7 +24,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
       - name: Install audit dependencies
         shell: bash
         run: |
@@ -97,11 +96,26 @@ jobs:
           python scripts/build_integrity_manifest.py \
             --output audit-artifacts/MANIFEST.sha256
           sha256sum -c audit-artifacts/MANIFEST.sha256
-          if test -f MANIFEST.sha256; then
-            cmp MANIFEST.sha256 audit-artifacts/MANIFEST.sha256
+          if [[ "$GITHUB_EVENT_NAME" != "push" || "$GITHUB_REF" != "refs/heads/main" ]]; then
+            if test -f MANIFEST.sha256; then
+              cmp MANIFEST.sha256 audit-artifacts/MANIFEST.sha256
+            fi
           fi
       - uses: actions/upload-artifact@v4
         with:
           name: integrity-manifest
           path: audit-artifacts/MANIFEST.sha256
           if-no-files-found: error
+      - name: Persist the current manifest on main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp audit-artifacts/MANIFEST.sha256 MANIFEST.sha256
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MANIFEST.sha256
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Refresh the verified repository integrity manifest"
+          git pull --rebase origin main
+          git push origin HEAD:main
