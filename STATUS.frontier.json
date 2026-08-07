@@ -1,22 +1,30 @@
 {
   "as_of": "2026-08-07",
   "author": "Francesco Giannicola",
-  "target": "an elliptic curve over Q with at least 30 rigorously independent rational points",
-  "truth_status": "new intermediate theorem",
-  "certified_record_reproduced": 29,
-  "rank_30_candidate": false,
-  "universal_upper_bound": false,
-  "exact_new_results": [
-    "symmetric split V4 packet obstruction over real fields",
-    "torsion packet capacity bounds: at most 22 with rational 2-torsion and at most 14 with rational 3-torsion",
-    "Riemann-Roch one-function visibility barrier: a split degree-30 near-square spans rank at most 29",
-    "minimal single-function construction target is a 31-zero norm equation"
-  ],
-  "active_constructive_tracks": [
-    "marked cyclic j=0 exact section schemes and CM descent",
-    "split E8 cubic pencils and three-channel quadratic packets",
-    "finite-field exact packet-rank laboratory with characteristic-zero lifting gate",
-    "31-zero polynomial norm identities"
-  ],
-  "promotion_rule": "No rank-30 claim without an explicit curve, 30 complete rational points, exact substitution, rigorous independence, heights, saturation, provenance, hashes, and second-system verification."
+  "final_truth_status": "new intermediate theorem",
+  "record_curve": {
+    "certified_subgroup_rank": 29,
+    "exact_rank_unconditional": null,
+    "baseline_reproduced": true
+  },
+  "rank30": {
+    "candidate_level": 0,
+    "curve_found": false,
+    "thirty_points_found": false,
+    "independence_certified": false,
+    "universal_impossibility_proved": false
+  },
+  "current_frontier": {
+    "representation": "cyclic cubic genus-one trisection packets on a split E8 rational elliptic surface",
+    "invariant_lattice": "E8(3)",
+    "required_nontrivial_character_rank_over_Qzeta3": 11,
+    "minimal_trisection_classes": 6720,
+    "nonzero_isotropic_trace_residues_mod3": 2240,
+    "maximal_totally_isotropic_trace_codes": 2240,
+    "minimal_classes_per_trace_code": 240,
+    "projected_orbit_lattice": "A2(2)",
+    "difference_orbit_lattice": "A2(6)"
+  },
+  "smallest_decisive_experiment": "Enumerate one maximal ternary trace code at a time, compute the 240 minimal trisection linear systems, canonicalize cyclic positive-rank genus-one covers, and seek a common-cover fibre of Hermitian rank at least 2 before escalating toward 11.",
+  "certificate_policy": "No promotion above Level 0 without explicit rational points and exact independence evidence."
 }
