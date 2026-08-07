@@ -1,0 +1,41 @@
+{
+  "H11_character_dimensions": {
+    "trivial": 10,
+    "zeta3": 11,
+    "zeta3_squared": 11
+  },
+  "H20_character_dimensions_up_to_conjugate_swap": {
+    "trivial": 0,
+    "zeta3": 2,
+    "zeta3_squared": 1
+  },
+  "H2_character_dimensions": {
+    "trivial": 10,
+    "zeta3": 14,
+    "zeta3_squared": 14
+  },
+  "deck_trace": {
+    "fixed_locus_euler_number": 0,
+    "trace_H1": -1,
+    "trace_H2": -4,
+    "trace_H3": -1
+  },
+  "mordell_weil": {
+    "invariant_rank": 8,
+    "nontrivial_character_capacity_each": 11,
+    "rank30_equivalent_picard_number": 32,
+    "rank_ceiling": 30,
+    "transcendental_rank_at_picard_maximality": 6
+  },
+  "status": "pass",
+  "surface_invariants": {
+    "b2": 38,
+    "base_genus": 1,
+    "chi": 3,
+    "euler_number": 36,
+    "h11": 32,
+    "p_g": 3,
+    "q": 1
+  },
+  "truth_status": "new intermediate theorem; no rank-30 curve claimed"
+}
