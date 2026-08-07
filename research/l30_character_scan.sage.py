@@ -16,7 +16,7 @@ from pathlib import Path
 
 from sage.all import ZZ, libgap
 
-if libgap.LoadPackage("ctbllib") is not True:
+if not bool(libgap.LoadPackage("ctbllib")):
     raise RuntimeError("GAP package CTblLib could not be loaded")
 
 TABLE_NAMES = [
