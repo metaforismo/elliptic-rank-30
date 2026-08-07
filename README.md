@@ -1,24 +1,23 @@
-# Elliptic rank 30: certificate-first research pipeline
+# Elliptic Rank 30
 
-This repository studies the open constructive target
+**Certificate-first research toward an elliptic curve over** \(\mathbf Q\) **with at least 30 independent rational points.**
 
-\[
-\operatorname{rank} E(\mathbb Q) \ge 30
-\]
+Author and project lead: **Francesco Giannicola**
 
-by optimizing for a final proof certificate, not for a large analytic-rank score.
+## Truth status
 
-## Current truth status
+> **new intermediate theorem**
 
-**new search method**
+No rank-30 curve is claimed here yet. The repository independently certifies
+the current rank-at-least-29 baseline and develops exact construction and
+obstruction results aimed at a final Level-5 certificate.
 
-No curve with 30 certified independent rational points has been found here.
-The package does independently close the baseline reproduction gate for the
-current public rank-29 record and preserves all evidence needed to audit that claim.
+The historical slowdown of rank records is not treated as evidence of a
+universal upper bound. A universal claim would require a universal theorem.
 
-## Baseline result
+## Reproduced baseline
 
-For
+For the published record model
 
 ```text
 y^2 + x*y = x^3 - A*x + B
@@ -28,109 +27,143 @@ B = 5525805855134237647573669959111819182152106703253507960837240477914941327771
 
 this repository verifies:
 
-- all 29 complete rational points in `points.json` exactly;
-- nonzero discriminant and a global minimal model;
+- all 29 complete rational points exactly;
+- nonsingularity and a global minimal model;
 - trivial rational torsion;
-- an exact rank-29 local mod-2 independence certificate;
-- canonical-height matrices in SageMath 10.9 and Magma V2.29-9;
+- an exact local mod-2 independence certificate of rank 29;
+- canonical-height matrices in SageMath and Magma;
 - nonzero regulator and positive-definite numerical height matrix;
-- exact conductor, local reduction data, and global root number `-1`;
-- p-saturation of the listed subgroup for every prime below `4096`, independently in Sage and Magma.
+- conductor, local reduction data, and global root number;
+- prime saturation of the displayed subgroup for every prime below 4096.
 
 Therefore, unconditionally,
 
 \[
-\operatorname{rank} E(\mathbb Q) \ge 29.
+\operatorname{rank}E(\mathbf Q)\ge 29.
 \]
 
-The package does **not** promote the published conditional upper bound to an
-unconditional exact-rank statement.
+The published conditional upper bound is not promoted to an unconditional
+exact-rank statement.
+
+## Current mathematical frontier
+
+### 1. Galois-character packets
+
+For a multiquadratic packet with character dimension \(k\) and total branch
+support \(b\),
+
+\[
+k\le b-1,
+\qquad
+g=1+2^{k-2}(b-4).
+\]
+
+Thirteen independent quadratic characters force genus at least 20481.
+However, one character can carry several Mordell--Weil directions, so searches
+must compute complete twist packets, including hidden product-twist channels.
+
+### 2. One-function visibility barrier
+
+If one rational function has zeros \(P_1,\ldots,P_N\) and pole divisor \(NO\),
+then
+
+\[
+P_1+\cdots+P_N=O.
+\]
+
+A split degree-30 norm identity therefore spans rank at most 29. The corrected
+one-function target uses 31 zeros.
+
+### 3. Certified split \(E_8\) surface
+
+The repository certifies a rational elliptic surface with twelve \(I_1\)
+fibres and split Mordell--Weil lattice \(E_8\). This is the maximum-capacity
+rational base: rank 8 with no reducible-fibre cost.
+
+### 4. Cyclic cubic trace codes
+
+A degree-three **genus-one** pullback is the first degree-three low-genus
+mechanism whose Hodge capacity reaches rank 30. For a cyclic trisection orbit:
+
+- the three sections have projected Gram matrix
+  \(\begin{psmallmatrix}4&-2\\-2&4\end{psmallmatrix}\), independent of the
+  trisection's intersection with the zero section;
+- the trace vectors define an exact ternary code in \(E_8/3E_8\);
+- the norm-six shell has 6720 classes;
+- there are 2240 maximal totally isotropic four-spaces;
+- each contains 240 minimal trisection classes.
+
+The decisive finite search is now: find **eleven Hermitian-independent cyclic
+trisection orbits defining one positive-rank genus-one cover**. Together with
+the invariant \(E_8(3)\), they would force generic rank 30.
+
+See:
+
+- [`research/cyclic_cubic_trace_codes.md`](research/cyclic_cubic_trace_codes.md)
+- [`certificates/cyclic_trisection_trace_code.json`](certificates/cyclic_trisection_trace_code.json)
+- [`paper/paper.pdf`](paper/paper.pdf)
 
 ## Repository layout
 
 ```text
-curve.json, points.json    exact baseline inputs
-candidate_record.json      canonical candidate record
-certificates/              compact machine-readable proof summaries
-evidence/                  raw Sage/Magma/CI evidence and preserved failed runs
-paper/paper.tex            single continuously updated research paper source
-paper/paper.pdf            compiled paper
-src/                       candidate, audit, sieve, and workstream utilities
-search/                    explicit-family workers and missing-data request
-tests/                     package integrity tests
-verify_exact.py            dependency-free exact lower-bound verifier
-verify_sage.py             independent Sage verifier
-verify_magma.m             independent Magma verifier
+curve.json, points.json          exact rank-29 baseline inputs
+candidate_record.json            canonical candidate record
+certificates/                    compact machine-readable certificates
+evidence/                        preserved Sage/Magma/CI evidence
+paper/paper.tex                  living paper entry point
+paper/paper.pdf                  compiled paper
+paper/source/                    modular LaTeX sources
+research/                        theorems, proofs, and exact certificates
+search/                          discovery workers and exact search outputs
+src/                             candidate, sieve, and audit utilities
+tests/                           integrity and theorem tests
+verify_exact.py                  dependency-free baseline verifier
+verify_sage.py                   independent SageMath verifier
+verify_magma.m                   independent Magma verifier
 ```
 
-The paper is updated in place. Do not create versioned `paper_v2`, `paper_v3`,
-etc. Historical states belong in Git history.
-
-## Reproduce the exact certificate
+## Reproduce the exact checks
 
 ```bash
 python3 verify_exact.py
-python3 rank_packet_obstruction_tests.py
+python3 research/cyclic_trisection_trace_code_certificate.py
 python3 -m unittest discover -s tests -v
 sha256sum -c MANIFEST.sha256
 ```
 
-## Reproduce in SageMath
+SageMath:
 
 ```bash
 sage -python verify_sage.py
 sage -python verify_sage.py --saturate
 ```
 
-The second command directly tests p-saturation for all primes below 4096 and is
-substantially more expensive.
-
-## Reproduce in Magma
+Magma:
 
 ```bash
 magma verify_magma.m
 ```
 
-The raw computations used for this package are archived under `evidence/` so
-verification does not depend on GitHub Actions retention.
+## Candidate policy
 
-## A long and useful failed route
+Only a Level-5 package is a record. It must contain one exact curve, thirty
+complete rational points, exact substitutions, torsion, a rigorous height
+matrix, nonzero determinant, an independent exact independence proof,
+saturation, a second-CAS rerun, hashes, versions, and provenance.
 
-Treating 13 extra points over a rank-17 fibration as 13 independent quadratic
-splitting characters forces a multiquadratic auxiliary curve of genus at least
-`20481`. Low genus is lost already at the fourth independent character. This is
-a restricted obstruction to that construction mechanism, not a universal rank bound.
+Analytic scores, Selmer dimensions, finite-characteristic ranks, and machine-
+learning rankings are discovery evidence only.
 
-## What the failure reveals
+## Contributing
 
-One character need not carry only one point. The package verifies an explicit
-family in which one nontrivial quadratic character carries three independent
-Mordell-Weil directions. Product-twist channels can also contribute sections
-that were not used to construct the original covers.
+Contributions are most useful when they provide one of:
 
-## The decisive change of setting
+- an explicit family with exact generic sections and a Shioda Gram matrix;
+- a cyclic trisection or packet with exact branch and height data;
+- a globally soluble covering producing a genuinely new quotient direction;
+- an independent verifier or adversarial audit;
+- executable data for the second rank-17 K3 fibration used in the rank-29
+  construction.
 
-Search over complete **Galois-character height packets**. For every low-genus
-branch code, compute all twist Mordell-Weil lattices, same-character rank
-multiplicities, product twists, successive minima, and global-solubility data.
-Only then sieve specializations.
-
-## Current search obstruction
-
-The rank-29 announcement identifies the successful parameter of the second
-rank-17 K3 fibration, but the public primary material examined does not provide
-a complete executable package containing the exact `Q(t)` model, all 17 labelled
-generic sections, the bad-parameter locus, and the coordinate map to the record
-fiber. `search/REQUEST_FOR_FIBRATION_DATA.md` states the precise missing input. A
-dated public-source audit is in `search/source_search_2026-08-06.md`, and
-`search/ingest_family.py` provides a fail-closed exact-family ingestion gate.
-No blind coefficient search is substituted.
-
-## Certificate policy
-
-A future rank-30 promotion requires a specified Weierstrass equation, 30 full
-rational points, exact substitutions, torsion, a canonical-height matrix,
-positive determinant, an independent exact independence certificate, saturation,
-software versions, provenance, hashes, and verification in a second system.
-
-See `STATUS.json`, `candidate_record.json`, and `paper/paper.pdf`.
+Every mathematical claim must state whether it is proved, conditional,
+computational evidence, or heuristic.
