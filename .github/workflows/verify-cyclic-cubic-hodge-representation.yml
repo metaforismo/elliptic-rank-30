@@ -1,0 +1,43 @@
+name: verify-cyclic-cubic-hodge-representation
+
+on:
+  push:
+    paths:
+      - "research/cyclic_cubic_hodge_certificate.py"
+      - "certificates/cyclic_cubic_hodge_representation.json"
+      - "tests/test_cyclic_cubic_hodge_representation.py"
+      - ".github/workflows/verify-cyclic-cubic-hodge-representation.yml"
+  pull_request:
+    paths:
+      - "research/cyclic_cubic_hodge_certificate.py"
+      - "certificates/cyclic_cubic_hodge_representation.json"
+      - "tests/test_cyclic_cubic_hodge_representation.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Regenerate the exact Hodge certificate
+        run: python3 research/cyclic_cubic_hodge_certificate.py
+      - name: Run focused theorem tests
+        run: python3 -m unittest tests.test_cyclic_cubic_hodge_representation -v
+      - name: Persist canonical generated JSON
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/cyclic_cubic_hodge_representation.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Regenerate the C3 Hodge representation certificate"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
