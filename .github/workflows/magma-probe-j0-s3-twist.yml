@@ -16,18 +16,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        prime: [11, 13, 17]
+        prime: [19, 23, 29, 31]
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - name: Probe the representative S3 packet twist
+      - name: Probe unresolved S3 packet twists
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p search/results/j0_s3_p${{ matrix.prime }}
           python3 search/magma_free_j0_s3_twist_probe.py \
-            --prime '${{ matrix.prime }}' --mus '2,3,4,5,6,7' \
+            --prime '${{ matrix.prime }}' --mus '3,4,5' \
             --output-dir 'search/results/j0_s3_p${{ matrix.prime }}' \
             --summary 'search/results/j0_s3_p${{ matrix.prime }}.json'
       - uses: actions/upload-artifact@v4
@@ -73,6 +73,6 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add search/results/j0_s3_p*.json search/results/j0_s3_p*/ search/j0_s3_twist_probe_summary.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Record S3-equivariant j0 twist probes"
+          git commit -m "Record further S3-equivariant j0 twist probes"
           git pull --rebase origin "$GITHUB_REF_NAME"
           git push origin HEAD:"$GITHUB_REF_NAME"
