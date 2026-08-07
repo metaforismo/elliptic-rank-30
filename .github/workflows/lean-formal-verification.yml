@@ -1,0 +1,60 @@
+name: lean-formal-verification
+
+on:
+  pull_request:
+    paths:
+      - 'lean-toolchain'
+      - 'lakefile.lean'
+      - 'lake-manifest.json'
+      - 'EllipticRank30.lean'
+      - 'EllipticRank30/**'
+      - 'formalization/**'
+      - '.github/workflows/lean-formal-verification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'lean-toolchain'
+      - 'lakefile.lean'
+      - 'lake-manifest.json'
+      - 'EllipticRank30.lean'
+      - 'EllipticRank30/**'
+      - 'formalization/**'
+      - '.github/workflows/lean-formal-verification.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject local proof placeholders
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          files = [Path('EllipticRank30.lean'), *sorted(Path('EllipticRank30').glob('*.lean'))]
+          forbidden = ('sorry', 'admit', 'axiom')
+          bad = []
+          for path in files:
+              text = path.read_text()
+              for token in forbidden:
+                  if token in text:
+                      bad.append(f'{path}: contains {token!r}')
+          if bad:
+              raise SystemExit('\n'.join(bad))
+          print(f'checked {len(files)} Lean source files: no local placeholders')
+          PY
+      - uses: leanprover/lean-action@v1
+        with:
+          build: true
+          test: false
+          lint: false
+          use-mathlib-cache: true
+          leanchecker: true
+          nanoda: true
+          nanoda-allow-sorry: false
