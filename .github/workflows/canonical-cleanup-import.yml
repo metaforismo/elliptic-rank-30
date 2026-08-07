@@ -11,13 +11,13 @@ permissions:
 
 concurrency:
   group: canonical-cleanup-import-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   import:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,7 +35,6 @@ jobs:
           import io
           import itertools
           import json
-          import re
           import shutil
           import tarfile
           import tempfile
@@ -49,65 +48,77 @@ jobs:
               "verify_sage.py",
               "verify_magma.m",
           }
+          BOOTSTRAP = Path("bootstrap")
 
-          def natural_key(path: Path):
-              return [
-                  int(piece) if piece.isdigit() else piece
-                  for piece in re.split(r"(\d+)", path.name)
-              ]
+          def read(name: str) -> bytes:
+              return b"".join((BOOTSTRAP / name).read_bytes().split())
 
-          def part_candidates(root: Path, index: int):
-              stem = f"payload.part.{index:03d}"
-              files = sorted(
-                  [
-                      path
-                      for path in root.iterdir()
-                      if path.is_file()
-                      and (path.name == stem or path.name.startswith(stem + "."))
-                  ],
-                  key=lambda path: (0 if path.name == stem else 1, natural_key(path)),
-              )
-              if not files:
-                  return []
+          def concat(*names: str) -> tuple[str, bytes]:
+              return "+".join(names), b"".join(read(name) for name in names)
 
-              unique = []
+          def unique(rows):
+              result = []
               seen = set()
-              for path in files:
-                  data = b"".join(path.read_bytes().split())
+              for label, data in rows:
                   if data in seen:
                       continue
                   seen.add(data)
-                  unique.append((path.name, data))
+                  result.append((label, data))
+              return result
 
-              candidates = []
-              candidate_data = set()
-              # The migration fragments contain a mixture of complete chunks,
-              # duplicate subdivisions, and tails.  Enumerate every ordered
-              # subsequence so combinations such as `part.002 + part.002.tail`
-              # are tested explicitly.
-              for mask in range(1, 1 << len(unique)):
-                  chosen = [unique[pos] for pos in range(len(unique)) if mask & (1 << pos)]
-                  data = b"".join(item[1] for item in chosen)
-                  if data in candidate_data:
-                      continue
-                  candidate_data.add(data)
-                  candidates.append(("+".join(item[0] for item in chosen), data))
+          if not BOOTSTRAP.exists():
+              raise SystemExit("bootstrap directory is absent")
 
-              # Try shorter and filename-simpler candidates first.
-              candidates.sort(key=lambda row: (len(row[1]), row[0].count("+"), row[0]))
-              return candidates
+          # The migration history records seven complete 20k base64 blocks and
+          # one final 7468-character block.  Parts 2 and 4 have alternate
+          # continuations; test the small exact ambiguity set instead of an
+          # exponential subset search.
+          part0 = [concat("payload.part.000")]
+          part1 = [concat("payload.part.001")]
+          part2 = unique([
+              concat("payload.part.002", "payload.part.002.tail"),
+              concat("payload.part.002", "payload.part.002.01"),
+              concat("payload.part.002", "payload.part.002.01", "payload.part.002.tail"),
+              concat("payload.part.002"),
+          ])
+          part3 = [concat("payload.part.003")]
+          part4 = unique([
+              concat("payload.part.004"),
+              concat("payload.part.004.00"),
+              concat("payload.part.004", "payload.part.004.01.00"),
+              concat("payload.part.004.00", "payload.part.004.01.00"),
+          ])
+          part5 = [concat("payload.part.005")]
+          part6 = [concat(
+              "payload.part.006.00",
+              "payload.part.006.01",
+              "payload.part.006.02",
+              "payload.part.006.03",
+              "payload.part.006.04.00",
+              "payload.part.006.04.01",
+              "payload.part.006.04.02",
+              "payload.part.006.04.03",
+          )]
+          part7 = [concat(
+              "payload.part.007.00.00",
+              "payload.part.007.00.01",
+              "payload.part.007.00.02",
+              "payload.part.007.00.03",
+              "payload.part.007.01.00",
+              "payload.part.007.01.01",
+              "payload.part.007.01.02",
+              "payload.part.007.01.03",
+          )]
+          groups = [part0, part1, part2, part3, part4, part5, part6, part7]
 
           def decoded_variants(data: bytes):
-              compact = b"".join(data.split())
               for pad in range(4):
                   try:
-                      decoded = base64.b64decode(compact + b"=" * pad, validate=True)
+                      decoded = base64.b64decode(data + b"=" * pad, validate=True)
                   except Exception:
                       continue
                   if decoded.startswith(b"\xfd7zXZ\x00"):
                       yield "base64-xz", decoded
-              if data.startswith((b"PK\x03\x04", b"\xfd7zXZ\x00")):
-                  yield "raw", data
 
           def extract(data: bytes, destination: Path):
               stream = io.BytesIO(data)
@@ -134,47 +145,33 @@ jobs:
                       return directory
               return None
 
-          bootstrap = Path("bootstrap")
-          if not bootstrap.exists():
-              raise SystemExit("bootstrap directory is absent; refusing an ambiguous import")
+          combinations = list(itertools.product(*groups))
+          print(json.dumps({
+              "candidate_counts": [len(group) for group in groups],
+              "combination_count": len(combinations),
+          }, sort_keys=True))
 
-          groups = []
-          for index in range(100):
-              candidates = part_candidates(bootstrap, index)
-              if not candidates:
-                  if groups:
-                      break
-                  continue
-              groups.append(candidates)
-
-          if not groups:
-              raise SystemExit("no bootstrap payload fragments were found")
-
-          combinations = 1
-          for group in groups:
-              combinations *= len(group)
-          print(
-              json.dumps(
-                  {
-                      "part_groups": len(groups),
-                      "candidate_counts": [len(group) for group in groups],
-                      "combination_count": combinations,
-                  },
-                  sort_keys=True,
-              )
-          )
-
-          for attempt, combination in enumerate(itertools.product(*groups), 1):
-              raw = b"".join(item[1] for item in combination)
-              for encoding, data in decoded_variants(raw):
+          diagnostics = []
+          for attempt, combination in enumerate(combinations, 1):
+              encoded = b"".join(item[1] for item in combination)
+              row = {
+                  "attempt": attempt,
+                  "encoded_length": len(encoded),
+                  "parts": [item[0] for item in combination],
+              }
+              for encoding, data in decoded_variants(encoded):
+                  row["decoded_length"] = len(data)
                   with tempfile.TemporaryDirectory() as temporary:
                       destination = Path(temporary)
                       archive_kind = extract(data, destination)
+                      row["archive"] = archive_kind
                       if not archive_kind:
                           continue
                       root = locate(destination)
                       if root is None:
+                          row["required_root"] = False
                           continue
+                      row["required_root"] = True
                       target = Path("/tmp/canonical-rank30")
                       if target.exists():
                           shutil.rmtree(target)
@@ -184,7 +181,9 @@ jobs:
                           "attempt": attempt,
                           "encoding": encoding,
                           "archive": archive_kind,
-                          "parts": [item[0] for item in combination],
+                          "parts": row["parts"],
+                          "encoded_length": len(encoded),
+                          "decoded_length": len(data),
                           "file_count": sum(1 for path in root.rglob("*") if path.is_file()),
                       }
                       Path("/tmp/reconstruction-plan.json").write_text(
@@ -192,10 +191,10 @@ jobs:
                       )
                       print(json.dumps(plan, sort_keys=True))
                       raise SystemExit(0)
+              diagnostics.append(row)
 
-          raise SystemExit(
-              f"could not reconstruct a valid canonical package after {combinations} combinations"
-          )
+          print(json.dumps({"diagnostics": diagnostics}, indent=2, sort_keys=True))
+          raise SystemExit("could not reconstruct the canonical package")
           PY
 
           python3 /tmp/reconstruct_bootstrap.py
