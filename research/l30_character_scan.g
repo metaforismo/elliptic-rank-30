@@ -1,7 +1,7 @@
 LoadPackage("ctbllib");;
 
 tables := [
-  "3_2.U4(3).(2^2)_133",
+  "3_2.U4(3).(2^2)_{133}",
   "3_2.U4(3).2_3",
   "3_2.U4(3).2_1"
 ];;
@@ -10,6 +10,9 @@ Print("{\n  \"status\": \"pass\",\n  \"tables\": [\n");
 for ti in [1..Length(tables)] do
   name := tables[ti];
   tbl := CharacterTable(name);
+  if tbl = fail then
+    Error("character table not found: ", name);
+  fi;
   irr := Irr(tbl);
   orders := OrdersClassRepresentatives(tbl);
   names := ClassNames(tbl);
