@@ -15,11 +15,21 @@
   "one_orbit": {
     "difference_determinant": 108,
     "difference_gram": [
-      [12, -6],
-      [-6, 12]
+      [
+        12,
+        -6
+      ],
+      [
+        -6,
+        12
+      ]
     ],
     "hermitian_determinant_norm": 36,
-    "hermitian_gram": [["6"]],
+    "hermitian_gram": [
+      [
+        "6"
+      ]
+    ],
     "projected_determinant": 12
   },
   "status": "pass",
