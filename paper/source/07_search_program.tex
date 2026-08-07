@@ -23,30 +23,59 @@ Once ingested, the search will:
 \item test independence incrementally by local reductions and Schur complements.
 \end{enumerate}
 
-\subsection{Workstream B: cubic trace-code packets}
+\subsection{Workstream B: the six-channel marked $j=0$ packet}
 
-This is the main new constructive route.
+This is the active finite search.  For a nondegenerate rational marking
+$\mu$, the full $C_3\times C_2$ packet has exact geometric capacity vector
+\[
+(4,6,4,4,6,6).
+\]
+The three rational elliptic-surface channels already attain ranks $4,6,4$.
+The remaining task is therefore simultaneous Picard maximality of three K3
+channels with target ranks
+\[
+(4,6,6).
+\]
+
+The executable programme is:
+\begin{enumerate}[leftmargin=*]
+\item reduce the first K3 channel at several good primes;
+\item enumerate all nondegenerate marking residues and retain only rank-four residues;
+\item intersect the resulting congruence conditions and reconstruct low-height rational markings;
+\item compute all three K3 ranks for every survivor and reject any vector below $(4,6,6)$;
+\item for persistent survivors, compute characteristic-zero Picard numbers or explicit sections;
+\item choose a positive-rank cubic-base scale, initially $c=3$;
+\item descend the six character lattices through the cubic and quadratic twists;
+\item assemble the generic height matrix, ternary gluing, and saturation data;
+\item specialize over the positive-rank genus-one base and certify thirty rational points.
+\end{enumerate}
+
+A finite-field maximum is only a necessary condition.  It becomes arithmetic
+evidence over $\Q$ only after explicit characteristic-zero sections and a
+separate independence certificate are supplied.
+
+\subsection{Workstream C: cubic trace-code packets}
+
+The independent geometric construction begins with the certified split $E_8$
+rational elliptic surface.
 
 \begin{enumerate}[leftmargin=*]
-\item Start from the certified split $E_8$ rational elliptic surface.
 \item Enumerate the $2240$ maximal isotropic trace codes in $E_8/3E_8$.
 \item For each code, process its $240$ minimal trisection classes.
-\item Compute a basis of each four-dimensional linear system $|D_v|$.
-\item Eliminate the surface coordinates to obtain the cubic extension of $\Q(t)$.
-\item Require a square cubic discriminant and exactly three smooth branch values.
+\item Construct the marked cubic surface and restrict its Hessian quartic to the distinguished $3$-secant line.
+\item Solve the resulting finite outer-Galois-point problem and retain smooth cyclic sections.
 \item Compute the genus-one normalization and prove positive rational rank.
 \item Canonicalize covers and group trisections defining the same cover.
 \item Build the Hermitian Gram matrix of every group and retain rank-eleven packets.
 \item Determine the ternary gluing code, projected determinant, and saturation.
-\item Construct all thirty generic sections explicitly.
-\item Specialize at rational points of the base and produce the final equation-and-points certificate.
+\item Construct all thirty generic sections explicitly and specialize them.
 \end{enumerate}
 
 A code is discarded only with a recorded exact reason: empty cyclic locus,
 wrong ramification, branch collision with the discriminant, base rank zero,
 insufficient Hermitian rank, nonintegral projected lattice, or failed descent.
 
-\subsection{Workstream C: split norm identities}
+\subsection{Workstream D: split norm identities}
 
 Search for exact identities
 \[
@@ -58,21 +87,24 @@ Finite-field solutions are used only as lifting seeds.  A candidate is promoted
 only when all thirty-one roots split over $\Q$, the corresponding points are
 listed exactly, and the relation module is proved to have rank one.
 
-\subsection{Workstream D: characteristic-$p$ discovery}
+\subsection{Workstream E: characteristic-$p$ discovery}
 
 Reductions modulo carefully selected primes can reveal high Picard rank,
-character packets, and candidate trisections.  They are discovery evidence,
-not characteristic-zero rank proofs.  A configuration is promoted only after
-explicit lifting and exact substitution over $\Q(t)$.
+character packets, and candidate trisections.  They are discovery or rigorous
+rejection evidence, not characteristic-zero rank proofs.  A configuration is
+promoted only after explicit lifting and exact substitution over $\Q(t)$.
 
 \subsection{Multi-stage sieve}
 
 For each specialization or packet, the sieve records a vector rather than one
 opaque score:
 \[
-(\text{forced rank},\;\text{auxiliary genus},\;\text{base rank},\;
-\text{successive minima},\;\text{Selmer room},\;\text{coefficient height},\;
-\text{certificate cost}).
+\begin{aligned}
+(&\text{forced rank},\;\text{auxiliary genus},\;\text{base rank},\;
+  \text{successive minima},\\
+ &\text{Selmer room},\;\text{coefficient height},\;
+  \text{certificate cost}).
+\end{aligned}
 \]
 Mestre--Nagao and Frobenius scores are cheap filters.  They never count as
 mathematical evidence for rank.
@@ -92,15 +124,14 @@ The full basis is not recomputed from scratch after every point.
 
 \subsection{Smallest decisive experiment}
 
-The next exact experiment is the minimal-shell trace-code scan:
-\[
-\boxed{
-\text{one split }E_8\text{ surface},
-\quad2240\text{ maximal ternary codes},
-\quad240\text{ trisection classes per code}.
-}
-\]
-The first objective is not immediately thirty sections.  It is one cyclic
-positive-rank genus-one cover carrying at least two distinct trisection orbits.
-That establishes that the incidence fibres can have multiplicity greater than
-one.  The search then escalates the Hermitian rank of the fibre toward eleven.
+The immediate experiment is the first-channel congruence sieve.  For each
+small good prime, enumerate every nondegenerate marking residue and retain only
+those for which the K3 channel reaches its geometric rank capacity four.
+Intersect these residue conditions, reconstruct rational markings, and run the
+full three-channel test only on the survivors.
+
+The first decisive milestone is one rational marking that repeatedly attains
+finite-field rank vector $(4,6,6)$.  The next milestone is an explicit
+characteristic-zero section basis for one of its K3 channels.  Neither
+milestone is promoted to a rank-thirty claim without rational descent and the
+final exact independence certificate.
