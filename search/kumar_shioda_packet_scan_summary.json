@@ -1,0 +1,31 @@
+{
+  "best": null,
+  "runs": [
+    {
+      "best_target_score": null,
+      "file": "kumar_shioda_packet_p23.json",
+      "prime": 23,
+      "reduction_base_rank": null,
+      "status": "error",
+      "top_packet": null
+    },
+    {
+      "best_target_score": null,
+      "file": "kumar_shioda_packet_p29.json",
+      "prime": 29,
+      "reduction_base_rank": null,
+      "status": "error",
+      "top_packet": null
+    },
+    {
+      "best_target_score": null,
+      "file": "kumar_shioda_packet_p31.json",
+      "prime": 31,
+      "reduction_base_rank": null,
+      "status": "error",
+      "top_packet": null
+    }
+  ],
+  "status": "pass",
+  "truth_note": "finite-characteristic discovery and upper-sieve evidence only; characteristic-zero promotion requires explicit Q(t)-sections"
+}

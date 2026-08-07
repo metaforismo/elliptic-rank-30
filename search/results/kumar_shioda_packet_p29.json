@@ -1,0 +1,8 @@
+{
+  "bound": 4,
+  "error": "AttributeError('EllipticCurve_field_with_category' object has no attribute 'rank')",
+  "prime": 29,
+  "status": "error",
+  "traceback": "Traceback (most recent call last):\n  File \"sage/structure/category_object.pyx\", line 856, in sage.structure.category_object.CategoryObject.getattr_from_category\n    return self._cached_methods[name]\nKeyError: 'rank'\n\nDuring handling of the above exception, another exception occurred:\n\nTraceback (most recent call last):\n  File \"/__w/elliptic-rank-30/elliptic-rank-30/search/sage_scan_kumar_shioda_packets.py\", line 98, in main\n    output[\"reduction_base_rank\"] = int(E.rank())\n                                        ^^^^^^\n  File \"sage/structure/category_object.pyx\", line 850, in sage.structure.category_object.CategoryObject.__getattr__\n    return self.getattr_from_category(name)\n  File \"sage/structure/category_object.pyx\", line 865, in sage.structure.category_object.CategoryObject.getattr_from_category\n    attr = getattr_from_other_class(self, cls, name)\n  File \"sage/cpython/getattr.pyx\", line 357, in sage.cpython.getattr.getattr_from_other_class\n    raise AttributeError(dummy_error_message)\nAttributeError: 'EllipticCurve_field_with_category' object has no attribute 'rank'\n",
+  "truth_note": "finite-characteristic discovery/upper-sieve evidence only; no Q(t) or rank-30 lower-bound claim"
+}
