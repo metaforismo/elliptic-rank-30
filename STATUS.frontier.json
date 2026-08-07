@@ -15,16 +15,24 @@
     "universal_impossibility_proved": false
   },
   "current_frontier": {
-    "representation": "cyclic cubic genus-one trisection packets on a split E8 rational elliptic surface",
-    "invariant_lattice": "E8(3)",
-    "required_nontrivial_character_rank_over_Qzeta3": 11,
-    "minimal_trisection_classes": 6720,
-    "nonzero_isotropic_trace_residues_mod3": 2240,
-    "maximal_totally_isotropic_trace_codes": 2240,
-    "minimal_classes_per_trace_code": 240,
-    "projected_orbit_lattice": "A2(2)",
-    "difference_orbit_lattice": "A2(6)"
+    "representation": "six C2 x C3 character channels of a generic marked j0 cyclic genus-one packet",
+    "geometric_capacity_vector": [4, 6, 4, 4, 6, 6],
+    "total_geometric_capacity": 30,
+    "automatic_rational_surface_rank_sum": 14,
+    "required_k3_rank_vector": [4, 6, 6],
+    "required_k3_picard_numbers": [20, 20, 20],
+    "positive_rank_cubic_base_scales_tested": [3, 18, 24, 30, 36, 81],
+    "rejected_markings_by_good_prime_sieve": ["3", "4", "5", "13/11"],
+    "degenerate_mu_2_geometric_rank_ceiling": 12,
+    "degenerate_mu_2_required_rank_jump_for_30": 18,
+    "trace_code_fallback": {
+      "invariant_lattice": "E8(3)",
+      "minimal_trisection_classes": 6720,
+      "maximal_totally_isotropic_trace_codes": 2240,
+      "minimal_classes_per_trace_code": 240,
+      "projected_orbit_lattice": "A2(2)"
+    }
   },
-  "smallest_decisive_experiment": "Enumerate one maximal ternary trace code at a time, compute the 240 minimal trisection linear systems, canonicalize cyclic positive-rank genus-one covers, and seek a common-cover fibre of Hermitian rank at least 2 before escalating toward 11.",
-  "certificate_policy": "No promotion above Level 0 without explicit rational points and exact independence evidence."
+  "smallest_decisive_experiment": "Complete the k20 maximal-residue scans at several good primes, intersect the congruence conditions, then run all three K3 channels only on surviving rational markings. A marking is promoted only if it attains finite-field ranks (4,6,6) at every completed good prime.",
+  "certificate_policy": "No promotion above Level 0 without explicit rational points and exact independence evidence. Finite-characteristic Picard ranks are rejection or prioritization evidence only."
 }
