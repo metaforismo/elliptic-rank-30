@@ -1,0 +1,97 @@
+\section{Obstruction atlas}
+
+The observed difficulty of finding one additional point is not a single
+phenomenon.  It is the product of several mathematically different
+obstructions.
+
+\subsection{Surface-lattice capacity}
+
+For a relatively minimal elliptic surface $\pi:S\to\mathbf P^1$ with section,
+Shioda--Tate gives
+\[
+\rank \MW(S)=\rho(S)-2-\sum_v(m_v-1),
+\]
+where $m_v$ is the number of irreducible components of the fibre at $v$.
+For arithmetic genus $d=\chi(\mathcal O_S)$ one has
+\[
+h^{1,1}(S)=10d,
+\qquad
+\rank\MW(S)\le10d-2.
+\]
+Thus a rational elliptic surface has generic rank at most $8$, a K3 elliptic
+surface at most $18$ geometrically, and an arithmetic-genus-three surface at
+most $28$.  These are generic-rank bounds; they do not bound a single
+specialized fibre over $\Q$.
+
+Every reducible fibre consumes Picard rank through its root lattice.  This is
+the \emph{reducible-fibre cost}.  A family designed for easy torsion or
+isogeny descent can therefore have insufficient capacity before any search is
+run.
+
+\subsection{Specialization and visibility}
+
+A fixed independent generic subgroup specializes injectively away from a
+controlled exceptional set, but extra points discovered after specialization
+can be dependent.  Given a generic lattice with Gram matrix $G_0$ and
+candidate extra points with block matrix
+\[
+G=\begin{pmatrix}G_0&B\\B^T&C\end{pmatrix},
+\]
+the new directions are measured by the Schur complement
+\[
+S=C-B^TG_0^{-1}B.
+\]
+The relevant search height is the norm in the quotient lattice represented by
+$S$, not merely the absolute canonical height of a candidate point.
+
+In a non-isotrivial family, specialized canonical heights grow with the height
+of the base parameter.  A curve can therefore have genuinely high rank while
+its missing generators lie beyond a feasible coordinate search.  This is a
+visibility obstruction, not a rank obstruction.
+
+\subsection{Descent and the local--global gap}
+
+A large $2$- or $3$-Selmer group records locally soluble covering classes.
+The excess over visible Mordell--Weil rank may lie in $\Sha$.  Consequently,
+\[
+\text{large Selmer dimension}
+\quad\not\Longrightarrow\quad
+\text{many rational points}.
+\]
+The correct construction problem is to make the relevant covering curves
+globally soluble and of manageable height, preferably through shared
+low-genus geometry.
+
+\subsection{Auxiliary-base arithmetic}
+
+Extra points on fibres are naturally represented by multisections or covering
+curves.  A genus-zero auxiliary curve with a rational point is parametrizable.
+A genus-one auxiliary curve is useful when its Jacobian has positive rational
+rank.  A higher-genus auxiliary curve can have only finitely many rational
+points, although finiteness never implies emptiness.
+
+Thus the useful resource is not only generic rank.  It is
+\[
+\text{forced rank}
++\text{low auxiliary genus}
++\text{positive-rank parameter space}
++\text{low quotient height}.
+\]
+
+\subsection{Certification cost}
+
+A lower-bound certificate does not require complete saturation of the full
+Mordell--Weil group, but it does require exact independence of the displayed
+points.  Finite-field reductions, interval-certified heights, and a second
+computer algebra system should be used incrementally.  Search code and
+verification code are deliberately separated so that a verifier depends only
+on the equation and point list.
+
+\subsection{What the historical graph does not prove}
+
+Record dates are not independent observations from a stationary process.
+Each jump reflects a different family, fibration, sieve, point-search method,
+amount of computation, and publication decision.  A fitted ``inflection
+point'' is therefore not evidence of a universal rank ceiling.  Failure of a
+family, a bounded search, or a low-height enumeration yields only a restricted
+obstruction unless it is converted into a theorem.
