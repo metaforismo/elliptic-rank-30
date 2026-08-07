@@ -1,0 +1,7 @@
+{
+  "pattern": "linear-linear",
+  "prime": 5,
+  "status": "worker_failed_without_json",
+  "trace_start": 200,
+  "truth_status": "no mathematical claim"
+}
