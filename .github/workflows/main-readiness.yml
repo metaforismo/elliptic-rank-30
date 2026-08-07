@@ -1,0 +1,107 @@
+name: main-readiness
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  exact-repository-audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - name: Install audit dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install sympy pyyaml
+      - name: Reject whitespace and syntax defects
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check HEAD^
+          python - <<'PY'
+          import py_compile
+          import subprocess
+          paths = subprocess.check_output(
+              ['git', 'ls-files', '*.py'], text=True
+          ).splitlines()
+          for path in paths:
+              py_compile.compile(path, doraise=True)
+          print(f'compiled {len(paths)} tracked Python files')
+          PY
+          python - <<'PY'
+          import json
+          import subprocess
+          paths = subprocess.check_output(
+              ['git', 'ls-files', '*.json'], text=True
+          ).splitlines()
+          for path in paths:
+              with open(path, encoding='utf-8') as handle:
+                  json.load(handle)
+          print(f'parsed {len(paths)} tracked JSON files')
+          PY
+          python - <<'PY'
+          import subprocess
+          import yaml
+          paths = subprocess.check_output(
+              ['git', 'ls-files', '*.yml', '*.yaml'], text=True
+          ).splitlines()
+          for path in paths:
+              with open(path, encoding='utf-8') as handle:
+                  yaml.safe_load(handle)
+          print(f'parsed {len(paths)} tracked YAML files')
+          PY
+      - name: Reproduce dependency-free certificates
+        shell: bash
+        run: |
+          set -euo pipefail
+          python verify_exact.py
+          python rank_packet_obstruction_tests.py
+          python research/riemann_roch_visibility_certificate.py
+          python research/torsion_packet_capacity_certificate.py
+          python research/cyclic_trisection_trace_code_certificate.py
+          python research/j0_six_channel_capacity_certificate.py
+          python research/j0_cubic_family_rank_ceiling_certificate.py
+          python research/j0_minimal_scale_obstruction_certificate.py
+      - name: Run the complete Python test suite
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -v
+      - name: Require deterministic tracked outputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --exit-code
+      - name: Build and verify the tracked-file manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p audit-artifacts
+          python scripts/build_integrity_manifest.py \
+            --output audit-artifacts/MANIFEST.sha256
+          sha256sum -c audit-artifacts/MANIFEST.sha256
+          if test -f MANIFEST.sha256; then
+            cmp MANIFEST.sha256 audit-artifacts/MANIFEST.sha256
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: integrity-manifest
+          path: audit-artifacts/MANIFEST.sha256
+          if-no-files-found: error
