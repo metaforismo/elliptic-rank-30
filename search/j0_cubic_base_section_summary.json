@@ -1,0 +1,52 @@
+{
+  "nontrivial_character_section_pair_total": 0,
+  "runs": [
+    {
+      "character": 1,
+      "elapsed_seconds": 2.0863037109375,
+      "error": null,
+      "file": "j0_cubic_mu_2_chi1.json",
+      "mu": "2",
+      "rational_section_pair_count": 0,
+      "rational_solution_count": 0,
+      "scheme_degree": 54,
+      "status": "pass"
+    },
+    {
+      "character": 2,
+      "elapsed_seconds": 0.04618263244628906,
+      "error": null,
+      "file": "j0_cubic_mu_2_chi2.json",
+      "mu": "2",
+      "rational_section_pair_count": null,
+      "rational_solution_count": null,
+      "scheme_degree": null,
+      "status": "non_zero_dimensional"
+    },
+    {
+      "character": 1,
+      "elapsed_seconds": 5.245290279388428,
+      "error": null,
+      "file": "j0_cubic_mu_3_chi1.json",
+      "mu": "3",
+      "rational_section_pair_count": 0,
+      "rational_solution_count": 0,
+      "scheme_degree": 54,
+      "status": "pass"
+    },
+    {
+      "character": 2,
+      "elapsed_seconds": 0.04899263381958008,
+      "error": null,
+      "file": "j0_cubic_mu_3_chi2.json",
+      "mu": "3",
+      "rational_section_pair_count": null,
+      "rational_solution_count": null,
+      "scheme_degree": null,
+      "status": "non_zero_dimensional"
+    }
+  ],
+  "sections": [],
+  "status": "pass",
+  "truth_status": "exact polynomial sections; generic independence and full rank require separate certificates"
+}

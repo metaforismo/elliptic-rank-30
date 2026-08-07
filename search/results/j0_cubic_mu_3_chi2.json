@@ -1,0 +1,14 @@
+{
+  "a": "7",
+  "b": "343/6",
+  "character": 2,
+  "curve_a6": "-343*u^9 + 80605/36*u^6 - 1029*u^3 - 343",
+  "elapsed_seconds": 0.04899263381958008,
+  "equation_count": 5,
+  "ideal_dimension": -1,
+  "mu": "3",
+  "status": "non_zero_dimensional",
+  "truth_status": "exact rational polynomial sections; independence requires a separate certificate",
+  "x_ansatz": "A*u^2",
+  "y_ansatz": "C*u^6 + D*u^3 + E"
+}

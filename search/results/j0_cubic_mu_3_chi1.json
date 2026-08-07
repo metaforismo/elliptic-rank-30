@@ -1,0 +1,36 @@
+{
+  "a": "7",
+  "b": "343/6",
+  "character": 1,
+  "curve_a6": "-343*u^9 + 80605/36*u^6 - 1029*u^3 - 343",
+  "elapsed_seconds": 5.245290279388428,
+  "equation_count": 5,
+  "groebner_basis_size": 5,
+  "ideal_dimension": 0,
+  "mu": "3",
+  "rational_section_pair_count": 0,
+  "rational_solution_count": 0,
+  "scheme_degree": 54,
+  "section_pairs": [],
+  "solutions": [],
+  "status": "pass",
+  "truth_status": "exact rational polynomial sections; independence requires a separate certificate",
+  "univariate_factors": [
+    {
+      "degree": 27,
+      "factors": [
+        [
+          "5184*A^9 + 12172384*A^6 - 97413372*A^3 + 3268642167",
+          1
+        ],
+        [
+          "6561*A^18 + 12211350858*A^15 + 312111378811603*A^12 - 15592562076793968*A^9 + 605878692463948491*A^6 - 4561561545106453146*A^3 + 10684021615890455889",
+          1
+        ]
+      ],
+      "variable": "A"
+    }
+  ],
+  "x_ansatz": "A*u^4 + B*u",
+  "y_ansatz": "C*u^6 + D*u^3 + E"
+}

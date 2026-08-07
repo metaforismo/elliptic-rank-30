@@ -1,0 +1,14 @@
+{
+  "a": "3",
+  "b": "27/2",
+  "character": 2,
+  "curve_a6": "-27*u^9 + 405/4*u^6 - 81*u^3 - 27",
+  "elapsed_seconds": 0.04618263244628906,
+  "equation_count": 5,
+  "ideal_dimension": -1,
+  "mu": "2",
+  "status": "non_zero_dimensional",
+  "truth_status": "exact rational polynomial sections; independence requires a separate certificate",
+  "x_ansatz": "A*u^2",
+  "y_ansatz": "C*u^6 + D*u^3 + E"
+}
