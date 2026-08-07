@@ -1,0 +1,85 @@
+name: magma-scan-j0-k20-residues
+
+on:
+  push:
+    paths:
+      - "search/magma_free_j0_k20_residue_scan.py"
+      - ".github/workflows/magma-scan-j0-k20-residues.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [11, 13, 17]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan all nondegenerate marking residues
+        shell: bash
+        run: |
+          set -euo pipefail
+          outdir="search/results/k20_residue_p${{ matrix.prime }}"
+          mkdir -p "$outdir"
+          python3 search/magma_free_j0_k20_residue_scan.py \
+            --prime '${{ matrix.prime }}' \
+            --output-dir "$outdir" \
+            --summary "search/results/k20_residue_p${{ matrix.prime }}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: k20-residue-p${{ matrix.prime }}
+          path: |
+            search/results/k20_residue_p${{ matrix.prime }}.json
+            search/results/k20_residue_p${{ matrix.prime }}/
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: k20-residue-p*
+          merge-multiple: true
+          path: search/results
+      - name: Preserve the exact congruence sieve
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path('search/results').glob('k20_residue_p*.json')):
+              data=json.loads(path.read_text())
+              rows.append({
+                  'file':path.name,
+                  'prime':data['prime'],
+                  'maximal_residues':data['maximal_residues'],
+                  'rejected_count':len(data['rejected_residues']),
+                  'incomplete_residues':data['incomplete_residues'],
+              })
+          out={
+              'status':'pass' if rows else 'no_artifacts',
+              'prime_sieves':rows,
+              'truth_status':'finite-characteristic necessary conditions only',
+          }
+          Path('search/j0_k20_residue_sieve_summary.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/k20_residue_p*.json search/j0_k20_residue_sieve_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record the k20 marking congruence sieve"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
