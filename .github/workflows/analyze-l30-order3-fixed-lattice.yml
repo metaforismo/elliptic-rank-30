@@ -1,0 +1,48 @@
+name: analyze-l30-order3-fixed-lattice
+
+on:
+  push:
+    paths:
+      - "research/l30_order3_fixed_lattice.sage.py"
+      - "research/l30_e8_embedding.sage.py"
+      - ".github/workflows/analyze-l30-order3-fixed-lattice.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compute qfauto and an order-three fixed lattice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p certificates
+          timeout 110m sage -python research/l30_order3_fixed_lattice.sage.py \
+            --trials 1000 \
+            --output certificates/l30_order3_fixed_lattice.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: l30-order3-fixed-lattice
+          path: certificates/l30_order3_fixed_lattice.json
+          if-no-files-found: error
+      - name: Preserve the exact order-three certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/l30_order3_fixed_lattice.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record the order-three fixed-lattice certificate"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
