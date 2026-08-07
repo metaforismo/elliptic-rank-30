@@ -1,0 +1,100 @@
+name: scan-kumar-shioda-e8-packets
+
+on:
+  push:
+    paths:
+      - "research/kumar_shioda_split_e8_certificate.py"
+      - "search/sage_scan_kumar_shioda_packets.py"
+      - ".github/workflows/scan-kumar-shioda-e8-packets.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  scan:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [23, 29, 31]
+    runs-on: ubuntu-24.04
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan all small rational V4 branch triples
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          timeout 5h sage -python search/sage_scan_kumar_shioda_packets.py \
+            --prime '${{ matrix.prime }}' --bound 4 \
+            --output 'search/results/kumar_shioda_packet_p${{ matrix.prime }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kumar-shioda-packet-p${{ matrix.prime }}
+          path: search/results/kumar_shioda_packet_p${{ matrix.prime }}.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: kumar-shioda-packet-p*
+          merge-multiple: true
+          path: search/results
+      - name: Preserve exact finite-field evidence without overclaiming
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows=[]
+          best=None
+          for path in sorted(Path('search/results').glob('kumar_shioda_packet_p*.json')):
+              data=json.loads(path.read_text())
+              row={
+                  'file': path.name,
+                  'prime': data.get('prime'),
+                  'status': data.get('status'),
+                  'reduction_base_rank': data.get('reduction_base_rank'),
+                  'best_target_score': data.get('best_target_score'),
+                  'top_packet': (data.get('top_packets') or [None])[0],
+              }
+              rows.append(row)
+              if row['best_target_score'] is not None and (
+                  best is None or row['best_target_score'] > best['best_target_score']
+              ):
+                  best=row
+          summary={
+              'status':'pass' if rows else 'no_artifacts',
+              'runs':rows,
+              'best':best,
+              'truth_note':(
+                  'finite-characteristic discovery and upper-sieve evidence only; '
+                  'characteristic-zero promotion requires explicit Q(t)-sections'
+              ),
+          }
+          Path('search/kumar_shioda_packet_scan_summary.json').write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+'\n'
+          )
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/kumar_shioda_packet_p*.json \
+                  search/kumar_shioda_packet_scan_summary.json
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record Kumar--Shioda E8 packet scans"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
