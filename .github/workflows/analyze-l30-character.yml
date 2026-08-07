@@ -30,12 +30,100 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p certificates
-          gap -q research/l30_character_scan.g > certificates/l30_character_scan.json
+          gap -q research/l30_character_scan.g > certificates/l30_character_scan.tsv
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          table_names = [
+              "3_2.U4(3).(2^2)_{133}",
+              "3_2.U4(3).2_3",
+              "3_2.U4(3).2_1",
+          ]
+          tables = {}
+          chars = {}
+          source = Path("certificates/l30_character_scan.tsv")
+          for raw in source.read_text(encoding="utf-8").splitlines():
+              fields = raw.strip().split("|")
+              if not fields or not fields[0]:
+                  continue
+              kind = fields[0]
+              if kind == "TABLE":
+                  _, ti, order, class_count = fields
+                  ti = int(ti)
+                  tables[ti] = {
+                      "table": table_names[ti - 1],
+                      "group_order": order,
+                      "class_count": int(class_count),
+                      "degree_30_characters": [],
+                  }
+              elif kind == "CHAR":
+                  _, ti, ci = fields
+                  key = (int(ti), int(ci))
+                  chars[key] = {
+                      "character_index": int(ci),
+                      "degree": 30,
+                      "order_three_classes": [],
+                      "has_fixed_rank_8_class": False,
+                  }
+                  tables[int(ti)]["degree_30_characters"].append(chars[key])
+              elif kind == "CLASS":
+                  _, ti, ci, class_index, square_index, fixed = fields
+                  key = (int(ti), int(ci))
+                  fixed = int(fixed)
+                  row = {
+                      "class_index": int(class_index),
+                      "square_class_index": int(square_index),
+                      "fixed_multiplicity": fixed,
+                      "matches_cyclic_cubic_requirement": fixed == 8,
+                  }
+                  chars[key]["order_three_classes"].append(row)
+                  chars[key]["has_fixed_rank_8_class"] |= fixed == 8
+              else:
+                  raise SystemExit(f"unknown GAP record: {raw!r}")
+
+          ordered = [tables[i] for i in sorted(tables)]
+          matching = [
+              {
+                  "table": table["table"],
+                  "character_index": char["character_index"],
+                  "classes": [
+                      row for row in char["order_three_classes"]
+                      if row["matches_cyclic_cubic_requirement"]
+                  ],
+              }
+              for table in ordered
+              for char in table["degree_30_characters"]
+              if char["has_fixed_rank_8_class"]
+          ]
+          out = {
+              "status": "pass",
+              "tables": ordered,
+              "matching_entries": matching,
+              "truth_note": (
+                  "Character-table compatibility only. A fixed multiplicity of 8 "
+                  "does not by itself construct an integral lattice automorphism, "
+                  "an elliptic surface, or a rank-30 Mordell-Weil group."
+              ),
+          }
+          Path("certificates/l30_character_scan.json").write_text(
+              json.dumps(out, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+          )
+          print(json.dumps({
+              "status": out["status"],
+              "degree_30_character_count": sum(
+                  len(t["degree_30_characters"]) for t in ordered
+              ),
+              "fixed_rank_8_match_count": len(matching),
+          }, sort_keys=True))
+          PY
           python3 -m json.tool certificates/l30_character_scan.json >/dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: l30-character-scan
-          path: certificates/l30_character_scan.json
+          path: |
+            certificates/l30_character_scan.tsv
+            certificates/l30_character_scan.json
           if-no-files-found: error
       - name: Preserve the exact character-table certificate
         shell: bash
@@ -43,7 +131,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add certificates/l30_character_scan.json
+          git add certificates/l30_character_scan.tsv certificates/l30_character_scan.json
           if git diff --cached --quiet; then exit 0; fi
           git commit -m "Record the order-three rank-30 character scan"
           git pull --rebase origin "$GITHUB_REF_NAME"
