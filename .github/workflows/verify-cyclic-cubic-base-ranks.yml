@@ -19,8 +19,6 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
       - name: Compute rigorous ranks with proof flags
         shell: bash
         run: |
@@ -29,10 +27,29 @@ jobs:
           sage -python search/verify_cyclic_cubic_base_rank.sage.py \
             --scales '1,2,3,4,6,8,9,12,18,24,27,30,36,48,54,72,81,108' \
             --output search/results/cyclic_cubic_base_ranks.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cyclic-cubic-base-ranks
+          path: search/results/cyclic_cubic_base_ranks.json
+          if-no-files-found: error
+
+  preserve:
+    if: always()
+    needs: verify
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          name: cyclic-cubic-base-ranks
+          path: search/results
       - name: Preserve exact rank certificate
         shell: bash
         run: |
           set -euo pipefail
+          test -s search/results/cyclic_cubic_base_ranks.json
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add search/results/cyclic_cubic_base_ranks.json
