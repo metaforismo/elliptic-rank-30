@@ -162,8 +162,10 @@ def main():
         "reduction_base_rank": output.get("reduction_base_rank"),
         "best_target_score": output.get("best_target_score"),
         "packet_count": output.get("packet_count"),
+        "error": output.get("error"),
     }, sort_keys=True))
-    return 0 if output["status"] == "pass" else 1
+    # Preserve negative and failed experiments as artifacts; the JSON status is authoritative.
+    return 0
 
 
 if __name__ == "__main__":
