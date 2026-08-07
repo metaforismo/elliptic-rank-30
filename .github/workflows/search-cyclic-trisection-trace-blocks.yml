@@ -1,0 +1,165 @@
+name: search-cyclic-trisection-trace-blocks
+
+on:
+  push:
+    paths:
+      - "search/normalize_kumar_shioda_certificate.py"
+      - "search/sage_search_cyclic_trisection_trace_blocks.py"
+      - ".github/workflows/search-cyclic-trisection-trace-blocks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: search-cyclic-trisection-trace-blocks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  search:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        trace_start: [0, 25, 50, 75, 100, 125, 150, 175]
+        pattern: [linear-linear]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Normalize exact split-E8 input
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results
+          sage -python search/normalize_kumar_shioda_certificate.py \
+            --source certificates/kumar_shioda_split_e8_certificate.json \
+            --output search/results/kumar_shioda_normalized.json
+      - name: Search one exact trace block
+        id: worker
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          slug='${{ matrix.trace_start }}-${{ matrix.pattern }}'
+          timeout 110m sage -python search/sage_search_cyclic_trisection_trace_blocks.py \
+            --prime 5 \
+            --trace-start '${{ matrix.trace_start }}' \
+            --trace-count 25 \
+            --pattern '${{ matrix.pattern }}' \
+            --max-hits 50 \
+            --normalized search/results/kumar_shioda_normalized.json \
+            --output "search/results/cyclic_trace_block_p5_${slug}.json" \
+            2>&1 | tee "search/results/cyclic_trace_block_p5_${slug}.log"
+      - name: Preserve a fail-closed worker record
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          start='${{ matrix.trace_start }}'
+          pattern='${{ matrix.pattern }}'
+          path=Path(f'search/results/cyclic_trace_block_p5_{start}-{pattern}.json')
+          if not path.exists():
+              path.write_text(json.dumps({
+                  'status':'worker_failed_without_json',
+                  'prime':5,
+                  'trace_start':int(start),
+                  'pattern':pattern,
+                  'truth_status':'no mathematical claim',
+              },indent=2,sort_keys=True)+'\n')
+          data=json.loads(path.read_text())
+          print(json.dumps({
+              'status':data.get('status'),
+              'trace_start':data.get('trace_start'),
+              'selected_traces':data.get('selected_trace_count'),
+              'hits':data.get('hit_count'),
+              'smooth_genus_one_hits':data.get('genus_one_smooth_branch_hit_count'),
+              'error':data.get('error'),
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cyclic-trace-p5-${{ matrix.trace_start }}-${{ matrix.pattern }}
+          path: |
+            search/results/cyclic_trace_block_p5_${{ matrix.trace_start }}-${{ matrix.pattern }}.json
+            search/results/cyclic_trace_block_p5_${{ matrix.trace_start }}-${{ matrix.pattern }}.log
+            search/results/kumar_shioda_normalized.json
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: search
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: cyclic-trace-p5-*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate exact lifting-seed evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; hits=[]
+          for path in sorted(Path('search/results').glob('cyclic_trace_block_p5_*.json')):
+              data=json.loads(path.read_text())
+              rows.append({
+                  'file':path.name,
+                  'status':data.get('status'),
+                  'trace_start':data.get('trace_start'),
+                  'selected_trace_count':data.get('selected_trace_count'),
+                  'hit_count':data.get('hit_count'),
+                  'genus_one_smooth_branch_hit_count':data.get('genus_one_smooth_branch_hit_count'),
+                  'error':data.get('error'),
+                  'elapsed_seconds':data.get('elapsed_seconds'),
+              })
+              for hit in data.get('hits',[]):
+                  hits.append({'source':path.name,**hit})
+          hits.sort(key=lambda hit:(
+              hit.get('extension_genus') != 1,
+              hit.get('branch_collision_detected') is not False,
+              hit.get('trace_index',10**9),
+          ))
+          out={
+              'status':'pass' if rows else 'no_artifacts',
+              'prime':5,
+              'runs':rows,
+              'traces_attempted':sum(row.get('selected_trace_count') or 0 for row in rows),
+              'total_hits':len(hits),
+              'genus_one_smooth_branch_hits':sum(
+                  hit.get('extension_genus')==1
+                  and hit.get('branch_collision_detected') is False
+                  for hit in hits
+              ),
+              'top_hits':hits[:200],
+              'truth_status':'finite-characteristic lifting seeds only; no Q(t) or rank-30 claim',
+          }
+          Path('search/cyclic_trisection_trace_block_summary.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({k:out[k] for k in (
+              'status','traces_attempted','total_hits','genus_one_smooth_branch_hits'
+          )},sort_keys=True))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/cyclic_trace_block_p5_*.json \
+                  search/results/cyclic_trace_block_p5_*.log \
+                  search/results/kumar_shioda_normalized.json \
+                  search/cyclic_trisection_trace_block_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record cyclic trisection trace-block scans"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
