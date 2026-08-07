@@ -1,0 +1,22 @@
+{
+  "active_workstreams": [
+    "cyclic cubic split-E8 trisection packets",
+    "31-zero norm identities",
+    "explicit Kummer bridge for the six-channel j=0 family"
+  ],
+  "author": "Francesco Giannicola",
+  "best_certified_subgroup_rank": 29,
+  "canonical_branch": "main",
+  "level": 2,
+  "newest_result": {
+    "certificate": "certificates/x0_3_isogeny_bridge.json",
+    "formalization": "EllipticRank30/X03Isogeny.lean",
+    "limitation": "K3-to-Kummer correspondence not yet proved",
+    "name": "common-twist X_0(3) isogeny bridge"
+  },
+  "project": "elliptic-rank-30",
+  "record_claim": false,
+  "required_final_theorem": "rank E(Q) >= 30",
+  "truth_status": "new intermediate theorem",
+  "updated": "2026-08-08"
+}
