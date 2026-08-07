@@ -3,7 +3,7 @@ name: analyze-l30-character
 on:
   push:
     paths:
-      - "research/l30_character_scan.sage.py"
+      - "research/l30_character_scan.g"
       - ".github/workflows/analyze-l30-character.yml"
   workflow_dispatch:
 
@@ -15,19 +15,23 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
-    container:
-      image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Install GAP and the Character Table Library
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gap gap-character-tables
       - name: Scan degree-30 characters and order-three fixed spaces
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p certificates
-          sage -python research/l30_character_scan.sage.py \
-            --output certificates/l30_character_scan.json
+          gap -q research/l30_character_scan.g > certificates/l30_character_scan.json
+          python3 -m json.tool certificates/l30_character_scan.json >/dev/null
       - uses: actions/upload-artifact@v4
         with:
           name: l30-character-scan
