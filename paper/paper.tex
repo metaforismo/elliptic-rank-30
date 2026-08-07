@@ -1,3 +1,62 @@
-% Canonical entry point for the single living paper.
-% Compile from the repository root; modular sources live in paper/source/.
-\input{paper/source/main.tex}
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=28mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs,longtable,array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,capitalise]{cleveref}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjectural target}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{experiment}[theorem]{Exact experiment}
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+\newcommand{\Q}{\mathbf Q}
+\newcommand{\Z}{\mathbf Z}
+\newcommand{\F}{\mathbf F}
+\newcommand{\MW}{\operatorname{MW}}
+\newcommand{\NS}{\operatorname{NS}}
+\newcommand{\Sha}{\operatorname{Sha}}
+\newcommand{\rank}{\operatorname{rank}}
+\newcommand{\Reg}{\operatorname{Reg}}
+\newcommand{\disc}{\operatorname{disc}}
+\newcommand{\Span}{\operatorname{Span}}
+
+\title{\textbf{Toward Thirty Independent Rational Points on an Elliptic Curve over $\Q$}\\[4pt]
+\large A certificate-first search, exact obstructions, and cyclic cubic trace codes}
+\author{Francesco Giannicola}
+\date{Research draft --- August 2026}
+
+\begin{document}
+\maketitle
+\input{paper/source/00_abstract}
+\tableofcontents
+\input{paper/source/01_baseline}
+\input{paper/source/02_obstructions}
+\input{paper/source/03_packets}
+\input{paper/source/04_split_e8}
+\input{paper/source/05_cyclic_cubic}
+\input{paper/source/05a_hodge_representation}
+\input{paper/source/06_trace_codes}
+\input{paper/source/06a_cubic_surface}
+\input{paper/source/06b_hessian_reduction}
+\input{paper/source/06c_eisenstein_determinant}
+\input{paper/source/06d_j0_scale_obstruction}
+\input{paper/source/06e_j0_rank_ceiling}
+\input{paper/source/06f_six_channel_capacity}
+\input{paper/source/06g_lean_verification}
+\input{paper/source/07_search_program}
+\input{paper/source/08_truth_status}
+\input{paper/source/09_references}
+\end{document}
