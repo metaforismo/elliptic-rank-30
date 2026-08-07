@@ -1,0 +1,47 @@
+name: analyze-l30-e8-embedding
+
+on:
+  push:
+    paths:
+      - "research/l30_e8_embedding.sage.py"
+      - ".github/workflows/analyze-l30-e8-embedding.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  analyze:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Enumerate the extremal 3-modular lattice and search for E8(3)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p certificates
+          timeout 2h sage -python research/l30_e8_embedding.sage.py \
+            --central-limit 64 \
+            --output certificates/l30_e8_embedding.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: l30-e8-embedding-certificate
+          path: certificates/l30_e8_embedding.json
+          if-no-files-found: error
+      - name: Preserve the exact certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/l30_e8_embedding.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record the rank-30 lattice compatibility certificate"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
