@@ -1,0 +1,26 @@
+{
+  "block_determinant_identity": "det(B_q)=F(q)^2 det(T(q,-,-))",
+  "characteristic_exclusions": [
+    2,
+    3
+  ],
+  "coordinate_change": "x = X - L/(3a)",
+  "cyclicity_condition": "3*a*Q - L^2 = 0",
+  "generic_candidates_per_240_class_trace_code_upper_bound": 1920,
+  "generic_cyclic_hyperplanes_per_trace_class_upper_bound": 8,
+  "generic_hessian_points_on_line": 4,
+  "generic_isotropic_hyperplanes_per_rank2_point": 2,
+  "hessian_equivalence": "det(B_q)=0 iff q lies on the Hessian quartic of X",
+  "hessian_scaling": "Hess_F(q)=6*T(q,-,-)",
+  "invariant_bilinear_form": "B_q(u,v)=F(q)T(q,u,v)-T(q,q,u)T(q,q,v)",
+  "plane_cubic_normal_form": "a*x^3 + x^2*L + x*Q + C",
+  "status": "pass",
+  "symbolic_checks": {
+    "X2_term_eliminated": true,
+    "block_determinant_identity": true,
+    "mixed_quadratic_formula": true
+  },
+  "translated_X2_coefficient": "0",
+  "translated_X_coefficient": "(3*a*q11*y**2 + 6*a*q12*y*z + 3*a*q22*z**2 - l1**2*y**2 - 2*l1*l2*y*z - l2**2*z**2)/(3*a)",
+  "truth_status": "new intermediate theorem; no rank-30 curve claimed"
+}
