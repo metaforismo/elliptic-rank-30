@@ -1,0 +1,7 @@
+project=elliptic-rank-30
+python>=3.11
+sage=10.9
+magma=V2.29-9
+sympy>=1.13
+proof_policy=exact arithmetic; Sage proof.all(True) where supported
+paper_engine=pdflatex
