@@ -1,0 +1,50 @@
+name: probe-atlasrep-u43
+
+on:
+  push:
+    paths:
+      - "research/atlasrep_u43_probe.g"
+      - ".github/workflows/probe-atlasrep-u43.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install GAP and AtlasRep
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq gap gap-atlasrep
+      - name: Query available small representations
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p certificates
+          gap -q research/atlasrep_u43_probe.g > certificates/atlasrep_u43_probe.tsv
+          cat certificates/atlasrep_u43_probe.tsv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: atlasrep-u43-probe
+          path: certificates/atlasrep_u43_probe.tsv
+          if-no-files-found: error
+      - name: Preserve the AtlasRep inventory
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add certificates/atlasrep_u43_probe.tsv
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record the AtlasRep inventory for the rank-30 symmetry group"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
