@@ -1,0 +1,122 @@
+name: search-j0-cubic-base-eigen-sections
+
+on:
+  push:
+    paths:
+      - "search/sage_solve_j0_cubic_base_sections.py"
+      - ".github/workflows/search-j0-cubic-base-eigen-sections.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  solve:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        mu: ["2", "3", "4/3", "3/2"]
+        character: [1, 2]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Solve one exact C3-eigen section scheme
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          slug=$(printf '%s' '${{ matrix.mu }}' | tr '/' '_')
+          mkdir -p search/results
+          timeout 170m sage -python search/sage_solve_j0_cubic_base_sections.py \
+            --mu '${{ matrix.mu }}' --character '${{ matrix.character }}' \
+            --output "search/results/j0_cubic_mu_${slug}_chi${{ matrix.character }}.json" \
+            2>&1 | tee "search/results/j0_cubic_mu_${slug}_chi${{ matrix.character }}.log"
+      - name: Preserve a fail-closed result record
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          slug=$(printf '%s' '${{ matrix.mu }}' | tr '/' '_')
+          path="search/results/j0_cubic_mu_${slug}_chi${{ matrix.character }}.json"
+          if [ ! -f "$path" ]; then
+            python3 - <<PY
+          import json
+          open('$path','w').write(json.dumps({
+            'status':'worker_failed_without_json','mu':'${{ matrix.mu }}',
+            'character':${{ matrix.character }},'truth_status':'no mathematical claim'
+          },indent=2,sort_keys=True)+'\n')
+          PY
+          fi
+          python3 - <<PY
+          import json
+          d=json.load(open('$path'))
+          print(json.dumps({k:d.get(k) for k in (
+            'status','mu','character','scheme_degree','rational_section_pair_count','error','elapsed_seconds'
+          )},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: j0-cubic-${{ matrix.mu }}-chi${{ matrix.character }}
+          path: search/results/j0_cubic_mu_*_chi${{ matrix.character }}.*
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: solve
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: j0-cubic-*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate exact section evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]; sections=[]
+          for path in sorted(Path('search/results').glob('j0_cubic_mu_*_chi*.json')):
+              d=json.loads(path.read_text())
+              row={
+                  'file':path.name,'status':d.get('status'),'mu':d.get('mu'),
+                  'character':d.get('character'),'scheme_degree':d.get('scheme_degree'),
+                  'rational_solution_count':d.get('rational_solution_count'),
+                  'rational_section_pair_count':d.get('rational_section_pair_count'),
+                  'error':d.get('error'),'elapsed_seconds':d.get('elapsed_seconds')}
+              rows.append(row)
+              for section in d.get('section_pairs',[]):
+                  sections.append({'source':path.name,'mu':d.get('mu'),
+                                   'character':d.get('character'),**section})
+          out={
+              'status':'pass' if rows else 'no_artifacts','runs':rows,
+              'nontrivial_character_section_pair_total':sum(
+                  row.get('rational_section_pair_count') or 0 for row in rows
+                  if row.get('character') in (1,2)),
+              'sections':sections,
+              'truth_status':'exact polynomial sections; generic independence and full rank require separate certificates'}
+          Path('search/j0_cubic_base_section_summary.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'status':out['status'],
+              'nontrivial_character_section_pair_total':out['nontrivial_character_section_pair_total']
+          },sort_keys=True))
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/j0_cubic_mu_* search/j0_cubic_base_section_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record exact j0 cubic-base eigen sections"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
