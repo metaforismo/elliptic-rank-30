@@ -1,0 +1,50 @@
+{
+  "status": "pass",
+  "theorem": "explicit cyclic-cubic rank-30 target lattice",
+  "mordell_weil_candidate": "E8^3 direct-sum E6",
+  "rank": 30,
+  "determinant": "3",
+  "minimum": 2,
+  "root_count": 792,
+  "order_three_characteristic_polynomial_factored": "(x - 1)^8 * (x^2 + x + 1)^11",
+  "fixed_lattice": {
+    "isometry_type": "E8(3)",
+    "rank": 8,
+    "determinant": "6561",
+    "minimal_vector_count": 240
+  },
+  "trace_zero_lattice": {
+    "isometry_description": "(E8 tensor A2) direct-sum E6",
+    "rank": 22,
+    "determinant": "19683",
+    "root_count": 72
+  },
+  "fixed_plus_trace_zero_index": "6561",
+  "section_orbits_of_roots": 264,
+  "neron_severi_candidate": {
+    "lattice": "[[-3,1],[1,0]] direct-sum (E8^3 direct-sum E6)(-1)",
+    "rank": 32,
+    "signature": [1, 31, 0],
+    "determinant": "-3"
+  },
+  "transcendental_candidate": {
+    "lattice": "E6",
+    "rank": 6,
+    "determinant": "3"
+  },
+  "topological_gluing": {
+    "unglued_determinant": "-9",
+    "overlattice_index": "3",
+    "unimodular_determinant": "-1",
+    "signature": [7, 31, 0],
+    "odd": true
+  },
+  "verification": {
+    "script": "research/cyclic_cubic_target_lattice.sage.py",
+    "sage_version": "10.9",
+    "workflow_run_id": 31171998537,
+    "workflow_artifact_id": 8991350342,
+    "workflow_artifact_sha256": "c0e01fca2a991bfd8e7391fccc17360a75619f7a028d2a7a3a06f3f58e30d98c"
+  },
+  "truth_note": "This proves exact lattice and topological compatibility only. It does not yet realize the lattice as a Mordell-Weil lattice, exhibit a rank-30 elliptic surface over Q, or provide 30 rational points on a curve over Q."
+}
