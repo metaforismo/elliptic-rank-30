@@ -1,0 +1,32 @@
+\section{Lean verification of the exact algebraic layer}
+
+The repository contains a machine-checked Lean 4 formalization, pinned to
+Lean and mathlib version 4.32.2.  The root module is
+\texttt{EllipticRank30.lean}; continuous integration builds it and rejects
+local \texttt{sorry}, \texttt{admit}, and \texttt{axiom} declarations.
+
+The Lean development certifies the following exact ingredients used in this
+paper:
+\begin{itemize}[leftmargin=*]
+\item the birational identity taking
+  $u^3=c\,t(t-1)$ to $Y^2=X^3+16c^4$;
+\item positivity of $\mu^2-\mu+1$ over the reals and the resulting
+  impossibility of the minimal real constant equation;
+\item the generic marked-coefficient factorization and the symmetric product
+  and pairwise-product identities for its three rational roots;
+\item the repeated-factor and quadratic-twist identities at the degenerate
+  marking $\mu=2$;
+\item both normalized rational solutions used in the minimal-scale
+  obstruction;
+\item every numerical Euler, root-rank, rank-capacity, shell-size, and
+  trace-code count used in the six-channel reduction.
+\end{itemize}
+
+This formalization has a deliberately narrow truth boundary.  It does not yet
+formalize Kodaira classification, minimal elliptic surfaces, Shioda--Tate,
+Picard-number bounds, character decomposition of Mordell--Weil groups,
+function-field rank computations, canonical heights, saturation, or rational
+point independence.  Those statements remain supported by the exact proofs
+and independent SageMath/Magma certificates described elsewhere in the
+paper.  Thus a green Lean build strengthens the algebraic core but is not, by
+itself, a rank-thirty certificate.
