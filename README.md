@@ -56,7 +56,7 @@ The project has exact proofs that:
 - one character can nevertheless carry several Mordell--Weil directions;
 - a single rational function with 30 rational zeros forces one group-law
   relation, so a one-function rank-30 construction needs at least 31 zeros;
-- easy rational 2- and 3-torsion models spend too much Neron--Severi rank on
+- easy rational 2- and 3-torsion models spend too much Néron--Severi rank on
   reducible fibres to support a rank-30 low-genus packet.
 
 ### 2. Certified split \(E_8\) surface
@@ -109,7 +109,10 @@ mu = 3, 4, 5, 13/11
 ```
 
 because reduction modulo 17 gives K3 ranks \((2,4,4)\), below the required
-\((4,6,6)\).
+\((4,6,6)\). The first-channel residue scans found no maximal nondegenerate
+residue modulo 11 or 17. A surviving rational marking must therefore meet the
+recorded exceptional congruence loci at those primes before the remaining
+good-prime tests are applied.
 
 ### 5. Degenerate marking obstruction
 
@@ -146,6 +149,33 @@ c = 3, 18, 24, 30, 36, 81
 and exact rank zero for the other tested cube classes recorded in
 `search/results/cyclic_cubic_base_ranks.json`.
 
+## Lean formal verification
+
+The exact algebraic and finite-arithmetic layer is also formalized in Lean 4,
+pinned to Lean and mathlib 4.32.2. The root module is
+`EllipticRank30.lean`; the project contains no local `sorry`, `admit`, or
+`axiom` declarations.
+
+Lean checks:
+
+- the birational cubic-base identity;
+- positivity of \(\mu^2-\mu+1\) and the minimal real obstruction;
+- the generic marked coefficient factorization and its symmetric root
+  identities;
+- the two \(\mu=2\) factorization identities;
+- both normalized solutions in the minimal-scale certificate;
+- the Euler, root-rank, rank-capacity, shell-size, and trace-code arithmetic
+  used by the six-channel reduction.
+
+The formal boundary is explicit. Kodaira classification, minimal elliptic
+surfaces, Shioda--Tate, Picard-number bounds, Mordell--Weil character
+decomposition, function-field ranks, canonical heights, saturation, and
+rational-point independence are still supported by the mathematical proofs
+and independent SageMath/Magma certificates rather than by Lean. A green Lean
+build strengthens the exact core; it is not by itself a rank-30 certificate.
+
+See [`formalization/README.md`](formalization/README.md).
+
 ## Smallest decisive experiment
 
 The active sieve scans the first K3 channel over every nondegenerate marking
@@ -169,7 +199,9 @@ This is followed by:
 - [`research/j0_cubic_family_rank_ceiling.md`](research/j0_cubic_family_rank_ceiling.md)
 - [`research/j0_minimal_scale_obstruction.md`](research/j0_minimal_scale_obstruction.md)
 - [`search/j0_six_channel_probe_summary.json`](search/j0_six_channel_probe_summary.json)
+- [`search/j0_k20_residue_sieve_summary.json`](search/j0_k20_residue_sieve_summary.json)
 - [`research/cyclic_cubic_trace_codes.md`](research/cyclic_cubic_trace_codes.md)
+- [`EllipticRank30.lean`](EllipticRank30.lean)
 - [`paper/paper.pdf`](paper/paper.pdf)
 
 ## Repository layout
@@ -179,8 +211,10 @@ curve.json, points.json          exact rank-29 baseline inputs
 candidate_record.json            canonical candidate record
 certificates/                    compact machine-readable certificates
 evidence/                        preserved Sage/Magma/CI evidence
-paper/paper.tex                  living paper entry point
-paper/paper.pdf                  compiled paper
+EllipticRank30/                  Lean formalization modules
+formalization/                   formal-verification scope and boundary
+paper/paper.tex                  canonical living-paper entry point
+paper/paper.pdf                  compiled living paper on main
 paper/source/                    modular LaTeX sources
 research/                        theorems, proofs, and exact certificates
 search/                          discovery workers and exact search outputs
@@ -193,6 +227,8 @@ verify_magma.m                   independent Magma verifier
 
 ## Reproduce the exact checks
 
+Dependency-free and Python certificates:
+
 ```bash
 python3 verify_exact.py
 python3 research/j0_six_channel_capacity_certificate.py
@@ -200,6 +236,14 @@ python3 research/j0_cubic_family_rank_ceiling_certificate.py
 python3 research/j0_minimal_scale_obstruction_certificate.py
 python3 -m unittest discover -s tests -v
 sha256sum -c MANIFEST.sha256
+```
+
+Lean:
+
+```bash
+lake update
+lake exe cache get
+lake build
 ```
 
 SageMath:
@@ -215,6 +259,15 @@ Magma:
 
 ```bash
 magma verify_magma.m
+```
+
+Paper:
+
+```bash
+pdflatex -interaction=nonstopmode -halt-on-error \
+  -jobname=paper -output-directory=paper paper/paper.tex
+pdflatex -interaction=nonstopmode -halt-on-error \
+  -jobname=paper -output-directory=paper paper/paper.tex
 ```
 
 ## Candidate policy
@@ -236,6 +289,7 @@ Contributions are most useful when they provide one of:
 - explicit sections in one of the rank-capacity \((4,6,6)\) K3 channels;
 - a cyclic trisection packet with exact branch, trace-code, and height data;
 - a globally soluble covering producing a genuinely new quotient direction;
+- a Lean formalization of one of the currently external geometric steps;
 - an independent verifier or adversarial audit;
 - executable data for the second rank-17 K3 fibration used in the rank-29
   construction.
