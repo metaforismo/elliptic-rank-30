@@ -1,0 +1,100 @@
+name: magma-probe-kumar-shioda-packet
+
+on:
+  push:
+    paths:
+      - "search/magma_free_kumar_shioda_packet_probe.py"
+      - ".github/workflows/magma-probe-kumar-shioda-packet.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [23, 29, 31]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query official Magma for the three packet characters
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p search/results/magma_packet_p${{ matrix.prime }}
+          python3 search/magma_free_kumar_shioda_packet_probe.py \
+            --prime '${{ matrix.prime }}' \
+            --triple '0,1,inf' \
+            --output-dir 'search/results/magma_packet_p${{ matrix.prime }}' \
+            --summary 'search/results/magma_packet_p${{ matrix.prime }}.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: magma-kumar-shioda-packet-p${{ matrix.prime }}
+          path: |
+            search/results/magma_packet_p${{ matrix.prime }}.json
+            search/results/magma_packet_p${{ matrix.prime }}/
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: probe
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: magma-kumar-shioda-packet-p*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate exact Magma evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          best=None
+          for path in sorted(Path('search/results').glob('magma_packet_p*.json')):
+              data=json.loads(path.read_text())
+              row={
+                  'file':path.name,
+                  'prime':data.get('prime'),
+                  'status':data.get('status'),
+                  'support':data.get('support'),
+                  'twist_rank_sum':data.get('twist_rank_sum'),
+                  'packet_score':data.get('packet_score_using_characteristic_zero_base_rank_8'),
+                  'channel_statuses':[r.get('status') for r in data.get('results',[])],
+                  'channel_ranks':[r.get('rank') for r in data.get('results',[])],
+              }
+              rows.append(row)
+              if row['packet_score'] is not None and (best is None or row['packet_score']>best['packet_score']):
+                  best=row
+          out={
+              'status':'pass' if rows else 'no_artifacts',
+              'runs':rows,
+              'best':best,
+              'truth_note':(
+                  'Magma finite-characteristic rank data only; no characteristic-zero '
+                  'or rank-30 lower-bound claim'
+              ),
+          }
+          Path('search/magma_kumar_shioda_packet_summary.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/magma_packet_p*.json \
+                  search/results/magma_packet_p*/ \
+                  search/magma_kumar_shioda_packet_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record official-Magma packet probes"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
