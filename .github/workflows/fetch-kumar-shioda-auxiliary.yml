@@ -1,0 +1,41 @@
+name: fetch-kumar-shioda-auxiliary
+
+on:
+  push:
+    paths:
+      - ".github/workflows/fetch-kumar-shioda-auxiliary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download and inspect the primary-source auxiliary archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ks-source extracted
+          curl --fail --location --retry 4 \
+            --user-agent 'elliptic-rank-30-reproducibility/1.0' \
+            'https://arxiv.org/e-print/1204.1531v3' \
+            -o /tmp/ks-source/source.tar
+          file /tmp/ks-source/source.tar
+          sha256sum /tmp/ks-source/source.tar | tee extracted/SHA256SUMS
+          tar -tf /tmp/ks-source/source.tar | tee extracted/archive-list.txt
+          tar -xf /tmp/ks-source/source.tar -C /tmp/ks-source
+          find /tmp/ks-source -maxdepth 2 -type f -printf '%P\n' | sort \
+            > extracted/extracted-list.txt
+          cp /tmp/ks-source/README.txt extracted/ 2>/dev/null || true
+          find /tmp/ks-source -maxdepth 2 -type f \
+            \( -iname '*e8*' -o -iname '*inv*' -o -iname '*char*' -o -iname '*.gp' -o -iname '*.m' -o -iname '*.max' \) \
+            -exec cp --parents '{}' extracted/ \;
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kumar-shioda-1204.1531-auxiliary
+          path: extracted/
+          if-no-files-found: error
