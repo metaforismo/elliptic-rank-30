@@ -1,0 +1,101 @@
+name: magma-probe-j0-six-channels
+
+on:
+  push:
+    paths:
+      - "search/magma_free_j0_six_channel_probe.py"
+      - ".github/workflows/magma-probe-j0-six-channels.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [17, 19, 29]
+        mu: ["3", "4", "5", "13/11"]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe the three K3 character channels
+        shell: bash
+        run: |
+          set -euo pipefail
+          slug=$(printf '%s' '${{ matrix.mu }}' | tr '/' '_')
+          outdir="search/results/six_channel_p${{ matrix.prime }}_mu${slug}"
+          mkdir -p "$outdir"
+          python3 search/magma_free_j0_six_channel_probe.py \
+            --prime '${{ matrix.prime }}' --mu '${{ matrix.mu }}' \
+            --output-dir "$outdir" \
+            --summary "search/results/six_channel_p${{ matrix.prime }}_mu${slug}.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: six-channel-p${{ matrix.prime }}-mu${{ strategy.job-index }}
+          path: |
+            search/results/six_channel_p${{ matrix.prime }}_mu*.json
+            search/results/six_channel_p${{ matrix.prime }}_mu*/
+          if-no-files-found: error
+
+  consolidate:
+    if: always()
+    needs: probe
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: six-channel-*
+          merge-multiple: true
+          path: search/results
+      - name: Consolidate exact finite-field rejections and survivors
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for path in sorted(Path('search/results').glob('six_channel_p*_mu*.json')):
+              data=json.loads(path.read_text())
+              rows.append({
+                  'file':path.name,
+                  'prime':data.get('prime'),
+                  'mu':data.get('mu'),
+                  'completed':data.get('all_channels_completed'),
+                  'maximal':data.get('all_three_k3_channels_maximal'),
+                  'rejected':data.get('characteristic_zero_candidate_rejected_by_this_prime'),
+                  'geometric_ranks':[row.get('geometric_rank') for row in data.get('channels',[])],
+                  'statuses':[row.get('status') for row in data.get('channels',[])],
+              })
+          by_mu={}
+          for row in rows:
+              by_mu.setdefault(row['mu'],[]).append(row)
+          survivors=[]; rejected=[]
+          for mu, recs in sorted(by_mu.items()):
+              if any(rec['rejected'] for rec in recs):
+                  rejected.append(mu)
+              elif recs and all(rec['maximal'] for rec in recs):
+                  survivors.append(mu)
+          out={
+              'status':'pass' if rows else 'no_artifacts',
+              'runs':rows,
+              'rejected_markings':rejected,
+              'surviving_markings_at_all_completed_primes':survivors,
+              'truth_status':'finite-characteristic exact sieve only; survivors require characteristic-zero sections',
+          }
+          Path('search/j0_six_channel_probe_summary.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add search/results/six_channel_p*_mu*.json search/j0_six_channel_probe_summary.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Record the six-channel K3 finite-field sieve"
+          git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin HEAD:"$GITHUB_REF_NAME"
