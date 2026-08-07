@@ -1,0 +1,73 @@
+\section{The split $E_8$ rational surface}
+
+\subsection{Why torsion-friendly models are too small}
+
+A rational elliptic surface with rational two-torsion can be written
+\[
+y^2=x^3+A(t)x^2+B(t)x,
+\qquad \deg A\le2,\quad \deg B\le4.
+\]
+Its discriminant is
+\[
+\Delta=16B^2(A^2-4B).
+\]
+The zeros of $B$ force reducible fibres of total root rank at least four, so
+Shioda--Tate bounds the generic Mordell--Weil rank by four.  A smooth
+three-character $V_4$ packet built from such bases has total capacity at most
+twenty-two.
+
+Rational three-torsion in Tate normal form forces still more reducible-fibre
+cost; the analogous packet capacity is at most fourteen.  The easiest descent
+models are therefore incapable of carrying rank thirty.  The high-capacity
+base should have trivial small rational torsion and twelve irreducible
+$I_1$ fibres.
+
+\subsection{A certified split $E_8$ surface}
+
+The repository contains an exact certificate for the rational elliptic
+surface
+\[
+\mathcal E:\quad y^2=x^3+A(t)x+B(t),
+\]
+with
+\[
+\begin{aligned}
+A(t)={}&-27t^4+216t^3+6t^2-432t-267,\\
+B(t)={}&54t^6+108t^5-630t^4-880t^3+1458t^2+1278t+1242.
+\end{aligned}
+\]
+Its discriminant has twelve simple roots, so every singular fibre is of type
+$I_1$.  The surface is rational and has no reducible-fibre root lattice.
+Eight explicit rational sections are stored in the machine-readable
+certificate.  Their Shioda height matrix is even, positive definite, has
+rank eight, and determinant one.  Therefore the generic Mordell--Weil lattice
+is exactly
+\[
+\boxed{E_8.}
+\]
+
+This is the preferred base for packet engineering: it realizes the maximum
+rank of a rational elliptic surface without spending Picard rank on reducible
+fibres.
+
+\subsection{Why higher-$\chi$ neighbour fibrations do not replace K3 methods}
+
+Let $S\to\mathbf P^1$ be a relatively minimal elliptic surface with section
+and $d=\chi(\mathcal O_S)$.  The canonical bundle formula gives
+\[
+K_S\sim(d-2)F.
+\]
+If $d\ne2$, the canonical class determines the primitive fibre ray.  Any
+other genus-one fibre class $F'$ satisfies $K_S\cdot F'=0$, hence
+$F\cdot F'=0$; the Hodge index theorem forces $F'$ to be proportional to
+$F$.  Primitivity gives $F'=F$.
+
+Thus
+\[
+\boxed{d\ne2\Longrightarrow\text{the genus-one fibration is canonically rigid}.}
+\]
+K3 surfaces, where $d=2$ and $K_S=0$, are the exceptional case in which
+neighbour fibrations can genuinely move lattice directions between fibre
+components and sections.  This explains why changing the K3 fibration broke
+the rank-$28$ plateau, while the same manoeuvre cannot simply be transplanted
+to an arithmetic-genus-four surface.
