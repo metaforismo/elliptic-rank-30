@@ -16,6 +16,9 @@ from pathlib import Path
 
 from sage.all import ZZ, libgap
 
+if libgap.LoadPackage("ctbllib") is not True:
+    raise RuntimeError("GAP package CTblLib could not be loaded")
+
 TABLE_NAMES = [
     "3_2.U4(3).(2^2)_133",
     "3_2.U4(3).2_3",
