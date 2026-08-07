@@ -1,0 +1,30 @@
+{
+  "prime_sieves": [
+    {
+      "file": "k20_residue_p11.json",
+      "incomplete_residues": [],
+      "maximal_residues": [],
+      "prime": 11,
+      "rejected_count": 6
+    },
+    {
+      "file": "k20_residue_p13.json",
+      "incomplete_residues": [
+        4,
+        10
+      ],
+      "maximal_residues": [],
+      "prime": 13,
+      "rejected_count": 6
+    },
+    {
+      "file": "k20_residue_p17.json",
+      "incomplete_residues": [],
+      "maximal_residues": [],
+      "prime": 17,
+      "rejected_count": 12
+    }
+  ],
+  "status": "pass",
+  "truth_status": "finite-characteristic necessary conditions only"
+}

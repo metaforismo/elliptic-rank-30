@@ -1,0 +1,99 @@
+{
+  "excluded_degenerate_residues": [
+    0,
+    1,
+    2,
+    7,
+    12
+  ],
+  "incomplete_residues": [
+    4,
+    10
+  ],
+  "maximal_residues": [],
+  "prime": 13,
+  "rejected_residues": [
+    3,
+    5,
+    6,
+    8,
+    9,
+    11
+  ],
+  "rows": [
+    {
+      "arithmetic_rank": 2,
+      "elapsed_seconds": 2.449284076690674,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 3,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": null,
+      "elapsed_seconds": 0.5953578948974609,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 4,
+      "status": "fail",
+      "warning": "An error occurred. See the output for details."
+    },
+    {
+      "arithmetic_rank": 2,
+      "elapsed_seconds": 2.278346538543701,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 5,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 2,
+      "elapsed_seconds": 2.060485601425171,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 6,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 2,
+      "elapsed_seconds": 2.4268062114715576,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 8,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 2,
+      "elapsed_seconds": 1.8877317905426025,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 9,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": null,
+      "elapsed_seconds": 0.5594115257263184,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 10,
+      "status": "fail",
+      "warning": "An error occurred. See the output for details."
+    },
+    {
+      "arithmetic_rank": 2,
+      "elapsed_seconds": 2.4090991020202637,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 11,
+      "status": "pass",
+      "warning": ""
+    }
+  ],
+  "status": "pass",
+  "truth_status": "exact finite-characteristic necessary-condition sieve"
+}

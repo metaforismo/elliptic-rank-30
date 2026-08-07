@@ -1,0 +1,138 @@
+{
+  "excluded_degenerate_residues": [
+    0,
+    1,
+    2,
+    9,
+    16
+  ],
+  "incomplete_residues": [],
+  "maximal_residues": [],
+  "prime": 17,
+  "rejected_residues": [
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "rows": [
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 2.799973726272583,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 3,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.145338773727417,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 4,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.7236459255218506,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 5,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.7615129947662354,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 6,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 0.7683744430541992,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 7,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.313321828842163,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 8,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 0.7778689861297607,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 10,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 0.768596887588501,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 11,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 0.9633023738861084,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 12,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.1450140476226807,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 13,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.5674364566802979,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 14,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 0.7739613056182861,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 15,
+      "status": "pass",
+      "warning": ""
+    }
+  ],
+  "status": "pass",
+  "truth_status": "exact finite-characteristic necessary-condition sieve"
+}

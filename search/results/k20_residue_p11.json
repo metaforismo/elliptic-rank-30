@@ -1,0 +1,78 @@
+{
+  "excluded_degenerate_residues": [
+    0,
+    1,
+    2,
+    6,
+    10
+  ],
+  "incomplete_residues": [],
+  "maximal_residues": [],
+  "prime": 11,
+  "rejected_residues": [
+    3,
+    4,
+    5,
+    7,
+    8,
+    9
+  ],
+  "rows": [
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 2.7210018634796143,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 3,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.2997477054595947,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 4,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.4926226139068604,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 5,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.4991426467895508,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 7,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.2962720394134521,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 8,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 1,
+      "elapsed_seconds": 1.5594830513000488,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 9,
+      "status": "pass",
+      "warning": ""
+    }
+  ],
+  "status": "pass",
+  "truth_status": "exact finite-characteristic necessary-condition sieve"
+}
