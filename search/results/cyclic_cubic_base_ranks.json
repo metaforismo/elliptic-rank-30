@@ -1,0 +1,347 @@
+{
+  "positive_rank_scales": [
+    "3",
+    "18",
+    "24",
+    "30",
+    "36",
+    "81"
+  ],
+  "rank_zero_scales": [
+    "1",
+    "2",
+    "4",
+    "6",
+    "8",
+    "9",
+    "12",
+    "27",
+    "48",
+    "54",
+    "72",
+    "108"
+  ],
+  "rows": [
+    {
+      "base_equation": "u^3=1*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "0"
+      ],
+      "scale": "1",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=2*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "4"
+      ],
+      "scale": "2",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=3*t*(t-1)",
+      "exact_rank": 1,
+      "generators": [
+        "(-2 : 3 : 1)"
+      ],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "20"
+      ],
+      "scale": "3",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=4*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "1"
+      ],
+      "scale": "4",
+      "torsion_invariants": [
+        6
+      ],
+      "torsion_order": 6
+    },
+    {
+      "base_equation": "u^3=6*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "324"
+      ],
+      "scale": "6",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=8*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "0"
+      ],
+      "scale": "8",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=9*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "2"
+      ],
+      "scale": "9",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=12*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "81"
+      ],
+      "scale": "12",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=18*t*(t-1)",
+      "exact_rank": 1,
+      "generators": [
+        "(-3 : 3 : 1)"
+      ],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "36"
+      ],
+      "scale": "18",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=24*t*(t-1)",
+      "exact_rank": 1,
+      "generators": [
+        "(-2 : 3 : 1)"
+      ],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "20"
+      ],
+      "scale": "24",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=27*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "0"
+      ],
+      "scale": "27",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=30*t*(t-1)",
+      "exact_rank": 1,
+      "generators": [
+        "(189 : 2637 : 1)"
+      ],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "202500"
+      ],
+      "scale": "30",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=36*t*(t-1)",
+      "exact_rank": 1,
+      "generators": [
+        "(-2 : 1 : 1)"
+      ],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "9"
+      ],
+      "scale": "36",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=48*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "324"
+      ],
+      "scale": "48",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=54*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "4"
+      ],
+      "scale": "54",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=72*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "2"
+      ],
+      "scale": "72",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=81*t*(t-1)",
+      "exact_rank": 1,
+      "generators": [
+        "(-2 : 3 : 1)"
+      ],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "1",
+        "0",
+        "20"
+      ],
+      "scale": "81",
+      "torsion_invariants": [
+        3
+      ],
+      "torsion_order": 3
+    },
+    {
+      "base_equation": "u^3=108*t*(t-1)",
+      "exact_rank": 0,
+      "generators": [],
+      "mordell_model_a_invariants": [
+        "0",
+        "0",
+        "0",
+        "0",
+        "1"
+      ],
+      "scale": "108",
+      "torsion_invariants": [
+        6
+      ],
+      "torsion_order": 6
+    }
+  ],
+  "status": "pass",
+  "transformation": "X=4*c*u, Y=4*c^2*(2*t-1), so Y^2=X^3+16*c^4",
+  "truth_status": "rigorous Sage ranks with proof.all(True) and rank(proof=True)"
+}
