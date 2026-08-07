@@ -1,0 +1,50 @@
+{
+  "all_channels_completed": false,
+  "all_three_k3_channels_maximal": false,
+  "channels": [
+    {
+      "arithmetic_rank": 0,
+      "channel": "k20",
+      "elapsed_seconds": 13.388517618179321,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": "13/11",
+      "output_tail": "R30_PRIME 19\nR30_MU 15\nR30_CHANNEL k20\nR30_TARGET 4\nR30_ARITHMETIC_RANK 0\nR30_GEOMETRIC_RANK 2\nR30_SIX_CHANNEL_PASS\n",
+      "prime": 19,
+      "status": "pass",
+      "target_geometric_rank": 4,
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": null,
+      "channel": "k11",
+      "elapsed_seconds": 60.564650774002075,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": "13/11",
+      "output_tail": "",
+      "prime": 19,
+      "status": "fail",
+      "target_geometric_rank": 6,
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "arithmetic_rank": null,
+      "channel": "k21",
+      "elapsed_seconds": 60.6527955532074,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": "13/11",
+      "output_tail": "",
+      "prime": 19,
+      "status": "fail",
+      "target_geometric_rank": 6,
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    }
+  ],
+  "characteristic_zero_candidate_rejected_by_this_prime": true,
+  "mu": "13/11",
+  "prime": 19,
+  "status": "pass",
+  "truth_status": "exact finite-characteristic rank sieve; characteristic-zero rank requires explicit sections and independent certification"
+}

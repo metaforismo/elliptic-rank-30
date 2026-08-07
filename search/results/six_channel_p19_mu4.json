@@ -1,0 +1,42 @@
+{
+  "all_channels_completed": false,
+  "all_three_k3_channels_maximal": false,
+  "channels": [
+    {
+      "arithmetic_rank": 0,
+      "channel": "k20",
+      "elapsed_seconds": 13.74596643447876,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": "4",
+      "output_tail": "R30_PRIME 19\nR30_MU 4\nR30_CHANNEL k20\nR30_TARGET 4\nR30_ARITHMETIC_RANK 0\nR30_GEOMETRIC_RANK 2\nR30_SIX_CHANNEL_PASS\n",
+      "prime": 19,
+      "status": "pass",
+      "target_geometric_rank": 4,
+      "warning": ""
+    },
+    {
+      "channel": "k11",
+      "elapsed_seconds": 60.65551567077637,
+      "mu": "4",
+      "prime": 19,
+      "status": "exception",
+      "target_geometric_rank": 6,
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/elliptic-rank-30/elliptic-rank-30/search/magma_free_j0_six_channel_probe.py\", line 84, in submit\n    with urllib.request.urlopen(request, timeout=180) as response:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 215, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 521, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 630, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 559, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 492, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 639, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 504: Gateway Timeout\n"
+    },
+    {
+      "channel": "k21",
+      "elapsed_seconds": 60.715720653533936,
+      "mu": "4",
+      "prime": 19,
+      "status": "exception",
+      "target_geometric_rank": 6,
+      "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/elliptic-rank-30/elliptic-rank-30/search/magma_free_j0_six_channel_probe.py\", line 84, in submit\n    with urllib.request.urlopen(request, timeout=180) as response:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 215, in urlopen\n    return opener.open(url, data, timeout)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 521, in open\n    response = meth(req, response)\n               ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 630, in http_response\n    response = self.parent.error(\n               ^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 559, in error\n    return self._call_chain(*args)\n           ^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 492, in _call_chain\n    result = func(*args)\n             ^^^^^^^^^^^\n  File \"/usr/lib/python3.12/urllib/request.py\", line 639, in http_error_default\n    raise HTTPError(req.full_url, code, msg, hdrs, fp)\nurllib.error.HTTPError: HTTP Error 504: Gateway Timeout\n"
+    }
+  ],
+  "characteristic_zero_candidate_rejected_by_this_prime": true,
+  "mu": "4",
+  "prime": 19,
+  "status": "pass",
+  "truth_status": "exact finite-characteristic rank sieve; characteristic-zero rank requires explicit sections and independent certification"
+}

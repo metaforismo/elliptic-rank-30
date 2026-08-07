@@ -1,0 +1,50 @@
+{
+  "all_channels_completed": true,
+  "all_three_k3_channels_maximal": false,
+  "channels": [
+    {
+      "arithmetic_rank": 1,
+      "channel": "k20",
+      "elapsed_seconds": 2.95524001121521,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": "13/11",
+      "output_tail": "R30_PRIME 17\nR30_MU 12\nR30_CHANNEL k20\nR30_TARGET 4\nR30_ARITHMETIC_RANK 1\nR30_GEOMETRIC_RANK 2\nR30_SIX_CHANNEL_PASS\n",
+      "prime": 17,
+      "status": "pass",
+      "target_geometric_rank": 4,
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 2,
+      "channel": "k11",
+      "elapsed_seconds": 10.146897077560425,
+      "geometric_rank": 4,
+      "http_status": 200,
+      "mu": "13/11",
+      "output_tail": "R30_PRIME 17\nR30_MU 12\nR30_CHANNEL k11\nR30_TARGET 6\nR30_ARITHMETIC_RANK 2\nR30_GEOMETRIC_RANK 4\nR30_SIX_CHANNEL_PASS\n",
+      "prime": 17,
+      "status": "pass",
+      "target_geometric_rank": 6,
+      "warning": ""
+    },
+    {
+      "arithmetic_rank": 2,
+      "channel": "k21",
+      "elapsed_seconds": 9.900824069976807,
+      "geometric_rank": 4,
+      "http_status": 200,
+      "mu": "13/11",
+      "output_tail": "R30_PRIME 17\nR30_MU 12\nR30_CHANNEL k21\nR30_TARGET 6\nR30_ARITHMETIC_RANK 2\nR30_GEOMETRIC_RANK 4\nR30_SIX_CHANNEL_PASS\n",
+      "prime": 17,
+      "status": "pass",
+      "target_geometric_rank": 6,
+      "warning": ""
+    }
+  ],
+  "characteristic_zero_candidate_rejected_by_this_prime": true,
+  "mu": "13/11",
+  "prime": 17,
+  "status": "pass",
+  "truth_status": "exact finite-characteristic rank sieve; characteristic-zero rank requires explicit sections and independent certification"
+}

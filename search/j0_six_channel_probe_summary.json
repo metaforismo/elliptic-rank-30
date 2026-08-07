@@ -1,0 +1,229 @@
+{
+  "rejected_markings": [
+    "13/11",
+    "3",
+    "4",
+    "5"
+  ],
+  "runs": [
+    {
+      "completed": true,
+      "file": "six_channel_p17_mu13_11.json",
+      "geometric_ranks": [
+        2,
+        4,
+        4
+      ],
+      "maximal": false,
+      "mu": "13/11",
+      "prime": 17,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ]
+    },
+    {
+      "completed": true,
+      "file": "six_channel_p17_mu3.json",
+      "geometric_ranks": [
+        2,
+        4,
+        4
+      ],
+      "maximal": false,
+      "mu": "3",
+      "prime": 17,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ]
+    },
+    {
+      "completed": true,
+      "file": "six_channel_p17_mu4.json",
+      "geometric_ranks": [
+        2,
+        4,
+        4
+      ],
+      "maximal": false,
+      "mu": "4",
+      "prime": 17,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ]
+    },
+    {
+      "completed": true,
+      "file": "six_channel_p17_mu5.json",
+      "geometric_ranks": [
+        2,
+        4,
+        4
+      ],
+      "maximal": false,
+      "mu": "5",
+      "prime": 17,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "pass",
+        "pass"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p19_mu13_11.json",
+      "geometric_ranks": [
+        2,
+        null,
+        null
+      ],
+      "maximal": false,
+      "mu": "13/11",
+      "prime": 19,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p19_mu3.json",
+      "geometric_ranks": [
+        0,
+        null,
+        null
+      ],
+      "maximal": false,
+      "mu": "3",
+      "prime": 19,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "exception",
+        "fail"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p19_mu4.json",
+      "geometric_ranks": [
+        2,
+        null,
+        null
+      ],
+      "maximal": false,
+      "mu": "4",
+      "prime": 19,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "exception",
+        "exception"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p19_mu5.json",
+      "geometric_ranks": [
+        2,
+        null,
+        null
+      ],
+      "maximal": false,
+      "mu": "5",
+      "prime": 19,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "fail",
+        "exception"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p29_mu13_11.json",
+      "geometric_ranks": [
+        2,
+        null,
+        null
+      ],
+      "maximal": false,
+      "mu": "13/11",
+      "prime": 29,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "fail",
+        "fail"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p29_mu3.json",
+      "geometric_ranks": [
+        2,
+        null,
+        4
+      ],
+      "maximal": false,
+      "mu": "3",
+      "prime": 29,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "fail",
+        "pass"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p29_mu4.json",
+      "geometric_ranks": [
+        2,
+        null,
+        null
+      ],
+      "maximal": false,
+      "mu": "4",
+      "prime": 29,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "exception",
+        "fail"
+      ]
+    },
+    {
+      "completed": false,
+      "file": "six_channel_p29_mu5.json",
+      "geometric_ranks": [
+        2,
+        null,
+        4
+      ],
+      "maximal": false,
+      "mu": "5",
+      "prime": 29,
+      "rejected": true,
+      "statuses": [
+        "pass",
+        "exception",
+        "pass"
+      ]
+    }
+  ],
+  "status": "pass",
+  "surviving_markings_at_all_completed_primes": [],
+  "truth_status": "finite-characteristic exact sieve only; survivors require characteristic-zero sections"
+}
