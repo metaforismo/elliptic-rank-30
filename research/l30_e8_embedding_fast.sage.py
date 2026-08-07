@@ -8,7 +8,7 @@ This imports the catalogue Gram matrix and certificate helpers from
 * inner-product relation sets are represented as Python integer bitsets, and
   the long E8 arm is built before the two interchangeable short arms.
 
-A positive result is a fully exact lattice theorem.  A negative result is only
+A positive result is a fully exact lattice theorem. A negative result is only
 complete when every minimal vector has been tried as the trivalent root.
 """
 from __future__ import annotations
@@ -19,7 +19,7 @@ import json
 import time
 from pathlib import Path
 
-from sage.all import IntegralLattice, Matrix, ZZ, pari, vector
+from sage.all import Matrix, ZZ, pari, vector
 
 ROOT = Path(__file__).resolve().parent
 SPEC = importlib.util.spec_from_file_location(
@@ -69,13 +69,12 @@ class Relations:
         self.GV = self.V * G
         self.VT = self.V.transpose()
         self.cache = {}
-        self.all_mask = (1 << len(vectors)) - 1
 
     def get(self, index):
         cached = self.cache.get(index)
         if cached is not None:
             return cached
-        values = (self.GV.row(index) * self.VT).row(0)
+        values = self.GV.row(index) * self.VT
         neighbor3 = 0
         orthogonal = 0
         for j, value in enumerate(values):
@@ -99,7 +98,7 @@ def search_embedding(vectors, G, central_limit):
         used_central += 1
         n3_c, z_c = rel.get(central)
 
-        # Build the length-five arm 2-3-4-5-6-7 first.  Each new vertex is
+        # Build the length-five arm 2-3-4-5-6-7 first. Each new vertex is
         # adjacent to the previous one and orthogonal to every earlier
         # non-neighbour.
         for node3 in bits(n3_c):
@@ -124,7 +123,7 @@ def search_embedding(vectors, G, central_limit):
 
                             # The two short arms are both adjacent to the
                             # central root and orthogonal to the complete long
-                            # arm.  They must also be mutually orthogonal.
+                            # arm. They must also be mutually orthogonal.
                             arms = n3_c & z_3 & z_4 & z_5 & z_6 & z_7
                             for node0 in bits(arms):
                                 _, z_0 = rel.get(node0)
