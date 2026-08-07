@@ -1,0 +1,114 @@
+\section{The minimal cubic genus-one mechanism}
+
+\subsection{Low-genus pullback capacity}
+
+Let $\pi:S\to C$ be a relatively minimal non-isotrivial elliptic surface with
+section, and put
+\[
+\chi=\chi(\mathcal O_S),\qquad g=g(C).
+\]
+The standard surface identities give
+\[
+e(S)=12\chi,\qquad q(S)=g,\qquad p_g(S)=\chi+g-1.
+\]
+Consequently
+\[
+b_2(S)=12\chi-2+4g,
+\qquad
+\boxed{h^{1,1}(S)=10\chi+2g.}
+\]
+If $R$ is the total root rank of reducible fibres, Shioda--Tate yields
+\[
+\boxed{
+\rank E(\overline{\Q}(C))\le10\chi+2g-2-R.
+}
+\]
+After a degree-$d$ base change of a rational elliptic surface,
+$\chi=d$.  Hence
+\[
+\rank E(\overline{\Q}(C))\le10d+2g(C)-2-R.
+\]
+
+For a base with infinitely many rational points, the smallest possibilities
+capable of rank thirty are
+\[
+\boxed{(d,g)=(4,0)\quad\text{or}\quad(d,g)=(3,1).}
+\]
+The second possibility is the decisive correction to the earlier assumption
+that degree four was minimal.
+
+\subsection{Ramification must avoid the discriminant}
+
+Suppose the rational elliptic surface has twelve $I_1$ fibres.  Ramification
+of index $e$ over an $I_1$ fibre produces an $I_e$ fibre and consumes root
+rank $e-1$.  A degree-three genus-one cover has total ramification six by
+Riemann--Hurwitz.  A cyclic cubic cover realizes this through three totally
+ramified points.
+
+Therefore a cubic pullback can reach the ceiling thirty only when all three
+branch points lie over smooth fibres.  Branching over even one $I_1$ fibre
+lowers the Shioda--Tate ceiling below thirty.
+
+\subsection{An explicit positive-rank cyclic base}
+
+Consider
+\[
+C_{36}:\qquad u^3=36t(t-1).
+\]
+The map $(t,u)\mapsto t$ is a cyclic cubic cover after adjoining a primitive
+cube root of unity, totally ramified over $0,1,\infty$.  It is a genus-one
+curve.  More generally, for
+\[
+u^3=c\,t(t-1),
+\]
+put
+\[
+X=4cu,\qquad Y=4c^2(2t-1).
+\]
+Then
+\[
+Y^2=X^3+16c^4.
+\]
+For $c=36$, the rational point $(t,u)=(3,6)$ maps to
+\[
+P=(864,25920).
+\]
+Doubling gives
+\[
+x(2P)=\frac{3456}{25},
+\]
+which is nonintegral.  If $P$ were torsion then $2P$ would be torsion, in
+contradiction with Lutz--Nagell on the integral Mordell model.  Hence
+\[
+\boxed{\rank C_{36}(\Q)\ge1.}
+\]
+A M\"obius transformation moves the three branch values to any chosen triple
+of rational smooth fibres.
+
+\subsection{Cyclic cubic eigenspaces}
+
+Let $C\to\mathbf P^1$ be such a cyclic cubic cover and let $\sigma$ generate
+its deck group.  Over $\Q(\zeta_3)$, the Mordell--Weil space of the pullback
+decomposes as
+\[
+M=M_1\oplus M_{\zeta}\oplus M_{\zeta^2}.
+\]
+The invariant part is the pullback of the original $E_8$ lattice, so
+\[
+\dim M_1=8.
+\]
+Complex conjugation exchanges the two nontrivial character spaces.  Writing
+$\dim M_{\zeta}=\dim M_{\zeta^2}=r$, one obtains
+\[
+\boxed{\rank M=8+2r.}
+\]
+The Hodge bound gives $r\le11$.  In the absence of reducible fibres,
+\[
+\boxed{
+\rank M=30
+\iff r=11
+\iff \rho(S_C)=32.
+}
+\]
+The arithmetic problem is not merely Picard maximality: the thirty geometric
+directions must descend to $\Q(C)$.
