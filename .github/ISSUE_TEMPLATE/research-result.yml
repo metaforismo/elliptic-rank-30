@@ -1,0 +1,38 @@
+name: Research result
+description: Record a theorem, candidate, exact experiment, or failed route
+title: "[research] "
+labels: []
+body:
+  - type: dropdown
+    id: truth
+    attributes:
+      label: Truth status
+      options:
+        - false
+        - incomplete
+        - heuristic only
+        - restricted obstruction
+        - new representation
+        - new intermediate theorem
+        - candidate construction
+        - certified rank at least 30
+    validations:
+      required: true
+  - type: textarea
+    id: claim
+    attributes:
+      label: Exact claim
+    validations:
+      required: true
+  - type: textarea
+    id: certificate
+    attributes:
+      label: Reproduction and certificate
+    validations:
+      required: true
+  - type: textarea
+    id: failure
+    attributes:
+      label: Counterexamples, failure analysis, and remaining gaps
+    validations:
+      required: true
