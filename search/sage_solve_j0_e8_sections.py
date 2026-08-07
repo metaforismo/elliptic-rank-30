@@ -4,13 +4,13 @@
     E_mu: y^2 = x^3 + b^2 r(t)^2 - a^3 q(t)^3,
     q=t^2-t+1, r=t(t-1),
 
-where a=q(mu), b=q(mu)^3/r(mu).  The six zeros are the fibre of the
-Legendre j-map above j(mu).  For generic mu this is a rational elliptic
+where a=q(mu), b=q(mu)^3/r(mu). The six zeros are the fibre of the
+Legendre j-map above j(mu). For generic mu this is a rational elliptic
 surface with six type-II fibres and geometric Mordell-Weil lattice E8.
 
-No coefficient box is used.  The seven coefficient equations for
+No coefficient box is used. The seven coefficient equations for
 x=A t^2+B t+C and y=D t^3+E t^2+F t+G are solved as a zero-dimensional
-scheme over QQ.  Only exact rational solutions are promoted.
+scheme over QQ. Only exact rational solutions are promoted.
 """
 from __future__ import annotations
 
@@ -30,24 +30,24 @@ def as_fraction_string(x):
 def solve(mu):
     started=time.time()
     mu=QQ(mu)
-    q0=mu^2-mu+1
+    q0=mu**2-mu+1
     r0=mu*(mu-1)
     if r0==0:
         raise ValueError("mu must not be 0 or 1")
     a=q0
-    b=q0^3/r0
+    b=q0**3/r0
 
     # Lex order with A last makes the terminal eliminant preferentially univariate in A.
     R=PolynomialRing(QQ,names=('G','F','E','D','C','B','A'),order='lex')
     G,F,E,D,C,B,A=R.gens()
     S=PolynomialRing(R,'t')
     t=S.gen()
-    q=t^2-t+1
+    q=t**2-t+1
     r=t*(t-1)
-    Bpoly=b^2*r^2-a^3*q^3
-    x=A*t^2+B*t+C
-    y=D*t^3+E*t^2+F*t+G
-    diff=y^2-x^3-Bpoly
+    Bpoly=b**2*r**2-a**3*q**3
+    x=A*t**2+B*t+C
+    y=D*t**3+E*t**2+F*t+G
+    diff=y**2-x**3-Bpoly
     eqs=[R(diff[i]) for i in range(7)]
     I=R.ideal(eqs)
 
@@ -56,7 +56,7 @@ def solve(mu):
         'mu':as_fraction_string(mu),
         'a':as_fraction_string(a),
         'b':as_fraction_string(b),
-        'j_legendre':as_fraction_string(256*q0^3/r0^2),
+        'j_legendre':as_fraction_string(256*q0**3/r0**2),
         'ideal_dimension':int(I.dimension()),
         'equation_count':len(eqs),
     }
@@ -77,7 +77,7 @@ def solve(mu):
             univariate.append({'variable':str(used[0]),'degree':int(poly.degree()),'factors':fac})
     result['univariate_groebner_polynomials']=univariate
 
-    # Sage/Singular exact rational variety enumeration.  Every returned point is rechecked.
+    # Sage/Singular exact rational variety enumeration. Every returned point is rechecked.
     solutions=[]
     try:
         variety=I.variety(QQ)
