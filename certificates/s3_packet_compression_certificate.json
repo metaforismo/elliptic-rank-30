@@ -1,0 +1,22 @@
+{
+  "base_family": "y^2=x^3+b^2[t(t-1)]^2-a^3(t^2-t+1)^3",
+  "branch_support": ["0", "1", "infinity"],
+  "cover_genus": 0,
+  "exact_invariance": {
+    "B(1-t)=B(t)": true,
+    "q(1-t)=q(t)": true,
+    "r(1-t)=r(t)": true,
+    "t^2 q(1/t)=q(t)": true,
+    "t^3 r(1/t)=-r(t)": true,
+    "t^6 B(1/t)=B(t)": true
+  },
+  "packet_squareclasses": ["-t", "t-1", "-t(t-1)"],
+  "rank30_corollary": "base rank 8 and representative twist rank at least 8 force packet rank at least 32",
+  "squareclass_action": {
+    "i:t->1/t": {"D1=-t": "D1/t^2", "D2=t-1": "D3/t^2", "D3=-t(t-1)": "D2/t^2"},
+    "s:t->1-t": {"D1=-t": "D2=t-1", "D2=t-1": "D1=-t", "D3=-t(t-1)": "D3=-t(t-1)"}
+  },
+  "status": "pass",
+  "theorem": "The three quadratic twists by -t, t-1, and -t(t-1) are pairwise Q(t)-isomorphic. If the base rank is r0 and one representative twist has rank r, the V4 packet has rank r0+3r over its rational genus-zero base.",
+  "truth_note": "This is a rank-compression theorem, not yet a construction of a twist of rank 8 over Q(t)."
+}
