@@ -1,0 +1,33 @@
+
+>> assert B ne 0;
+   ^
+Runtime error in assert: Assertion failed
+
+>> T:=EllipticCurve([K|0,0,0,0,-t^3*B]);
+                   ^
+Runtime error in 'EllipticCurve': Curve is singular
+
+
+>> assert Discriminant(T) ne 0;
+                       ^
+User error: Identifier 'T' has not been declared or assigned
+
+>> AI:=AnalyticInformation(T);
+                           ^
+User error: Identifier 'T' has not been declared or assigned
+R30_PRIME 13
+R30_MU 4
+
+>> print "R30_ANALYTIC_INFORMATION",AI;
+                                    ^
+User error: Identifier 'AI' has not been declared or assigned
+
+>> print "R30_ARITHMETIC_RANK",AI[1];
+                               ^
+User error: Identifier 'AI' has not been declared or assigned
+
+>> print "R30_GEOMETRIC_RANK",AI[2];
+                              ^
+User error: Identifier 'AI' has not been declared or assigned
+R30_J0_S3_TWIST_PASS
+

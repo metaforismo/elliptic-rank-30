@@ -1,0 +1,84 @@
+{
+  "best": {
+    "elapsed_seconds": 7.315913677215576,
+    "geometric_rank": 2,
+    "http_status": 200,
+    "mu": 2,
+    "output_tail": "R30_PRIME 17\nR30_MU 2\nR30_ANALYTIC_INFORMATION <1, 2, 18>\nR30_ARITHMETIC_RANK 1\nR30_GEOMETRIC_RANK 2\nR30_J0_S3_TWIST_PASS\n",
+    "prime": 17,
+    "rank": 1,
+    "status": "pass",
+    "warning": ""
+  },
+  "prime": 17,
+  "runs": [
+    {
+      "elapsed_seconds": 7.315913677215576,
+      "geometric_rank": 2,
+      "http_status": 200,
+      "mu": 2,
+      "output_tail": "R30_PRIME 17\nR30_MU 2\nR30_ANALYTIC_INFORMATION <1, 2, 18>\nR30_ARITHMETIC_RANK 1\nR30_GEOMETRIC_RANK 2\nR30_J0_S3_TWIST_PASS\n",
+      "prime": 17,
+      "rank": 1,
+      "status": "pass",
+      "warning": ""
+    },
+    {
+      "elapsed_seconds": 60.616711139678955,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 3,
+      "output_tail": "",
+      "prime": 17,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "elapsed_seconds": 60.75213623046875,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 4,
+      "output_tail": "",
+      "prime": 17,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "elapsed_seconds": 60.60946273803711,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 5,
+      "output_tail": "",
+      "prime": 17,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "elapsed_seconds": 60.74370527267456,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 6,
+      "output_tail": "",
+      "prime": 17,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    },
+    {
+      "elapsed_seconds": 60.61442756652832,
+      "geometric_rank": null,
+      "http_status": 200,
+      "mu": 7,
+      "output_tail": "",
+      "prime": 17,
+      "rank": null,
+      "status": "fail",
+      "warning": "The computation exceeded the time limit and so was terminated prematurely."
+    }
+  ],
+  "status": "pass",
+  "truth_note": "finite-characteristic exact rank data only; no Q(t) lower-bound claim"
+}

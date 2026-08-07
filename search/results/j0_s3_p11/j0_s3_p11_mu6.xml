@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<calculator><headers><max_time>60</max_time><max_input>50000</max_input><seed>135736422</seed><version>2.29-9</version><time>0.660</time><memory>32.09MB</memory></headers><results><line>R30_PRIME 11</line><line>R30_MU 6</line><line>R30_ANALYTIC_INFORMATION &lt;3, 6, 22&gt;</line><line>R30_ARITHMETIC_RANK 3</line><line>R30_GEOMETRIC_RANK 6</line><line>R30_J0_S3_TWIST_PASS</line><line></line></results></calculator>

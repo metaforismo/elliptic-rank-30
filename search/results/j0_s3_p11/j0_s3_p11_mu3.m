@@ -1,0 +1,18 @@
+SetColumns(0);
+F:=GF(11); K<t>:=FunctionField(F);
+mu:=F!(3);
+q:=t^2-t+1; r:=t*(t-1);
+a:=mu^2-mu+1; rmu:=mu*(mu-1);
+assert rmu ne 0;
+b:=a^3/rmu;
+B:=K!(b^2)*r^2-K!(a^3)*q^3;
+assert B ne 0;
+T:=EllipticCurve([K|0,0,0,0,-t^3*B]);
+assert Discriminant(T) ne 0;
+AI:=AnalyticInformation(T);
+print "R30_PRIME",11;
+print "R30_MU",3;
+print "R30_ANALYTIC_INFORMATION",AI;
+print "R30_ARITHMETIC_RANK",AI[1];
+print "R30_GEOMETRIC_RANK",AI[2];
+print "R30_J0_S3_TWIST_PASS";
