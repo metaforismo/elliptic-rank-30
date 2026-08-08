@@ -1,22 +1,27 @@
 {
   "active_workstreams": [
-    "cyclic cubic split-E8 trisection packets",
-    "31-zero norm identities",
-    "explicit Kummer bridge for the six-channel j=0 family"
+    "reconstruct the explicit rank-17 K3 bridge and historical specialization",
+    "audit the divergent modular-packet branch without merging it wholesale",
+    "search higher-degree and rational-function inverse constructions",
+    "benchmark independent high-generic-rank families under the common certificate funnel"
   ],
-  "author": "Francesco Giannicola",
-  "best_certified_subgroup_rank": 29,
+  "authoritative_lower_bound": 29,
   "canonical_branch": "main",
-  "level": 2,
   "newest_result": {
+    "certificate": "certificates/degree24_polynomial_section_obstruction.json",
+    "claim_status": "proved",
+    "documentation": "research/degree24_polynomial_section_obstruction.md",
+    "limitation": "Rules out only Q(v)^2-v^2L(v)^3=v^3-Sv^2+3v+1 with deg(L)=2 and deg(Q)<=4; it is not a rank-30 obstruction.",
+    "name": "degree-(2,4) polynomial-section obstruction",
+    "verifier": "research/degree24_polynomial_section_obstruction.py"
+  },
+  "record_claim": false,
+  "required_final_theorem": "An explicit elliptic curve over Q with 30 rigorously certified independent rational points, or a universal unconditional rank upper bound of 29.",
+  "stale_claim_removed": {
     "certificate": "certificates/x0_3_isogeny_bridge.json",
     "formalization": "EllipticRank30/X03Isogeny.lean",
-    "limitation": "K3-to-Kummer correspondence not yet proved",
-    "name": "common-twist X_0(3) isogeny bridge"
+    "reason": "The referenced artifacts do not exist on main, so the former frontier entry was not evidence-backed."
   },
-  "project": "elliptic-rank-30",
-  "record_claim": false,
-  "required_final_theorem": "rank E(Q) >= 30",
-  "truth_status": "new intermediate theorem",
+  "truth_status": "UNSOLVED: exact rank lower bound 29; no rank-30 certificate",
   "updated": "2026-08-08"
 }
