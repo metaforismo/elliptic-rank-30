@@ -64,5 +64,10 @@ jobs:
           python3 research/riemann_roch_visibility_certificate.py \
             --compare certificates/riemann_roch_visibility_barrier.json
 
+      - name: Recompute the N=474 Shimura anchor certificate
+        run: |
+          python3 research/rank17_shimura_anchor.py \
+            --compare certificates/rank17_shimura_anchor.json
+
       - name: Run exact unit tests
         run: python3 -m unittest discover -s tests -v
