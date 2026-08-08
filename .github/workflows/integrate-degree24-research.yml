@@ -1,0 +1,338 @@
+name: integrate-degree24-research
+
+on:
+  push:
+    paths:
+      - ".github/workflows/integrate-degree24-research.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact certificates and tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/degree24_polynomial_section_obstruction.py \
+            --check certificates/degree24_polynomial_section_obstruction.json
+          python3 research/degree24_polynomial_section_classification.py \
+            --check certificates/degree24_polynomial_section_classification.json
+          python3 research/degree24_collision_descent.py \
+            --check certificates/degree24_collision_descent.json
+          python3 -m unittest discover -s tests -v
+
+      - name: Run deterministic bounded collision search
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/degree24_collision_search.py \
+            --numerator-bound 256 \
+            --denominator-bound 256 \
+            --expect-collisions 0 \
+            --output certificates/degree24_collision_search_n256_d256.json
+
+      - name: Update canonical research state
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          date = '2026-08-08'
+
+          status_frontier = {
+              'active_workstreams': [
+                  'reconstruct the explicit rank-17 K3 bridge and historical specialization',
+                  'solve or further descend the simultaneous Gaussian/Eisenstein ninth-power collision system',
+                  'search higher-degree and controlled-pole inverse constructions',
+                  'benchmark independent high-generic-rank families under the common certificate funnel',
+              ],
+              'authoritative_lower_bound': 29,
+              'canonical_branch': 'main',
+              'newest_result': {
+                  'certificate': 'certificates/degree24_polynomial_section_classification.json',
+                  'claim_status': 'proved',
+                  'documentation': 'research/degree24_polynomial_section_classification.md',
+                  'name': 'complete degree-(2,4) polynomial coefficient classification',
+                  'theorem': 'For p != 0, the rational coefficient scheme is exactly p=t^12/186624-t^3/6 with the displayed coefficients.',
+                  'verifier': 'research/degree24_polynomial_section_classification.py',
+              },
+              'record_claim': False,
+              'required_final_theorem': 'An explicit elliptic curve over Q with 30 rigorously certified independent rational points, or a universal unconditional rank upper bound of 29.',
+              'stale_claim_removed': {
+                  'certificate': 'certificates/x0_3_isogeny_bridge.json',
+                  'formalization': 'EllipticRank30/X03Isogeny.lean',
+                  'reason': 'The referenced artifacts do not exist on main, so the former frontier entry was not evidence-backed.',
+              },
+              'supporting_results': [
+                  {
+                      'certificate': 'certificates/degree24_polynomial_section_obstruction.json',
+                      'status': 'proved',
+                      'summary': 'The historical coefficient p=3 is outside the complete rational degree-(2,4) image.',
+                  },
+                  {
+                      'certificate': 'certificates/degree24_collision_descent.json',
+                      'status': 'proved necessary condition',
+                      'summary': 'A nontrivial collision forces four simultaneous ninth-power equations in Gaussian and Eisenstein norm forms.',
+                  },
+                  {
+                      'certificate': 'certificates/degree24_collision_search_n256_d256.json',
+                      'status': 'exact bounded computation',
+                      'summary': 'No collision for reduced t=n/d with |n|<=256 and 1<=d<=256.',
+                  },
+              ],
+              'truth_status': 'UNSOLVED: exact rank lower bound 29; no rank-30 certificate',
+              'updated': date,
+          }
+          (root / 'STATUS.frontier.json').write_text(
+              json.dumps(status_frontier, indent=2, sort_keys=True) + '\n', encoding='utf-8'
+          )
+
+          def append_section(filename: str, marker: str, section: str) -> None:
+              path = root / filename
+              text = path.read_text(encoding='utf-8') if path.exists() else f'# {path.stem.replace("_", " ")}\n'
+              if marker not in text:
+                  path.write_text(text.rstrip() + '\n\n' + section.strip() + '\n', encoding='utf-8')
+
+          append_section(
+              'NEGATIVE_RESULTS.md',
+              'degree24-polynomial-boundary-2026-08-08',
+              '''<!-- degree24-polynomial-boundary-2026-08-08 -->
+## Degree-(2,4) polynomial boundary at p=3
+
+**Status:** proved.
+
+The complete rational solutions of
+`Q(v)^2-v^2 L(v)^3=v^3-Sv^2+p v+1` with `deg(L)=2` and
+`deg(Q)<=4`, for `p!=0`, are parametrized by
+`p=t^12/186624-t^3/6`.  At `p=3`, writing `q=t^3/36` gives
+`3q^4-2q-1=(q-1)(3q^3+3q^2+3q+1)`.  The cubic has no rational
+root and `q=1` would require `t^3=36`, impossible by the 2-adic
+valuation.  Therefore this ansatz cannot supply the missing section.
+
+Evidence:
+- `research/degree24_polynomial_section_classification.md`
+- `certificates/degree24_polynomial_section_classification.json`
+- `research/degree24_polynomial_section_classification.py`
+
+A deterministic exact search also found no nontrivial collision for reduced
+`t=n/d` with `|n|<=256`, `1<=d<=256`; this is only a finite result.'''
+          )
+
+          append_section(
+              'HYPOTHESES.md',
+              'degree24-collision-ninth-power-hypothesis-2026-08-08',
+              '''<!-- degree24-collision-ninth-power-hypothesis-2026-08-08 -->
+## Collision ninth-power hypothesis
+
+**Status:** conjectured final nonexistence; proved reduction.
+
+A nontrivial collision in the degree-(2,4) family forces primitive integers
+satisfying simultaneously
+
+```
+a+b                    = 2^6*3^4*w^9
+a^2-a*b+b^2            = 3*x^9
+a^2+b^2                = 2*y^9
+a^4-a^2*b^2+b^4        = z^9
+```
+
+The next falsifiable objective is to parameterize the Gaussian and Eisenstein
+ninth powers and either find a common solution or prove that their fiber
+product has no rational point.  The exact necessary-condition proof is in
+`research/degree24_collision_descent.md`.'''
+          )
+
+          append_section(
+              'CLAIMS.md',
+              'degree24-claims-2026-08-08',
+              '''<!-- degree24-claims-2026-08-08 -->
+## Degree-(2,4) inverse-construction claims
+
+| Claim | Status | Evidence |
+|---|---|---|
+| Complete coefficient classification for `p!=0` | proved | `certificates/degree24_polynomial_section_classification.json` |
+| No rational degree-(2,4) solution at `p=3` | proved | `certificates/degree24_polynomial_section_obstruction.json` |
+| Collision implies four simultaneous ninth-power equations | proved necessary condition | `certificates/degree24_collision_descent.json` |
+| No collision in the `256 x 256` reduced rational box | exact bounded computation | `certificates/degree24_collision_search_n256_d256.json` |
+| No collision over all of Q | unknown | not claimed |
+| Rank at least 30 | unknown | not claimed |
+'''
+          )
+
+          append_section(
+              'DECISIONS.md',
+              'decision-degree24-pivot-2026-08-08',
+              '''<!-- decision-degree24-pivot-2026-08-08 -->
+## Decision: close the p=3 degree-(2,4) polynomial ansatz
+
+The coefficient scheme has been completely classified and the historical
+coefficient `p=3` is proved not to lie in its rational image.  Do not spend
+additional compute enlarging the same coefficient search.  Preserve the
+classification as a reusable forcing map and redirect effort toward its
+collision descent, higher degree, controlled poles, and independent K3/family
+workstreams.'''
+          )
+
+          append_section(
+              'STATUS.md',
+              'status-degree24-2026-08-08',
+              '''<!-- status-degree24-2026-08-08 -->
+## 2026-08-08 exact inverse-construction checkpoint
+
+- Proved lower bound remains `rank E(Q) >= 29`; no rank-30 certificate.
+- Completely classified the degree-(2,4) polynomial coefficient scheme.
+- Proved the target coefficient `p=3` is excluded by a cube-class obstruction.
+- Reduced any nontrivial collision to simultaneous Gaussian and Eisenstein
+  ninth-power norm equations.
+- Completed the exact reduced rational box `|n|<=256`, `d<=256` with no
+  collision.
+- Highest-value next action: solve or further descend the ninth-power fiber
+  product while independently continuing the explicit rank-17 K3 bridge.
+'''
+          )
+
+          checkpoint_path = root / 'CHECKPOINT.json'
+          if checkpoint_path.exists():
+              try:
+                  checkpoint = json.loads(checkpoint_path.read_text(encoding='utf-8'))
+              except json.JSONDecodeError:
+                  checkpoint = {'legacy_unparsed': True}
+          else:
+              checkpoint = {}
+          checkpoint['degree24_inverse_construction'] = {
+              'classification_certificate': 'certificates/degree24_polynomial_section_classification.json',
+              'collision_descent_certificate': 'certificates/degree24_collision_descent.json',
+              'collision_search_certificate': 'certificates/degree24_collision_search_n256_d256.json',
+              'next_command': 'python3 research/degree24_collision_search.py --numerator-bound 512 --denominator-bound 512 --output certificates/degree24_collision_search_n512_d512.json',
+              'state': 'classification proved; p=3 closed; collision descent open',
+          }
+          checkpoint['mathematical_status'] = {
+              'best_unconditional_lower_bound': 29,
+              'rank_30_found': False,
+              'remaining_gap': 1,
+          }
+          checkpoint['updated'] = date
+          checkpoint_path.write_text(json.dumps(checkpoint, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          registry_path = root / 'APPROACH_REGISTRY.json'
+          registry = json.loads(registry_path.read_text(encoding='utf-8'))
+          if isinstance(registry, list):
+              approaches = registry
+          elif isinstance(registry, dict):
+              approaches = registry.get('approaches')
+              if not isinstance(approaches, list):
+                  approaches = registry.get('registry')
+              if not isinstance(approaches, list):
+                  approaches = []
+                  registry['approaches'] = approaches
+          else:
+              raise SystemExit('unsupported APPROACH_REGISTRY.json shape')
+
+          marker = 'degree-(2,4) classification proved; p=3 excluded'
+          matched = False
+          for approach in approaches:
+              if not isinstance(approach, dict):
+                  continue
+              searchable = ' '.join(str(value) for value in approach.values()).lower()
+              if 'inverse' not in searchable and 'prescribed' not in searchable and approach.get('approach_id') not in {'D', 'D1'}:
+                  continue
+              matched = True
+              evidence_against = approach.get('evidence_against')
+              if isinstance(evidence_against, list):
+                  if marker not in evidence_against:
+                      evidence_against.append(marker)
+              elif evidence_against:
+                  if marker not in str(evidence_against):
+                      approach['evidence_against'] = [str(evidence_against), marker]
+              else:
+                  approach['evidence_against'] = [marker]
+              evidence_for = approach.get('evidence_for')
+              positive = 'complete one-parameter forcing map and exact ninth-power collision descent now available'
+              if isinstance(evidence_for, list):
+                  if positive not in evidence_for:
+                      evidence_for.append(positive)
+              elif evidence_for:
+                  if positive not in str(evidence_for):
+                      approach['evidence_for'] = [str(evidence_for), positive]
+              else:
+                  approach['evidence_for'] = [positive]
+              approach['concrete_next_test'] = 'parameterize and analyze the simultaneous Gaussian/Eisenstein ninth-power fiber product; in parallel test higher-degree and controlled-pole ansatzes'
+              approach['missing_lemma'] = 'nonexistence or explicit rational point on the simultaneous ninth-power collision locus'
+              approach['blocker'] = 'requires a Thue-Mahler, covering-curve, or modular-method resolution; finite search alone is insufficient'
+              approach['status'] = 'ACTIVE_REFORMULATED'
+
+          if not matched:
+              approaches.append({
+                  'approach_id': 'D-degree24-collision',
+                  'mathematical_family': 'inverse polynomial construction and norm-form collision descent',
+                  'central_mechanism': 'complete degree-(2,4) forcing map followed by Gaussian/Eisenstein ninth-power intersection',
+                  'assumptions': [],
+                  'predicted_advantage': 'converts coefficient search to explicit low-dimensional arithmetic loci',
+                  'concrete_next_test': 'solve or further descend the simultaneous ninth-power fiber product',
+                  'evidence_for': ['complete classification and exact descent certificates'],
+                  'evidence_against': ['p=3 is proved outside the degree-(2,4) image; no collision in the 256 x 256 box'],
+                  'computational_cost': 'moderate for bounded search; potentially high for complete Diophantine resolution',
+                  'missing_lemma': 'nonexistence or explicit point on the simultaneous ninth-power locus',
+                  'blocker': 'needs Thue-Mahler, covering curves, or modular method',
+                  'status': 'ACTIVE_REFORMULATED',
+              })
+
+          registry_path.write_text(json.dumps(registry, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+          rm -f .github/workflows/integrate-degree24-research.yml
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+
+      - name: Reverify updated tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/degree24_polynomial_section_obstruction.py \
+            --check certificates/degree24_polynomial_section_obstruction.json
+          python3 research/degree24_polynomial_section_classification.py \
+            --check certificates/degree24_polynomial_section_classification.json
+          python3 research/degree24_collision_descent.py \
+            --check certificates/degree24_collision_descent.json
+          python3 research/degree24_collision_search.py \
+            --numerator-bound 256 \
+            --denominator-bound 256 \
+            --expect-collisions 0 \
+            --output /tmp/degree24-collision-recheck.json
+          cmp certificates/degree24_collision_search_n256_d256.json /tmp/degree24-collision-recheck.json
+          python3 -m unittest discover -s tests -v
+
+      - name: Rebuild repository manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f ! -path './.git/*' ! -name 'MANIFEST.sha256' \
+            -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > MANIFEST.sha256
+          sha256sum -c MANIFEST.sha256
+
+      - name: Commit canonical checkpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --stat
+          git diff --cached --quiet && { echo "No integration changes" >&2; exit 1; }
+          git commit -m "Integrate the exact degree-(2,4) research checkpoint"
+          git push
