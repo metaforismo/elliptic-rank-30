@@ -1,0 +1,45 @@
+name: export-current-main-now
+
+on:
+  push:
+    paths:
+      - ".github/workflows/export-current-main-now.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build reproducible repository snapshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          git status --short
+          git rev-parse HEAD > HEAD.txt
+          git bundle create elliptic-rank-30-main-now.bundle --all
+          git archive --format=tar.gz --output=elliptic-rank-30-main-now.tar.gz HEAD
+          sha256sum \
+            elliptic-rank-30-main-now.bundle \
+            elliptic-rank-30-main-now.tar.gz \
+            HEAD.txt > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elliptic-rank-30-current-main-now
+          path: |
+            elliptic-rank-30-main-now.bundle
+            elliptic-rank-30-main-now.tar.gz
+            HEAD.txt
+            SHA256SUMS
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
