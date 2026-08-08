@@ -1,0 +1,43 @@
+{
+  "certificate_id": "degree24-collision-ninth-power-descent-v1",
+  "claim_status": "proved",
+  "collision_equation": "(a^3+b^3)(a^6+b^6)=2^7*3^5*c^9",
+  "coprimality": {
+    "A_B": "gcd(a+b,a^2-ab+b^2) divides 3",
+    "A_C": "gcd(a+b,a^2+b^2) divides 2",
+    "A_D": "gcd(a+b,a^4-a^2b^2+b^4)=1",
+    "B_C": "gcd(a^2-ab+b^2,a^2+b^2)=1",
+    "B_D": "gcd(a^2-ab+b^2,a^4-a^2b^2+b^4)=1",
+    "C_D": "gcd(a^2+b^2,a^4-a^2b^2+b^4)=1",
+    "scope": "for primitive a,b with both odd and a+b divisible by 3"
+  },
+  "cyclotomic_factors": {
+    "A": "a+b",
+    "B": "a^2-ab+b^2",
+    "C": "a^2+b^2",
+    "D": "a^4-a^2b^2+b^4"
+  },
+  "forced_equations": {
+    "A": "a+b=2^6*3^4*w^9",
+    "B": "a^2-ab+b^2=3*x^9",
+    "C": "a^2+b^2=2*y^9",
+    "D": "a^4-a^2b^2+b^4=z^9"
+  },
+  "interpretation": {
+    "eisenstein": "B is the norm of a+b*omega in Z[omega]",
+    "gaussian": "C is the norm of a+i*b in Z[i]",
+    "research_reduction": "a collision requires simultaneous ninth-power norm conditions in both UFDs"
+  },
+  "primitive_local_conditions": {
+    "mod_2": "a and b are odd; v_2(C)=1; B and D are odd",
+    "mod_3": "3 does not divide ab, a+b is divisible by 3, v_3(B)=1, and 3 does not divide CD",
+    "valuation_A": "v_2(A)=6 mod 9 and v_3(A)=4 mod 9"
+  },
+  "schema_version": 1,
+  "scope_limitation": "The descent is a necessary condition for a collision; nonexistence of the simultaneous ninth-power solutions is not yet proved here.",
+  "verification": {
+    "gcd_identities": "exact symbolic polynomial arithmetic",
+    "mod_2": "complete enumeration of odd residue classes modulo 8",
+    "mod_3": "complete enumeration of admissible residue classes modulo 9"
+  }
+}
