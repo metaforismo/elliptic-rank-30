@@ -108,8 +108,9 @@ def verify_cubic_degeneracies() -> None:
     # S=-3: R=(v+1)^3.
     if multiply(multiply([1, 1], [1, 1]), [1, 1]) != [1, 3, 3, 1]:
         raise AssertionError("S=-3 factorization failed")
-    # S=15/4: 4R=(v-2)^2(4v+1).
-    if multiply(multiply([-2, 1], [-2, 1]), [1, 4]) != [4, -15, 12, 4]:
+    # S=15/4: 4R=(v-2)^2(4v+1)
+    #              =4+12v-15v^2+4v^3.
+    if multiply(multiply([-2, 1], [-2, 1]), [1, 4]) != [4, 12, -15, 4]:
         raise AssertionError("S=15/4 factorization failed")
 
 
