@@ -48,8 +48,8 @@ jobs:
               code = f'''SetColumns(0);
               F:=GF({p}); K<v>:=FunctionField(F);
               S:=F!({s});
+              assert (S+3)^2*(4*S-15) ne 0;
               C:=v^3-K!S*v^2+3*v+1;
-              assert Discriminant(C) ne 0;
               E:=EllipticCurve([K|0,0,0,0,v^4*C]);
               assert Discriminant(E) ne 0;
               AI:=AnalyticInformation(E);
@@ -68,7 +68,7 @@ jobs:
                       "Content-Type": "application/x-www-form-urlencoded",
                       "Accept": "application/xml,text/xml,text/html",
                       "Referer": "http://magma.maths.usyd.edu.au/calc/",
-                      "User-Agent": "elliptic-rank-30-symmetric-k20/1.0",
+                      "User-Agent": "elliptic-rank-30-symmetric-k20/1.1",
                   },
                   method="POST",
               )
