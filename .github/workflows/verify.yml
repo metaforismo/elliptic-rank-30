@@ -8,6 +8,9 @@ on:
       - "points.json"
       - "verify_exact.py"
       - "baseline/**"
+      - "research/**"
+      - "certificates/**"
+      - "tests/**"
       - ".github/workflows/verify.yml"
   pull_request:
     paths:
@@ -15,6 +18,9 @@ on:
       - "points.json"
       - "verify_exact.py"
       - "baseline/**"
+      - "research/**"
+      - "certificates/**"
+      - "tests/**"
       - ".github/workflows/verify.yml"
   workflow_dispatch:
 
@@ -22,7 +28,7 @@ permissions:
   contents: read
 
 jobs:
-  exact-rank29-certificate:
+  exact-certificates:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -30,9 +36,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Recompute exact certificate
+
+      - name: Recompute the unconditional rank-29 certificate
         run: python3 verify_exact.py
-      - name: Recompute into a fresh file and compare bytes
+
+      - name: Recompute rank-29 JSON from scratch
         run: |
           python3 baseline/verify_rank29_mod2.py \
             --write-certificate /tmp/rank29_mod2_certificate.json
@@ -43,5 +51,13 @@ jobs:
           committed = json.loads(Path("baseline/rank29_mod2_certificate.json").read_text())
           fresh = json.loads(Path("/tmp/rank29_mod2_certificate.json").read_text())
           assert committed == fresh
-          print("fresh certificate matches committed certificate")
+          print("fresh rank-29 certificate matches committed certificate")
           PY
+
+      - name: Recompute the three-character rank-packet certificate
+        run: |
+          python3 research/packet3_certificate.py \
+            --compare certificates/packet3_certificate.json
+
+      - name: Run exact unit tests
+        run: python3 -m unittest discover -s tests -v
