@@ -1,0 +1,38 @@
+name: export-current-main
+
+on:
+  push:
+    paths:
+      - ".github/workflows/export-current-main.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build complete main snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p export
+          git bundle create export/elliptic-rank-30-main.bundle --all
+          git archive --format=tar.gz --output=export/elliptic-rank-30-main.tar.gz HEAD
+          git rev-parse HEAD > export/HEAD.txt
+          git status --porcelain=v1 > export/status.txt
+          git ls-files -z | sort -z | tr '\0' '\n' > export/tracked-files.txt
+          (cd export && sha256sum HEAD.txt status.txt tracked-files.txt elliptic-rank-30-main.bundle elliptic-rank-30-main.tar.gz > SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: elliptic-rank-30-current-main
+          path: export/
+          if-no-files-found: error
+          retention-days: 7
