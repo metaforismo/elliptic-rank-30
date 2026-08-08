@@ -1,0 +1,249 @@
+{
+  "registry_version": 1,
+  "updated_at": "2026-08-08",
+  "objective": "Produce an unconditional certificate that an explicit elliptic curve over Q has rank at least 30.",
+  "status_definitions": {
+    "VERIFIED_BASELINE": "The stated result is reproduced by an exact executable certificate.",
+    "PROVED_MODULE": "A reusable theorem or construction is proved exactly, but it does not by itself solve rank 30.",
+    "ACTIVE": "There is a concrete executable next experiment and no known fatal obstruction.",
+    "SCOUTING": "The representation is materially distinct but has not yet produced a verified construction.",
+    "AUDIT_REQUIRED": "A branch or note contains a claim that must be independently rederived before use.",
+    "BLOCKED": "The route currently terminates in a missing lemma or object comparable in difficulty to the original target.",
+    "DEPRIORITIZED": "Retained for completeness but not allocated substantial resources under the constructive-first policy."
+  },
+  "approaches": [
+    {
+      "approach_id": "A1-record-k3-specialization",
+      "mathematical_family": "The rank-17 elliptic fibration on the K3 surface used for the 2006 rank-28 and 2024 rank-29 records.",
+      "central_mechanism": "Specialize a large generic Mordell-Weil subgroup and search for at least 13 additional independent rational points outside it.",
+      "assumptions": [
+        "No conjecture is needed for a lower-bound certificate.",
+        "GRH is relevant only to the published assertion that the rank-29 curve has no thirtieth generator; that upper bound is not used here."
+      ],
+      "predicted_advantage": "This is the only construction already demonstrated to reach rank 29, so the required improvement is one additional direction on a proven search landscape.",
+      "concrete_next_test": "Recover the explicit fibration, parameter, 17 generic sections, specialization maps, and original scoring code from primary material; reproduce the rank-29 parameter and decompose its 29 certified points into 17 generic plus 12 exceptional directions. Then run prime-by-prime score ablations around that parameter.",
+      "evidence_for": [
+        "The repository now has an unconditional exact rank-at-least-29 certificate for the published record curve.",
+        "The same K3 surface produced two consecutive records, indicating unusually productive geometry.",
+        "The 2024 specialization produced 12 directions outside the generic rank-17 subgroup."
+      ],
+      "evidence_against": [
+        "A jump of 12 was already exceptional; a jump of 13 may be much rarer under the same distribution.",
+        "The explicit fibration and complete original search implementation have not yet been reconstructed on main.",
+        "Searching farther without identifying structural predictors would mostly buy a linear increase in trials."
+      ],
+      "computational_cost": "High: symbolic reconstruction plus large specialization scans and deep point searches.",
+      "missing_lemma": "An interpretable arithmetic or geometric predictor for specializations carrying unusually many points outside the generic subgroup.",
+      "blocker": "The primary fibration data and original scoring pipeline are not yet represented in a clean executable form on main.",
+      "status": "ACTIVE"
+    },
+    {
+      "approach_id": "B1-neighbor-fibrations-on-record-k3",
+      "mathematical_family": "Alternative elliptic fibrations on the record K3 surface and closely related high-Picard-rank K3 surfaces.",
+      "central_mechanism": "Use Neron-Severi lattice calculations, neighbor steps, automorphisms, and alternative pencils to raise generic rank or lower section/coefficient heights before specialization.",
+      "assumptions": [],
+      "predicted_advantage": "Raising the generic floor from 17 to 18 or more can be more valuable than orders of magnitude of additional scans in the original fibration.",
+      "concrete_next_test": "Reconstruct the singular-fiber configuration and a Gram matrix for the Neron-Severi lattice; enumerate admissible primitive U-embeddings and 2-neighbor/3-neighbor fibrations; compute the Shioda-Tate upper bound and rationality of candidate sections for each orbit.",
+      "evidence_for": [
+        "A high-Picard-rank K3 generally admits many inequivalent elliptic fibrations.",
+        "The record surface already supports an unusually large Mordell-Weil lattice."
+      ],
+      "evidence_against": [
+        "A high geometric rank need not descend to Q.",
+        "Alternative fibrations may dramatically increase coefficient complexity or section heights.",
+        "No explicit fibration better than the rank-17 record fibration is yet verified here."
+      ],
+      "computational_cost": "High symbolic cost, followed by medium-to-high arithmetic verification cost.",
+      "missing_lemma": "An explicit rational fibration whose expected total cost to rank 30 improves on the current record fibration.",
+      "blocker": "The exact Neron-Severi lattice and automorphism action of the record model have not yet been reconstructed.",
+      "status": "SCOUTING"
+    },
+    {
+      "approach_id": "C1-genus-zero-three-character-packets",
+      "mathematical_family": "Biquadratic base changes and the three nontrivial quadratic-character twists of an elliptic surface.",
+      "central_mechanism": "Two independent squareclasses can expose a third product-character section while the composite cover remains genus zero, adding three independent directions rather than two.",
+      "assumptions": [],
+      "predicted_advantage": "It converts hidden product-twist arithmetic into a systematic generic-rank increment and can be transplanted into an already high-rank surface.",
+      "concrete_next_test": "For every pair of quadratic multisections in a high-rank family, compute valuation-parity vectors, enumerate all three nontrivial character twists, search the product twist for a section, and retain only packets whose composite cover has genus zero or one.",
+      "evidence_for": [
+        "research/packet3_certificate.py proves an explicit degree-four genus-zero example with three non-torsion character sections.",
+        "certificates/packet3_certificate.json is recomputed successfully in CI using only exact standard-library arithmetic."
+      ],
+      "evidence_against": [
+        "The displayed example certifies only three generic directions and is not itself close to rank 30.",
+        "A suitable packet has not yet been found inside the record rank-17 fibration."
+      ],
+      "computational_cost": "Medium for squareclass/branch audits; high if complete Mordell-Weil searches on product twists are required.",
+      "missing_lemma": "Existence of a positive product-character section compatible with a high-generic-rank Q-rational fibration and low-genus composite base.",
+      "blocker": "The record fibration's quadratic multisections have not yet been enumerated in a form suitable for the packet audit.",
+      "status": "PROVED_MODULE"
+    },
+    {
+      "approach_id": "C2-split-e8-lattice-realization",
+      "mathematical_family": "Elliptic K3 surfaces with split E8-type lattice contributions, Shioda-Inose structures, or related lattice-polarized surfaces.",
+      "central_mechanism": "Construct a large Mordell-Weil lattice geometrically first, then choose a Q-rational realization and specialization with additional arithmetic points.",
+      "assumptions": [],
+      "predicted_advantage": "E8 blocks supply many controlled lattice directions and may raise the generic floor instead of relying on a rare specialization jump.",
+      "concrete_next_test": "Independently audit the split-E8 construction files on the research branch; for the first valid model, compute singular fibers, Picard constraints, explicit sections, height pairing, and fields of definition from scratch.",
+      "evidence_for": [
+        "Large root lattices are natural constituents of Neron-Severi and Mordell-Weil lattices on elliptic K3 surfaces.",
+        "The research branch contains candidate split-E8 constructions and finite-field scanners, but they are not yet trusted."
+      ],
+      "evidence_against": [
+        "Root-lattice rank can be absorbed by reducible fibers instead of appearing in the Mordell-Weil group.",
+        "Splitting over an extension rather than Q would not meet the target.",
+        "No audited explicit model in this thread currently supplies a higher Q(t)-rank than the record family."
+      ],
+      "computational_cost": "High symbolic and lattice cost; potentially high specialization cost.",
+      "missing_lemma": "A Q-rational realization whose Mordell-Weil lattice retains enough split directions after accounting for reducible fibers.",
+      "blocker": "Existing branch claims have not yet passed independent mathematical review.",
+      "status": "AUDIT_REQUIRED"
+    },
+    {
+      "approach_id": "D1-inverse-prescribed-points",
+      "mathematical_family": "Auxiliary varieties obtained by prescribing many rational x-coordinates and solving simultaneously for a Weierstrass model and square right-hand sides.",
+      "central_mechanism": "Reverse the usual search: encode many desired points first, use symmetry and elimination to lower the dimension, and parameterize the resulting auxiliary variety.",
+      "assumptions": [],
+      "predicted_advantage": "A successful parameterization would make many rational points generic rather than exceptional and would change the probability model of the search.",
+      "concrete_next_test": "Start with symmetric point patterns x=plus/minus r_i on y^2=x^3+A*x+B, eliminate A and B, compute the dimension and singular locus for N=6,8,10, and identify recurrences or rational fibrations before increasing N.",
+      "evidence_for": [
+        "Each prescribed point condition is algebraic and amenable to Groebner, resultant, interpolation, and modular methods.",
+        "Symmetry can create low-degree auxiliary equations and built-in relations that are visible before expensive searches."
+      ],
+      "evidence_against": [
+        "Naive dimension counts become unfavorable quickly.",
+        "Symmetry-generated points may carry unavoidable linear dependencies.",
+        "No construction from this route currently exceeds established generic-rank families."
+      ],
+      "computational_cost": "Medium at small N; rapidly high for direct Groebner elimination at large N.",
+      "missing_lemma": "A scalable algebraic pattern forcing many points while avoiding an equally large space of Mordell-Weil relations.",
+      "blocker": "No low-dimensional auxiliary variety with a verified path to 20 or more independent sections has yet emerged.",
+      "status": "SCOUTING"
+    },
+    {
+      "approach_id": "D2-norm31-one-function-representation",
+      "mathematical_family": "Norm-form and divisor constructions that encode many rational zeros of one function on a double cover.",
+      "central_mechanism": "Replace thirty separate point equations by one structured norm identity with at least thirty-one controlled zeros, then recover points and certify the single expected principal-divisor relation.",
+      "assumptions": [],
+      "predicted_advantage": "The representation trades a large collection of square conditions for a structured polynomial identity that can be attacked with interpolation, lattice reduction, modular lifting, and coding-style sparsity constraints.",
+      "concrete_next_test": "Audit and reprove the proposed Riemann-Roch visibility bound from the research branch; implement exact small-degree analogues of A(x)^2-R(x)B(x)^2=c*product(x-r_i), measure the relation rank, and determine whether the construction scales without forcing extra dependencies.",
+      "evidence_for": [
+        "Norm equations offer a single global algebraic object whose zeros can encode many candidate points.",
+        "The branch contains a proposed 31-zero formulation and certificate, but it has not yet been independently accepted."
+      ],
+      "evidence_against": [
+        "A principal divisor automatically creates at least one relation among visible point classes.",
+        "Solving the norm identity at the required degree may be as difficult as the original rank problem.",
+        "Independence after transferring the zeros to an elliptic curve is not automatic."
+      ],
+      "computational_cost": "Medium for small prototypes; very high for the full 31-zero system without additional structure.",
+      "missing_lemma": "A rationally parameterized or efficiently solvable norm family whose visible divisor classes retain rank at least 30 after all forced relations.",
+      "blocker": "The visibility theorem and its connection to an explicit elliptic surface still require independent audit.",
+      "status": "AUDIT_REQUIRED"
+    },
+    {
+      "approach_id": "E1-diophantine-structured-families",
+      "mathematical_family": "Elliptic curves from rational Diophantine tuples, quadratic forms, polynomial identities, and rational surfaces carrying many sections.",
+      "central_mechanism": "Use an arithmetic identity that produces several rational points simultaneously and then combine independent identities or base changes without collapsing their Mordell-Weil directions.",
+      "assumptions": [],
+      "predicted_advantage": "These constructions provide explicit coordinates and often cheap exact point verification, making them suitable inputs to a certificate-first search funnel.",
+      "concrete_next_test": "Collect the strongest verified Q(t)-families from Diophantine tuples and related identities, canonicalize them, recompute their generic sections and height matrices, and rank them by the remaining specialization jump and coefficient growth.",
+      "evidence_for": [
+        "Structured Diophantine identities have repeatedly produced high-rank families and many explicit sections.",
+        "The construction data are usually exact and amenable to independent verification."
+      ],
+      "evidence_against": [
+        "Known tuple families generally remain far below the rank-17 generic floor of the record K3 construction.",
+        "Points generated by the same identity can have hidden dependencies.",
+        "Coefficient growth can make specialization point searches prohibitively expensive."
+      ],
+      "computational_cost": "Medium for literature reconstruction and exact verification; high for broad specialization scans.",
+      "missing_lemma": "A composition principle that combines several point-producing identities while preserving independence and low coefficient complexity.",
+      "blocker": "No audited family from this class currently has competitive expected cost to rank 30.",
+      "status": "SCOUTING"
+    },
+    {
+      "approach_id": "F1-twists-isogenies-and-descent",
+      "mathematical_family": "Quadratic/cubic twists, isogeny families, Selmer structures, and explicit covering curves.",
+      "central_mechanism": "Use arithmetic structure to manufacture rational points in several character or isogeny components and use descent both as a search tool and as an early rigorous filter.",
+      "assumptions": [],
+      "predicted_advantage": "Character separation can prove independence cheaply, while coverings can find points invisible to bounded direct x-searches.",
+      "concrete_next_test": "Extend the packet3 audit to three or more squareclasses subject to a genus budget; enumerate low-branch binary codes, test every character twist for sections, and benchmark 2-covering point search against direct search on the same specializations.",
+      "evidence_for": [
+        "The verified packet3 theorem demonstrates an exact three-character gain.",
+        "Descent and covering methods are standard sources of rigorous rank information and hidden points."
+      ],
+      "evidence_against": [
+        "The genus of a multiquadratic base rises rapidly with branch support.",
+        "Large Selmer groups need not contain rational points.",
+        "Twist gains over an auxiliary function field must still specialize back to Q."
+      ],
+      "computational_cost": "Medium for branch-code enumeration; high for Mordell-Weil and covering searches on many twists.",
+      "missing_lemma": "A low-genus multi-character packet with a large positive total twist rank embedded in a competitive high-rank family.",
+      "blocker": "No such packet beyond the verified three-character module is currently instantiated in the record geometry.",
+      "status": "ACTIVE"
+    },
+    {
+      "approach_id": "G1-measured-search-funnel",
+      "mathematical_family": "Algorithmic specialization search across all candidate families.",
+      "central_mechanism": "Use cheap local rejection, adaptive Frobenius/Mestre-Nagao scoring, root-number and congruence filters, bounded point search, coverings, and incremental exact independence tests in a measured multi-stage funnel.",
+      "assumptions": [
+        "Heuristic scores are used only for prioritization, never as rank certificates."
+      ],
+      "predicted_advantage": "A measured funnel can redirect compute toward filters that predict actual extra rational points rather than merely high analytic-looking scores.",
+      "concrete_next_test": "Define the canonical candidate schema and benchmark corpus; reproduce the rank-29 specialization and a control sample; record candidates per second, survivor fractions, point yield, and marginal predictive value of every prime and filter.",
+      "evidence_for": [
+        "The historical record search successfully combined a rank-17 fibration, a sieve score, and point searches.",
+        "The new exact mod-2 verifier supplies a cheap final independence certificate once points are found."
+      ],
+      "evidence_against": [
+        "The repository does not yet contain a clean reconstruction of the original scanner or a benchmark dataset.",
+        "Optimizing raw throughput without ablations can amplify a misleading score.",
+        "Deep point searches remain expensive for large-coefficient curves."
+      ],
+      "computational_cost": "Low-to-medium for infrastructure; potentially massive for production scans.",
+      "missing_lemma": "An empirically validated, interpretable filter with materially better cost per additional independent point than the classical score alone.",
+      "blocker": "No normalized candidate database and no reproduced baseline score distribution yet exist on main.",
+      "status": "ACTIVE"
+    },
+    {
+      "approach_id": "H1-mordell-weil-lattice-first",
+      "mathematical_family": "Lattice realization, coding theory, modular images, and optimization-driven construction of Mordell-Weil generators.",
+      "central_mechanism": "Specify a target Mordell-Weil lattice or a family of modular independence signatures first, then search for elliptic surfaces realizing that combinatorial object.",
+      "assumptions": [],
+      "predicted_advantage": "Rank 30 becomes a realization problem for a designed object rather than a tail event in a one-parameter specialization distribution.",
+      "concrete_next_test": "Use the exact local E(F_p)/2E(F_p) certificate as a model: design binary signatures for 30 prospective sections with sparse algebraic constraints, then ask which divisor/intersection data on an elliptic surface could realize those signatures compatibly across primes.",
+      "evidence_for": [
+        "The rank-29 baseline is certified by a full-rank binary local-image matrix, showing that modular independence signatures are compact and exact.",
+        "Neron-Severi and Mordell-Weil groups are lattices constrained by explicit intersection theory."
+      ],
+      "evidence_against": [
+        "Most abstract lattices or modular signatures need not be geometrically realizable by rational sections.",
+        "Local compatibility does not imply a global elliptic surface.",
+        "No realization theorem currently turns a designed rank-30 signature into a Q-rational curve."
+      ],
+      "computational_cost": "Low for combinatorial prototypes; very high for geometric realization and exact section recovery.",
+      "missing_lemma": "A practical realization theorem or construction map from designed lattice/modular data to an explicit elliptic surface over Q.",
+      "blocker": "The current reduction ends at a global realization problem that may be comparable to the original challenge.",
+      "status": "SCOUTING"
+    },
+    {
+      "approach_id": "N1-universal-upper-bound",
+      "mathematical_family": "Global theorems applying to every elliptic curve over Q.",
+      "central_mechanism": "Prove rank E(Q) <= 29 uniformly without restrictions on conductor, height, torsion, or family.",
+      "assumptions": [],
+      "predicted_advantage": "Would solve the challenge negatively if achieved.",
+      "concrete_next_test": "None allocated beyond monitoring for a genuinely new universal mechanism; family-specific or conditional bounds are explicitly rejected as resolutions.",
+      "evidence_for": [],
+      "evidence_against": [
+        "No known unconditional universal rank bound of the required form exists.",
+        "Current arithmetic-statistical and height methods do not approach a uniform bound of 29 for every curve.",
+        "The route is vastly less concrete than constructive discovery."
+      ],
+      "computational_cost": "Not meaningfully estimable; primarily theoretical.",
+      "missing_lemma": "A universal mechanism strong enough to bound all Mordell-Weil ranks over Q by 29.",
+      "blocker": "No credible mechanism currently distinguishes 29 as a universal ceiling.",
+      "status": "DEPRIORITIZED"
+    }
+  ]
+}
