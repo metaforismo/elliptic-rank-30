@@ -1,0 +1,68 @@
+{
+  "certificate_id": "degree47-target-mod19-obstruction-v1",
+  "claim_status": "proved",
+  "exceptional_branch": {
+    "condition": "k=2-3t=0",
+    "consequence": "the first reduced equation gives z=0, hence d=0",
+    "result": "not a degree-four L"
+  },
+  "linear_equations": {
+    "G10": "(-264t^2+3993t-2904)z+44t^3-53845t^2+71874t-23958=0",
+    "G9": "(12t^2+5290t-3564)z-588t^3-4455t^2+6138t-1936=0"
+  },
+  "modular_obstruction": {
+    "leading_coefficient_mod_19": 6,
+    "modulus": 19,
+    "values_at_0_through_18": [
+      17,
+      10,
+      8,
+      11,
+      1,
+      16,
+      15,
+      9,
+      2,
+      8,
+      11,
+      1,
+      10,
+      15,
+      12,
+      14,
+      11,
+      6,
+      13
+    ],
+    "zero_count": 0
+  },
+  "normalization": {
+    "c": "2/11-3b",
+    "k": "2-3t",
+    "t": "11b",
+    "z": "121d"
+  },
+  "quintic": {
+    "coefficients_low_to_high": [
+      -79764168,
+      357341556,
+      -533872086,
+      266432683,
+      -758384,
+      154704
+    ],
+    "content": 1,
+    "polynomial": "154704t^5-758384t^4+266432683t^3-533872086t^2+357341556t-79764168"
+  },
+  "rational_root_argument": "For a primitive integer polynomial, a rational root has denominator dividing the leading coefficient. Since 19 does not divide that coefficient, reduction gives a root in F_19, but the exhaustive value table has none.",
+  "result": "no_rational_solution",
+  "schema_version": 1,
+  "scope": "generic squarefree/coprime degree-(4,7) target branch; repeated-root values are excluded separately",
+  "theorem": "The generic degree-(4,7) polynomial target system has no rational solution.",
+  "verification": {
+    "determinant": "two independent exact checks: sparse Laurent-polynomial identity and integer convolution",
+    "implementation": "Python standard library only",
+    "modular_check": "complete enumeration of F_19",
+    "scaled_equations": "exact sparse Laurent-polynomial arithmetic over Q"
+  }
+}
