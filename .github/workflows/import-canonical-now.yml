@@ -19,210 +19,80 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Recover the canonical archive from overlapping chunks
+      - name: Locate and verify canonical package in Git history
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from __future__ import annotations
+          required=(
+            README.md
+            curve.json
+            points.json
+            verify_exact.py
+            rank_packet_obstruction_tests.py
+            paper/paper.tex
+          )
 
-          import base64
-          import hashlib
-          import itertools
-          import lzma
-          from pathlib import Path
-
-          root = Path("bootstrap")
-          expected_b64_sha = "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b"
-          expected_xz_sha = "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c"
-          expected_b64_size = 147468
-          expected_xz_size = 110600
-
-          def read(name: str) -> bytes:
-              return (root / name).read_bytes()
-
-          def unique(items: list[tuple[str, bytes]]) -> list[tuple[str, bytes]]:
-              seen: set[bytes] = set()
-              result: list[tuple[str, bytes]] = []
-              for label, data in items:
-                  if data not in seen:
-                      seen.add(data)
-                      result.append((label, data))
-              return result
-
-          # part 000 was uploaded both as one 20k object and as four 4k
-          # replacement slices (.01-.04).  Enumerate every slice-level overlay.
-          p0 = read("payload.part.000")
-          if len(p0) != 20000:
-              raise SystemExit(f"unexpected part 000 size: {len(p0)}")
-          p0_slices = [p0[i:i + 4000] for i in range(0, 20000, 4000)]
-          p0_choices: list[list[tuple[str, bytes]]] = [[("full.00", p0_slices[0])]]
-          for index in range(1, 5):
-              patch = read(f"payload.part.000.0{index}")
-              p0_choices.append(unique([
-                  (f"full.{index:02d}", p0_slices[index]),
-                  (f"patch.{index:02d}", patch),
-              ]))
-          part0_variants = []
-          for choices in itertools.product(*p0_choices):
-              part0_variants.append(("+".join(label for label, _ in choices), b"".join(data for _, data in choices)))
-          part0_variants = unique(part0_variants)
-
-          part1_variants = [("part001", read("payload.part.001"))]
-
-          p2 = read("payload.part.002.00") + read("payload.part.002.tail")
-          p2_alt = read("payload.part.002.01")
-          if len(p2) != 20000:
-              raise SystemExit(f"unexpected reconstructed part 002 size: {len(p2)}")
-          p2_candidates = [("002.default", p2)]
-          n2 = len(p2_alt)
-          p2_candidates.extend([
-              ("002.alt-prefix", p2_alt + p2[n2:]),
-              ("002.alt-suffix", p2[:-n2] + p2_alt),
-              ("002.default-prefix+alt", p2[:20000-n2] + p2_alt),
-              ("002.alt+default-prefix", p2_alt + p2[:20000-n2]),
-              ("002.default-suffix+alt", p2[n2:] + p2_alt),
-              ("002.alt+default-suffix", p2_alt + p2[n2:]),
-          ])
-          part2_variants = unique([(label, data) for label, data in p2_candidates if len(data) == 20000])
-
-          part3_variants = [("part003", read("payload.part.003"))]
-
-          p4 = read("payload.part.004")
-          p4_00 = read("payload.part.004.00")
-          p4_alt = read("payload.part.004.01.00")
-          p4_candidates = [("004.full", p4)]
-          for label, data in [("004.00", p4_00), ("004.00.rstrip", p4_00.rstrip(b"\r\n"))]:
-              if len(data) >= 20000:
-                  p4_candidates.extend([
-                      (label + ".first20k", data[:20000]),
-                      (label + ".last20k", data[-20000:]),
-                  ])
-              if len(data) == 20000:
-                  p4_candidates.append((label, data))
-          n4 = len(p4_alt)
-          for base_label, base in list(p4_candidates):
-              if len(base) != 20000:
-                  continue
-              p4_candidates.extend([
-                  (base_label + "+alt-prefix", p4_alt + base[n4:]),
-                  (base_label + "+alt-suffix", base[:-n4] + p4_alt),
-                  (base_label + "+prefix-alt", base[:20000-n4] + p4_alt),
-                  (base_label + "+alt-prefixbase", p4_alt + base[:20000-n4]),
-              ])
-          part4_variants = unique([(label, data) for label, data in p4_candidates if len(data) == 20000])
-
-          part5_variants = [("part005", read("payload.part.005"))]
-          part6_variants = [("part006", b"".join(read(name) for name in [
-              "payload.part.006.00", "payload.part.006.01", "payload.part.006.02", "payload.part.006.03",
-              "payload.part.006.04.00", "payload.part.006.04.01", "payload.part.006.04.02", "payload.part.006.04.03",
-          ]))]
-          part7_variants = [("part007", b"".join(read(name) for name in [
-              "payload.part.007.00.00", "payload.part.007.00.01", "payload.part.007.00.02", "payload.part.007.00.03",
-              "payload.part.007.01.00", "payload.part.007.01.01", "payload.part.007.01.02", "payload.part.007.01.03",
-          ]))]
-
-          groups = [part0_variants, part1_variants, part2_variants, part3_variants,
-                    part4_variants, part5_variants, part6_variants, part7_variants]
-          print("variant counts:", [len(group) for group in groups])
-
-          valid_lzma: list[tuple[list[str], str, str]] = []
-          found: tuple[list[str], bytes, bytes] | None = None
-          tested = 0
-          for combination in itertools.product(*groups):
-              labels = [label for label, _ in combination]
-              transport = b"".join(data for _, data in combination)
-              if len(transport) != expected_b64_size:
-                  continue
-              tested += 1
-              transport_sha = hashlib.sha256(transport).hexdigest()
-              try:
-                  archive = base64.b64decode(transport, validate=False)
-              except Exception:
-                  continue
-              archive_sha = hashlib.sha256(archive).hexdigest()
-              if len(archive) == expected_xz_size:
-                  try:
-                      lzma.decompress(archive)
-                  except lzma.LZMAError:
-                      pass
-                  else:
-                      valid_lzma.append((labels, transport_sha, archive_sha))
-              if transport_sha == expected_b64_sha and archive_sha == expected_xz_sha:
-                  found = (labels, transport, archive)
-                  break
-
-          print(f"tested {tested} current-tree combinations")
-          for labels, transport_sha, archive_sha in valid_lzma[:20]:
-              print("VALID-XZ", labels, transport_sha, archive_sha)
-
-          if found is None:
-              raise SystemExit(
-                  "No current-tree combination reproduced the canonical hashes; "
-                  f"valid XZ candidates={len(valid_lzma)}"
-              )
-
-          labels, transport, archive = found
-          print("Recovered canonical combination:")
-          for label in labels:
-              print("  ", label)
-          Path("/tmp/elliptic-rank-30-source.tar.xz.b64").write_bytes(transport)
-          Path("/tmp/elliptic-rank-30-source.tar.xz").write_bytes(archive)
-          PY
-
-      - name: Inspect and stage the recovered archive
-        shell: bash
-        run: |
-          set -euo pipefail
-          archive=/tmp/elliptic-rank-30-source.tar.xz
-          echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  $archive" | sha256sum -c -
-          xz --test "$archive"
-          python3 - <<'PY'
-          from pathlib import PurePosixPath
-          import tarfile
-
-          archive = "/tmp/elliptic-rank-30-source.tar.xz"
-          with tarfile.open(archive, "r:xz") as bundle:
-              members = bundle.getmembers()
-              if not members:
-                  raise SystemExit("canonical archive is empty")
-              names = set()
-              for member in members:
-                  path = PurePosixPath(member.name)
-                  if path.is_absolute() or ".." in path.parts:
-                      raise SystemExit(f"unsafe archive path: {member.name!r}")
-                  if member.issym() or member.islnk():
-                      raise SystemExit(f"archive links are not allowed: {member.name!r}")
-                  if member.name in names:
-                      raise SystemExit(f"duplicate archive member: {member.name!r}")
-                  names.add(member.name)
-              print(f"Validated {len(members)} archive members")
-          PY
-          mkdir -p /tmp/canonical-tree
-          tar --extract --xz --file "$archive" --directory /tmp/canonical-tree \
-            --no-same-owner --no-same-permissions
-
-      - name: Validate staged package before overlay
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/canonical-tree
-          required=(README.md curve.json points.json verify_exact.py rank_packet_obstruction_tests.py paper/paper.tex)
-          for path in "${required[@]}"; do
-            test -f "$path" || { echo "Missing required canonical artifact: $path" >&2; exit 1; }
+          : > /tmp/history-candidates.txt
+          for commit in $(git rev-list --all --date-order); do
+            ok=1
+            for path in "${required[@]}"; do
+              git cat-file -e "$commit:$path" 2>/dev/null || { ok=0; break; }
+            done
+            if test "$ok" = 1; then
+              printf '%s\t%s\n' "$commit" "$(git show -s --format='%cI %s' "$commit")" \
+                | tee -a /tmp/history-candidates.txt
+            fi
           done
-          python3 verify_exact.py
-          python3 rank_packet_obstruction_tests.py
-          if test -f research/packet3_certificate.py; then
-            python3 research/packet3_certificate.py --output certificates/packet3_certificate.json
-          fi
-          python3 -m unittest discover -s tests -v
 
-      - name: Overlay validated package and remove transport scaffolding
+          test -s /tmp/history-candidates.txt || {
+            echo "No commit in reachable Git history contains the required package." >&2
+            exit 1
+          }
+
+          recovered=""
+          while IFS=$'\t' read -r commit metadata; do
+            echo "Testing historical package $commit ($metadata)"
+            rm -rf /tmp/canonical-tree
+            mkdir -p /tmp/canonical-tree
+            git archive "$commit" | tar -x -C /tmp/canonical-tree
+
+            if (
+              set -euo pipefail
+              cd /tmp/canonical-tree
+              python3 verify_exact.py
+              python3 rank_packet_obstruction_tests.py
+              if test -f research/packet3_certificate.py; then
+                mkdir -p certificates
+                python3 research/packet3_certificate.py \
+                  --output certificates/packet3_certificate.json
+              fi
+              python3 -m unittest discover -s tests -v
+            ); then
+              recovered="$commit"
+              break
+            fi
+            echo "Historical package $commit failed verification; continuing." >&2
+          done < /tmp/history-candidates.txt
+
+          test -n "$recovered" || {
+            echo "No historical package passed the exact verification suite." >&2
+            exit 1
+          }
+          echo "$recovered" > /tmp/recovered-commit.txt
+          echo "Recovered verified package from $recovered"
+
+      - name: Replace main with the verified package
         shell: bash
         run: |
           set -euo pipefail
+          recovered=$(cat /tmp/recovered-commit.txt)
+          rm -rf /tmp/canonical-tree
+          mkdir -p /tmp/canonical-tree
+          git archive "$recovered" | tar -x -C /tmp/canonical-tree
+
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -a /tmp/canonical-tree/. .
+
           rm -rf bootstrap
           rm -f .github/workflows/bootstrap-import.yml
           rm -f .github/workflows/bootstrap-import-final.yml
@@ -237,14 +107,18 @@ jobs:
             \( -name '*.aux' -o -name '*.log' -o -name '*.out' -o -name '*.toc' -o -name '*.fls' -o -name '*.fdb_latexmk' -o -name '*.synctex.gz' \) \
             -delete 2>/dev/null || true
 
-      - name: Verify imported package from repository root
+          printf '%s\n' "$recovered" > RECOVERED_FROM_COMMIT
+
+      - name: Verify recovered package from repository root
         shell: bash
         run: |
           set -euo pipefail
           python3 verify_exact.py
           python3 rank_packet_obstruction_tests.py
           if test -f research/packet3_certificate.py; then
-            python3 research/packet3_certificate.py --output certificates/packet3_certificate.json
+            mkdir -p certificates
+            python3 research/packet3_certificate.py \
+              --output certificates/packet3_certificate.json
           fi
           python3 -m unittest discover -s tests -v
 
@@ -257,7 +131,7 @@ jobs:
             -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > MANIFEST.sha256
           sha256sum -c MANIFEST.sha256
 
-      - name: Commit canonical tree
+      - name: Commit canonical main
         shell: bash
         run: |
           set -euo pipefail
@@ -265,6 +139,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --stat
-          git diff --cached --quiet && { echo "Import produced no repository changes" >&2; exit 1; }
-          git commit -m "Import the verified certificate-first research package"
+          git diff --cached --quiet && {
+            echo "Historical recovery produced no repository changes" >&2
+            exit 1
+          }
+          git commit -m "Restore the verified certificate-first research package"
           git push
