@@ -1,68 +1,57 @@
-# Genus-zero three-channel quadratic rank packet
+# Genus-zero three-character quadratic rank packet
 
 ## The family
 
 Let
 
 \[
-K=\mathbb Q(t),\qquad
-E_t:\ y^2=x^3-\frac{t^2+1}{t+1}x+t.
+K=\mathbf Q(t),\qquad
+E_t:\ y^2=f_t(x)
+=x^3-\frac{t^2+1}{t+1}x+t.
 \]
 
 Put
 
 \[
 d_1=t,
-\qquad d_2=\frac{2t}{t+1}.
-\]
-
-The three nontrivial character twists in the biquadratic extension
-
-\[
-L=K(\sqrt{d_1},\sqrt{d_2})
-\]
-
-contain the following sections:
-
-\[
-\begin{array}{c|c|c}
-\text{twist}&x&y_{\rm twist}\\
-\hline
-d_1y^2=f_t(x)&0&1\\
-d_2y^2=f_t(x)&1&1\\
-d_1d_2y^2=f_t(x)&-1&1,
-\end{array}
-\]
-
-where
-
-\[
-f_t(x)=x^3-\frac{t^2+1}{t+1}x+t.
-\]
-
-Indeed,
-
-\[
-f_t(0)=t,
 \qquad
-f_t(1)=\frac{2t}{t+1},
+d_2=\frac{2t}{t+1},
 \qquad
-f_t(-1)=\frac{2t^2}{t+1}=d_1d_2.
+L=K(u,v),\quad u^2=d_1,\quad v^2=d_2.
 \]
+
+There are three immediate points over \(L\):
+
+\[
+P_u=(0,u),\qquad
+P_v=(1,v),\qquad
+P_{uv}=(-1,uv),
+\]
+
+because the following identities hold exactly in \(\mathbf Q(t)\):
+
+\[
+f_t(0)=d_1,
+\qquad
+f_t(1)=d_2,
+\qquad
+f_t(-1)=d_1d_2=\frac{2t^2}{t+1}.
+\]
+
+Equivalently, if the standard short-model quadratic twist by \(d\) is written
+
+\[
+E_t^{(d)}:\ Y^2=X^3+d^2a(t)X+d^3b(t),
+\]
+
+then the three character twists possess \(K\)-rational sections.  The
+executable certificate verifies these twist equations directly rather than
+assuming a twist convention.
 
 ## Theorem
 
-The squareclasses of \(d_1\) and \(d_2\) are geometrically independent. Their
-total geometric branch support on \(\mathbb P^1_t\) is
-
-\[
-\{0,-1,\infty\}.
-\]
-
-Consequently, the connected biquadratic cover attached to
-\(\langle d_1,d_2\rangle\) has genus zero. The three displayed sections are
-non-torsion and occupy the three distinct nontrivial characters of
-\(\operatorname{Gal}(L/K)\). Therefore
+The extension \(L/K\) is a connected biquadratic cover of degree four and
+its function field is rational over \(\mathbf Q\).  Moreover,
 
 \[
 \boxed{
@@ -72,76 +61,44 @@ non-torsion and occupy the three distinct nontrivial characters of
 }
 \]
 
-### Proof
+The result is unconditional.
 
-At the places \(0,-1,\infty\), the parity vectors of the two squareclasses are
+## Proof
+
+### 1. Squareclass independence and genus
+
+At the places \(t=0\), \(t=-1\), and \(t=\infty\), the valuation-parity
+vectors are
 
 \[
 d_1:(1,0,1),
-\qquad d_2:(1,1,0).
-\]
-
-They are linearly independent over \(\mathbb F_2\), and their sum is
-\((0,1,1)\). Thus the geometric character dimension is \(2\) and the union of
-branch points has size \(3\). Riemann--Hurwitz gives
-
-\[
-g=1+2^{2-2}(3-4)=0.
-\]
-
-To prove that the sections are non-torsion, specialize at \(t=-3\). The base
-curve is
-
-\[
-y^2=x^3+5x-3,
-\]
-
-and the three twist parameters are \(-3,3,-9\). In standard integral twist
-models the relevant points are
-
-\[
-\begin{array}{c|c|c}
-d& E^{(d)} & P_d\\
-\hline
--3&y^2=x^3+45x+81&(0,9)\\
-3&y^2=x^3+45x-81&(3,9)\\
--9&y^2=x^3+405x+2187&(9,81).
-\end{array}
-\]
-
-Exact addition gives
-
-\[
-x(2P_{-3})=\frac{25}{4},
 \qquad
-x(3P_3)=\frac{1479}{49},
+d_2:(1,1,0),
 \qquad
-x(3P_{-9})=\frac{13077}{121}.
+d_1d_2:(0,1,1).
 \]
 
-If any \(P_d\) were torsion, all of its multiples would be torsion; by the
-Lutz--Nagell theorem their coordinates on these integral short Weierstrass
-models would be integral. The displayed nonintegral coordinates prove that all
-three specialized points, and hence all three generic twist sections, are
-non-torsion.
-
-The Néron--Tate pairing is Galois invariant. Sections belonging to distinct
-quadratic characters are mutually orthogonal, hence independent. This proves
-the rank inequality.
-
-## Explicit rational parametrisation
-
-Write
+The first two vectors have rank two over \(\mathbf F_2\).  Hence \(d_1,d_2\)
+are independent squareclasses and \([L:K]=4\).  Their total branch support is
+exactly \(\{0,-1,\infty\}\).  Every branch point has inertia group of order
+two, so Riemann--Hurwitz gives
 
 \[
-u^2=t,
-\qquad
-v^2=\frac{2t}{1+t},
-\qquad
-w=\frac vu.
+2g(L)-2
+=4(-2)+3\cdot 4\left(1-\frac12\right)
+=-2.
 \]
 
-Then \(v^2+w^2=2\). The conic has the parametrisation
+Thus \(g(L)=0\).
+
+An explicit rational parameter makes this conclusion constructive.  Set
+\(w=v/u\).  Then
+
+\[
+v^2+w^2=2.
+\]
+
+The conic is parameterized by
 
 \[
 v=\frac{r^2-2r-1}{r^2+1},
@@ -153,40 +110,112 @@ u=\frac vw,
 t=u^2.
 \]
 
-Thus the biquadratic base is rational over \(\mathbb Q\), and the three points
-become rational sections over \(\mathbb Q(r)\):
+Consequently \(L\cong\mathbf Q(r)\), and the three points become explicit
+rational sections over \(\mathbf Q(r)\):
 
 \[
-(0,u),
-\qquad
-(1,v),
-\qquad
-(-1,uv).
+(0,u),\qquad(1,v),\qquad(-1,uv).
 \]
 
-## Why this matters for rank 30
+The certificate checks the polynomial identities
+\(v^2+w^2=2\), \(t=u^2\), and \(2t/(t+1)=v^2\) by exact coefficient
+arithmetic.
 
-This gives an exact counterexample to the implicit accounting rule
+### 2. Each character section is non-torsion
+
+Specialize the three twist sections at the smooth fiber \(t=-3\).  The base
+curve is
 
 \[
-\text{two quadratic multisections}
-\Longrightarrow
-\text{at most two added directions}.
+y^2=x^3+5x-3,
+\qquad \Delta=-11888,
 \]
 
-The product character can carry a third independent section without any genus
-penalty beyond the original composite cover. Therefore, for a rank-17 K3
-fibration, a genus-zero pair with a positive product-twist channel forces rank
-at least \(20\), not merely \(19\).
+and the three twist parameters are \(-3,3,-9\).  In integral short
+Weierstrass models the specialized points are
 
-The decisive computational audit for every pair \((d_1,d_2)\) is now:
+\[
+\begin{array}{c|c|c}
+d&E_{-3}^{(d)}&Q_d\\
+\hline
+-3&y^2=x^3+45x+81&(0,9)\\
+3&y^2=x^3+45x-81&(3,9)\\
+-9&y^2=x^3+405x+2187&(9,81).
+\end{array}
+\]
 
-1. verify the two known twist sections;
-2. compute the complete Mordell--Weil group of the hidden product twist
-   \(E^{d_1d_2}\);
-3. compute the union of branch supports and the auxiliary genus;
-4. promote the pair by total packet rank, not by the number of multisections
-   originally used to construct it.
+Exact group-law arithmetic gives
 
-The executable certificate is `research/packet3_certificate.py`; its
+\[
+2Q_{-3}=\left(\frac{25}{4},-\frac{197}{8}\right),
+\]
+
+\[
+3Q_3=\left(\frac{1479}{49},\frac{58185}{343}\right),
+\]
+
+and
+
+\[
+3Q_{-9}=\left(\frac{13077}{121},-\frac{1522395}{1331}\right).
+\]
+
+If one of the \(Q_d\) were torsion, the displayed nonzero multiple would also
+be torsion.  Lutz--Nagell would then force integral coordinates on its
+integral short Weierstrass model, contradicting the nonintegral
+\(x\)-coordinate.  Therefore all three specialized points are non-torsion.
+A torsion section specializes to a torsion point at every smooth fiber where
+it is defined, so the three generic twist sections are non-torsion as well.
+
+### 3. Character separation proves independence
+
+Let \(G=\operatorname{Gal}(L/K)=\langle\sigma_u,\sigma_v\rangle\), where the
+two generators change the signs of \(u\) and \(v\).  The sign characters of
+the points are
+
+\[
+\begin{array}{c|cc}
+&\sigma_u&\sigma_v\\
+\hline
+P_u&-1&+1\\
+P_v&+1&-1\\
+P_{uv}&-1&-1.
+\end{array}
+\]
+
+After tensoring \(E_t(L)\) with \(\mathbf Q\), the commuting involutions split
+the group into character eigenspaces.  The idempotent
+
+\[
+e_\chi=\frac14\sum_{g\in G}\chi(g)g
+\]
+
+projects onto the \(\chi\)-eigenspace.  Applying the three nontrivial
+projectors to any proposed relation isolates the corresponding point.  Since
+each point is non-torsion, each is nonzero in \(E_t(L)\otimes\mathbf Q\), and
+the three points are independent.  The trivial-character projector also
+shows that these directions are independent from \(E_t(K)\).  This proves the
+rank inequality.
+
+## Research significance and limitation
+
+This theorem exhibits a structural mechanism that is easy to miss when two
+quadratic multisections are counted separately: their product character can
+carry a third independent section without increasing the genus of the
+composite cover beyond zero.
+
+For a high-generic-rank family, the correct audit is therefore not merely
+"how many quadratic multisections were constructed?" but:
+
+1. determine the complete squareclass span of the multisections;
+2. inspect every nontrivial character twist, including product characters;
+3. prove non-torsion of every surviving character section;
+4. compute the total branch support and auxiliary genus;
+5. rank constructions by the total character-packet contribution.
+
+The displayed family itself certifies three generic directions; it is **not**
+a rank-30 curve.  Its value is as a construction module to transplant into a
+family already carrying many independent sections.
+
+The executable proof is `research/packet3_certificate.py`.  Its deterministic
 machine-readable output is `certificates/packet3_certificate.json`.
