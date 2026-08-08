@@ -1,0 +1,40 @@
+{
+  "certificate_id": "degree47-degenerate-remainder-obstruction-v1",
+  "claim_status": "proved",
+  "degree_setup": {
+    "L": 4,
+    "Q": 7,
+    "identity": "Q(v)^2-v^2L(v)^3=R(v)"
+  },
+  "double_root_case": {
+    "common_branch": {
+      "after_gcd_degree": 12,
+      "local_orders": "ord_2(Q)=1, ord_2(L)=l>=1",
+      "mason_contradiction": "12 <= 12-l, impossible for l>=1",
+      "radical_upper_bound": "13-l"
+    },
+    "parameter": "S=15/4",
+    "remainder": "R=(v-2)^2(v+1/4)",
+    "result": "no degree-(4,7) solution",
+    "unit_branch": "Mason: 14 <= 7+5+2-1=13, contradiction"
+  },
+  "schema_version": 1,
+  "scope_limitation": "Rules out only the two repeated-root target cubics at the maximal polynomial degree.",
+  "theorem": "Neither repeated-root value S=-3 nor S=15/4 admits a degree-(4,7) polynomial identity.",
+  "triple_root_case": {
+    "common_branch": {
+      "after_gcd_degree": 11,
+      "local_orders": "ord_{-1}(L)=1, ord_{-1}(Q)=q>=2",
+      "mason_contradiction": "11 <= 11-q, impossible for q>=2",
+      "radical_upper_bound": "12-q"
+    },
+    "parameter": "S=-3",
+    "remainder": "R=(v+1)^3",
+    "result": "no degree-(4,7) solution",
+    "unit_branch": "Mason: 14 <= 7+5+1-1=12, contradiction"
+  },
+  "verification": {
+    "local_order_branches": "complete finite enumeration of possible local orders",
+    "mason_degree_bounds": "exact integer arithmetic"
+  }
+}
