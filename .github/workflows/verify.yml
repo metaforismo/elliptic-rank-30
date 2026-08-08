@@ -59,5 +59,10 @@ jobs:
           python3 research/packet3_certificate.py \
             --compare certificates/packet3_certificate.json
 
+      - name: Recompute the one-function visibility barrier certificate
+        run: |
+          python3 research/riemann_roch_visibility_certificate.py \
+            --compare certificates/riemann_roch_visibility_barrier.json
+
       - name: Run exact unit tests
         run: python3 -m unittest discover -s tests -v
