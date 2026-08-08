@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - ".github/workflows/import-canonical-now.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,10 +19,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reconstruct verified canonical archive
+      - name: Reconstruct and verify canonical archive
         shell: bash
         run: |
           set -euo pipefail
+          archive_b64=/tmp/elliptic-rank-30-source.tar.xz.b64
+          archive=/tmp/elliptic-rank-30-source.tar.xz
+
           cat \
             bootstrap/payload.part.000 \
             bootstrap/payload.part.001 \
@@ -46,14 +50,56 @@ jobs:
             bootstrap/payload.part.007.01.01 \
             bootstrap/payload.part.007.01.02 \
             bootstrap/payload.part.007.01.03 \
-            > /tmp/elliptic-rank-30-source.tar.xz.b64
+            > "$archive_b64"
 
-          test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz.b64)" = "147468"
-          echo "a40a9009139d283004df7eec666ad06625b082048cc9856420864cf47d7a047b  /tmp/elliptic-rank-30-source.tar.xz.b64" | sha256sum -c -
-          base64 -d /tmp/elliptic-rank-30-source.tar.xz.b64 > /tmp/elliptic-rank-30-source.tar.xz
-          test "$(wc -c < /tmp/elliptic-rank-30-source.tar.xz)" = "110600"
-          echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  /tmp/elliptic-rank-30-source.tar.xz" | sha256sum -c -
-          tar -xJf /tmp/elliptic-rank-30-source.tar.xz
+          test "$(wc -c < "$archive_b64")" = "147468"
+          echo "Reconstructed transport digest:"
+          sha256sum "$archive_b64"
+
+          # The base64 transport can be re-chunked without changing the canonical
+          # archive.  The decoded archive digest is the proof-critical invariant.
+          base64 --decode "$archive_b64" > "$archive"
+          test "$(wc -c < "$archive")" = "110600"
+          echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  $archive" | sha256sum -c -
+
+          python3 - <<'PY'
+          from pathlib import PurePosixPath
+          import tarfile
+
+          archive = "/tmp/elliptic-rank-30-source.tar.xz"
+          with tarfile.open(archive, "r:xz") as bundle:
+              members = bundle.getmembers()
+              if not members:
+                  raise SystemExit("canonical archive is empty")
+              for member in members:
+                  path = PurePosixPath(member.name)
+                  if path.is_absolute() or ".." in path.parts:
+                      raise SystemExit(f"unsafe archive path: {member.name!r}")
+                  if member.issym() or member.islnk():
+                      raise SystemExit(f"archive links are not allowed: {member.name!r}")
+              print(f"Validated {len(members)} archive members")
+          PY
+
+          tar --extract --xz --file "$archive" --no-same-owner --no-same-permissions
+
+      - name: Assert canonical package shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            README.md
+            curve.json
+            points.json
+            verify_exact.py
+            rank_packet_obstruction_tests.py
+            paper/paper.tex
+          )
+          for path in "${required[@]}"; do
+            test -f "$path" || {
+              echo "Missing required canonical artifact: $path" >&2
+              exit 1
+            }
+          done
 
       - name: Remove temporary transport and failed one-shot workflows
         shell: bash
@@ -77,10 +123,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test -f curve.json
-          test -f points.json
-          test -f verify_exact.py
-          test -f paper/paper.tex
           python3 verify_exact.py
           python3 rank_packet_obstruction_tests.py
           if test -f research/packet3_certificate.py; then
@@ -107,5 +149,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --stat
+          if git diff --cached --quiet; then
+            echo "Import produced no repository changes" >&2
+            exit 1
+          fi
           git commit -m "Import the verified certificate-first research package"
           git push
