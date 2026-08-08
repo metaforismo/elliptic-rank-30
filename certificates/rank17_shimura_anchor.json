@@ -1,0 +1,185 @@
+{
+  "anchor_id": "elkies_rank17_shimura_anchor_N474",
+  "bielliptic_involution": {
+    "invariants": {
+      "x": "t^2",
+      "y": "t*u"
+    },
+    "map": "iota(t,u)=(-t,-u)",
+    "order": 2,
+    "quotient_discriminant": "-80518053888",
+    "quotient_equation": "y^2=16*x^4-19*x^3+88*x^2-48*x",
+    "quotient_genus": 1,
+    "quotient_nonsingular": true,
+    "quotient_polynomial_coefficients_ascending": [
+      "0",
+      "-48",
+      "88",
+      "-19",
+      "16"
+    ],
+    "reciprocal_cubic_discriminant": "-34947072",
+    "reciprocal_cubic_model": "Y^2=-48*X^3+88*X^2-19*X+16, X=1/t^2, Y=u/t^3"
+  },
+  "certificate_sha256": "908440692c6c8d7ea01e36c3d3637a5ba4543b86296227eaa25b830f5f196d20",
+  "conditional_assumptions": [],
+  "curve": {
+    "degree": 6,
+    "equation": "u^2=16*t^6-19*t^4+88*t^2-48",
+    "genus": 2,
+    "polynomial_coefficients_ascending": [
+      "-48",
+      "0",
+      "88",
+      "0",
+      "-19",
+      "0",
+      "16"
+    ],
+    "polynomial_discriminant": "60029231499174739968",
+    "polynomial_resultant_with_derivative": "-960467703986795839488",
+    "rational_points_at_infinity_weighted_projective_T_Z_U": [
+      [
+        "1",
+        "0",
+        "4"
+      ],
+      [
+        "1",
+        "0",
+        "-4"
+      ]
+    ],
+    "squarefree": true
+  },
+  "distinguished_exact_checks": {
+    "F(14/13)=(16064/2197)^2": true,
+    "F(2)=32^2": true,
+    "N=6*79": true
+  },
+  "exact_claim": "The genus-2 curve C: u^2=16t^6-19t^4+88t^2-48 is nonsingular, has the listed rational affine points and two rational points at infinity, and the involution (t,u)->(-t,-u) has a nonsingular genus-1 quotient.",
+  "implementation": {
+    "language": "Python standard library",
+    "script": "research/rank17_shimura_anchor.py"
+  },
+  "missing_bridge": "An explicit moduli map from this Shimura point to a Weierstrass K3 fibration, the 17 generic sections, and the specialization map to the published rank-29 curve.",
+  "point_images": {
+    "quartic_quotient_by_source_point": {
+      "-14/13,-16064/2197": [
+        "196/169",
+        "224896/28561"
+      ],
+      "-14/13,16064/2197": [
+        "196/169",
+        "-224896/28561"
+      ],
+      "-2,-32": [
+        "4",
+        "64"
+      ],
+      "-2,32": [
+        "4",
+        "-64"
+      ],
+      "14/13,-16064/2197": [
+        "196/169",
+        "-224896/28561"
+      ],
+      "14/13,16064/2197": [
+        "196/169",
+        "224896/28561"
+      ],
+      "2,-32": [
+        "4",
+        "-64"
+      ],
+      "2,32": [
+        "4",
+        "64"
+      ]
+    },
+    "reciprocal_cubic_by_source_point": {
+      "-14/13,-16064/2197": [
+        "169/196",
+        "2008/343"
+      ],
+      "-14/13,16064/2197": [
+        "169/196",
+        "-2008/343"
+      ],
+      "-2,-32": [
+        "1/4",
+        "4"
+      ],
+      "-2,32": [
+        "1/4",
+        "-4"
+      ],
+      "14/13,-16064/2197": [
+        "169/196",
+        "-2008/343"
+      ],
+      "14/13,16064/2197": [
+        "169/196",
+        "2008/343"
+      ],
+      "2,-32": [
+        "1/4",
+        "-4"
+      ],
+      "2,32": [
+        "1/4",
+        "4"
+      ]
+    }
+  },
+  "rational_affine_points": [
+    [
+      "-2",
+      "-32"
+    ],
+    [
+      "-2",
+      "32"
+    ],
+    [
+      "-14/13",
+      "-16064/2197"
+    ],
+    [
+      "-14/13",
+      "16064/2197"
+    ],
+    [
+      "14/13",
+      "-16064/2197"
+    ],
+    [
+      "14/13",
+      "16064/2197"
+    ],
+    [
+      "2",
+      "-32"
+    ],
+    [
+      "2",
+      "32"
+    ]
+  ],
+  "schema_version": 1,
+  "shimura_metadata": {
+    "N": 474,
+    "curve_label": "X(6,79)/<w_474>",
+    "factorization": [
+      6,
+      79
+    ],
+    "status": "identification from Elkies's primary-source lectures/paper; the moduli map is not reconstructed by this certificate"
+  },
+  "source_claims_not_proved_here": [
+    "The |t|=14/13 orbit is non-CM.",
+    "That non-CM moduli point yields an elliptic K3 surface over Q(s) with Mordell-Weil rank 17.",
+    "This rank-17 surface is the geometric source used in the rank-28 and rank-29 record searches."
+  ]
+}
