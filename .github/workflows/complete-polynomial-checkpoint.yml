@@ -1,4 +1,4 @@
-# Checkpoint rerun with the corrected unit-ideal Groebner elimination.
+# Exact checkpoint rerun after the unit-ideal verifier repair.
 name: complete-polynomial-checkpoint
 
 on:
