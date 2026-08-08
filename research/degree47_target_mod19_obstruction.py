@@ -3,10 +3,10 @@
 
 The Wronskian reduction leaves three equations in rational b,d, with
 c=2/11-3b.  After t=11b, z=121d, k=2-3t, exact combinations produce two
-linear equations in z.  Their determinant is a primitive quintic P(t).
-P has no root modulo 19 and its leading coefficient is nonzero modulo 19,
-so P has no rational root.  The exceptional k=0 branch forces d=0 and is not
-degree four.
+linear equations in z.  Their determinant is 11 times a primitive quintic
+P0(t).  The primitive part P0 has no root modulo 19 and its leading
+coefficient is nonzero modulo 19, so neither P0 nor the determinant has a
+rational root.  The exceptional k=0 branch forces d=0 and is not degree four.
 
 Only Python standard-library exact arithmetic is used.
 """
@@ -27,7 +27,7 @@ from research.degree24_polynomial_section_obstruction import (
 )
 
 
-P_COEFFICIENTS_LOW = [
+DETERMINANT_COEFFICIENTS_LOW = [
     -79764168,
     357341556,
     -533872086,
@@ -35,8 +35,37 @@ P_COEFFICIENTS_LOW = [
     -758384,
     154704,
 ]
+DETERMINANT_CONTENT = 11
+PRIMITIVE_COEFFICIENTS_LOW = [
+    -7251288,
+    32485596,
+    -48533826,
+    24221153,
+    -68944,
+    14064,
+]
 
-P_MOD_19_VALUES = [17, 10, 8, 11, 1, 16, 15, 9, 2, 8, 11, 1, 10, 15, 12, 14, 11, 6, 13]
+PRIMITIVE_MOD_19_VALUES = [
+    5,
+    13,
+    18,
+    1,
+    7,
+    17,
+    10,
+    6,
+    14,
+    18,
+    1,
+    7,
+    13,
+    10,
+    8,
+    3,
+    1,
+    4,
+    15,
+]
 
 
 def polynomial_multiply(left: list[int], right: list[int]) -> list[int]:
@@ -60,7 +89,9 @@ def polynomial_subtract(left: list[int], right: list[int]) -> list[int]:
     return result
 
 
-def polynomial_value_mod(coefficients_low: Iterable[int], value: int, modulus: int) -> int:
+def polynomial_value_mod(
+    coefficients_low: Iterable[int], value: int, modulus: int
+) -> int:
     result = 0
     for coefficient in reversed(list(coefficients_low)):
         result = (result * value + coefficient) % modulus
@@ -123,7 +154,7 @@ def verify_symbolic_reduction() -> None:
         2,
         {
             (degree, 0): Fraction(coefficient)
-            for degree, coefficient in enumerate(P_COEFFICIENTS_LOW)
+            for degree, coefficient in enumerate(DETERMINANT_COEFFICIENTS_LOW)
         },
     )
     if determinant != expected:
@@ -131,18 +162,27 @@ def verify_symbolic_reduction() -> None:
 
 
 def verify_mod_19_obstruction() -> None:
-    if coefficient_gcd(P_COEFFICIENTS_LOW) != 1:
-        raise AssertionError("quintic is not primitive")
-    if P_COEFFICIENTS_LOW[-1] % 19 == 0:
-        raise AssertionError("leading coefficient vanishes modulo 19")
+    if coefficient_gcd(DETERMINANT_COEFFICIENTS_LOW) != DETERMINANT_CONTENT:
+        raise AssertionError("unexpected determinant content")
+    if any(
+        determinant != DETERMINANT_CONTENT * primitive
+        for determinant, primitive in zip(
+            DETERMINANT_COEFFICIENTS_LOW, PRIMITIVE_COEFFICIENTS_LOW
+        )
+    ):
+        raise AssertionError("primitive-part normalization failed")
+    if coefficient_gcd(PRIMITIVE_COEFFICIENTS_LOW) != 1:
+        raise AssertionError("primitive part is not primitive")
+    if PRIMITIVE_COEFFICIENTS_LOW[-1] % 19 == 0:
+        raise AssertionError("primitive leading coefficient vanishes modulo 19")
     values = [
-        polynomial_value_mod(P_COEFFICIENTS_LOW, value, 19)
+        polynomial_value_mod(PRIMITIVE_COEFFICIENTS_LOW, value, 19)
         for value in range(19)
     ]
-    if values != P_MOD_19_VALUES:
-        raise AssertionError(f"unexpected mod-19 values: {values}")
+    if values != PRIMITIVE_MOD_19_VALUES:
+        raise AssertionError(f"unexpected primitive mod-19 values: {values}")
     if any(value == 0 for value in values):
-        raise AssertionError("quintic has a root modulo 19")
+        raise AssertionError("primitive quintic has a root modulo 19")
 
 
 def verify_determinant_by_integer_convolution() -> None:
@@ -155,7 +195,7 @@ def verify_determinant_by_integer_convolution() -> None:
         polynomial_multiply(c9, l10),
         polynomial_multiply(c10, l9),
     )
-    if determinant != P_COEFFICIENTS_LOW:
+    if determinant != DETERMINANT_COEFFICIENTS_LOW:
         raise AssertionError("integer-convolution determinant failed")
 
 
@@ -164,8 +204,13 @@ def build_certificate() -> dict:
     verify_determinant_by_integer_convolution()
     verify_mod_19_obstruction()
     return {
-        "certificate_id": "degree47-target-mod19-obstruction-v1",
+        "certificate_id": "degree47-target-mod19-obstruction-v2",
         "claim_status": "proved",
+        "determinant_quintic": {
+            "coefficients_low_to_high": DETERMINANT_COEFFICIENTS_LOW,
+            "content": DETERMINANT_CONTENT,
+            "polynomial": "154704t^5-758384t^4+266432683t^3-533872086t^2+357341556t-79764168",
+        },
         "exceptional_branch": {
             "condition": "k=2-3t=0",
             "consequence": "the first reduced equation gives z=0, hence d=0",
@@ -176,9 +221,9 @@ def build_certificate() -> dict:
             "G10": "(-264t^2+3993t-2904)z+44t^3-53845t^2+71874t-23958=0",
         },
         "modular_obstruction": {
-            "leading_coefficient_mod_19": P_COEFFICIENTS_LOW[-1] % 19,
+            "leading_coefficient_mod_19": PRIMITIVE_COEFFICIENTS_LOW[-1] % 19,
             "modulus": 19,
-            "values_at_0_through_18": P_MOD_19_VALUES,
+            "values_at_0_through_18": PRIMITIVE_MOD_19_VALUES,
             "zero_count": 0,
         },
         "normalization": {
@@ -187,20 +232,21 @@ def build_certificate() -> dict:
             "t": "11b",
             "z": "121d",
         },
-        "quintic": {
-            "coefficients_low_to_high": P_COEFFICIENTS_LOW,
+        "primitive_quintic": {
+            "coefficients_low_to_high": PRIMITIVE_COEFFICIENTS_LOW,
             "content": 1,
-            "polynomial": "154704t^5-758384t^4+266432683t^3-533872086t^2+357341556t-79764168",
+            "polynomial": "14064t^5-68944t^4+24221153t^3-48533826t^2+32485596t-7251288",
         },
-        "rational_root_argument": "For a primitive integer polynomial, a rational root has denominator dividing the leading coefficient. Since 19 does not divide that coefficient, reduction gives a root in F_19, but the exhaustive value table has none.",
+        "rational_root_argument": "The determinant and its primitive part have the same rational roots. For the primitive integer quintic, a rational root has denominator dividing 14064. Since 19 does not divide 14064, reduction gives a root in F_19, but the exhaustive value table has none.",
         "result": "no_rational_solution",
-        "schema_version": 1,
+        "schema_version": 2,
         "scope": "generic squarefree/coprime degree-(4,7) target branch; repeated-root values are excluded separately",
         "theorem": "The generic degree-(4,7) polynomial target system has no rational solution.",
         "verification": {
+            "content_and_primitive_part": "exact coefficient gcd and scalar comparison",
             "determinant": "two independent exact checks: sparse Laurent-polynomial identity and integer convolution",
             "implementation": "Python standard library only",
-            "modular_check": "complete enumeration of F_19",
+            "modular_check": "complete enumeration of F_19 for the primitive quintic",
             "scaled_equations": "exact sparse Laurent-polynomial arithmetic over Q",
         },
     }
