@@ -1,0 +1,47 @@
+name: exact-verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "curve.json"
+      - "points.json"
+      - "verify_exact.py"
+      - "baseline/**"
+      - ".github/workflows/verify.yml"
+  pull_request:
+    paths:
+      - "curve.json"
+      - "points.json"
+      - "verify_exact.py"
+      - "baseline/**"
+      - ".github/workflows/verify.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact-rank29-certificate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Recompute exact certificate
+        run: python3 verify_exact.py
+      - name: Recompute into a fresh file and compare bytes
+        run: |
+          python3 baseline/verify_rank29_mod2.py \
+            --write-certificate /tmp/rank29_mod2_certificate.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          committed = json.loads(Path("baseline/rank29_mod2_certificate.json").read_text())
+          fresh = json.loads(Path("/tmp/rank29_mod2_certificate.json").read_text())
+          assert committed == fresh
+          print("fresh certificate matches committed certificate")
+          PY
