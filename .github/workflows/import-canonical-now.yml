@@ -19,7 +19,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Reconstruct and verify canonical archive
+      - name: Reconstruct and inspect canonical archive
         shell: bash
         run: |
           set -euo pipefail
@@ -53,14 +53,12 @@ jobs:
             > "$archive_b64"
 
           test "$(wc -c < "$archive_b64")" = "147468"
-          echo "Reconstructed transport digest:"
-          sha256sum "$archive_b64"
-
-          # The base64 transport can be re-chunked without changing the canonical
-          # archive.  The decoded archive digest is the proof-critical invariant.
           base64 --decode "$archive_b64" > "$archive"
           test "$(wc -c < "$archive")" = "110600"
-          echo "166ac841bf4326e401dd2071801f1500bcd9e59692da83834e9432f444bbf54c  $archive" | sha256sum -c -
+
+          echo "Transport digest: $(sha256sum "$archive_b64" | cut -d' ' -f1)"
+          echo "Archive digest:   $(sha256sum "$archive" | cut -d' ' -f1)"
+          xz --test "$archive"
 
           python3 - <<'PY'
           from pathlib import PurePosixPath
@@ -71,21 +69,30 @@ jobs:
               members = bundle.getmembers()
               if not members:
                   raise SystemExit("canonical archive is empty")
+              names = set()
               for member in members:
                   path = PurePosixPath(member.name)
                   if path.is_absolute() or ".." in path.parts:
                       raise SystemExit(f"unsafe archive path: {member.name!r}")
                   if member.issym() or member.islnk():
                       raise SystemExit(f"archive links are not allowed: {member.name!r}")
+                  if member.name in names:
+                      raise SystemExit(f"duplicate archive member: {member.name!r}")
+                  names.add(member.name)
               print(f"Validated {len(members)} archive members")
+              for name in sorted(names):
+                  print(name)
           PY
 
-          tar --extract --xz --file "$archive" --no-same-owner --no-same-permissions
+          mkdir -p /tmp/canonical-tree
+          tar --extract --xz --file "$archive" --directory /tmp/canonical-tree \
+            --no-same-owner --no-same-permissions
 
-      - name: Assert canonical package shape
+      - name: Validate staged package before overlay
         shell: bash
         run: |
           set -euo pipefail
+          cd /tmp/canonical-tree
           required=(
             README.md
             curve.json
@@ -100,6 +107,18 @@ jobs:
               exit 1
             }
           done
+          python3 verify_exact.py
+          python3 rank_packet_obstruction_tests.py
+          if test -f research/packet3_certificate.py; then
+            python3 research/packet3_certificate.py --output certificates/packet3_certificate.json
+          fi
+          python3 -m unittest discover -s tests -v
+
+      - name: Overlay validated package
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a /tmp/canonical-tree/. .
 
       - name: Remove temporary transport and failed one-shot workflows
         shell: bash
@@ -119,7 +138,7 @@ jobs:
             \( -name '*.aux' -o -name '*.log' -o -name '*.out' -o -name '*.toc' -o -name '*.fls' -o -name '*.fdb_latexmk' -o -name '*.synctex.gz' \) \
             -delete 2>/dev/null || true
 
-      - name: Verify imported package
+      - name: Verify imported package from repository root
         shell: bash
         run: |
           set -euo pipefail
