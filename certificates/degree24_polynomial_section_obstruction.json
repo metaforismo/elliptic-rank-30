@@ -1,0 +1,81 @@
+{
+  "certificate_id": "degree24-polynomial-section-obstruction-v1",
+  "claim_status": "proved",
+  "coefficient_equations": [
+    "h^2 = 1",
+    "2 g h = 3",
+    "g^2 + 2 f h - c^3 = -S",
+    "2 f g + 2 e h - 3 b c^2 = 1",
+    "f^2 + 2 e g + 2 d h = 3 a c^2 + 3 b^2 c",
+    "2 d g + 2 e f = 6 a b c + b^3",
+    "e^2 + 2 d f = 3 a^2 c + 3 a b^2",
+    "2 d e = 3 a^2 b",
+    "d^2 = a^3"
+  ],
+  "cube_obstruction": {
+    "candidate": "z = 1/6",
+    "conclusion": "not a cube in Q",
+    "prime": 2,
+    "valuation": -1,
+    "valuation_mod_3": 2
+  },
+  "elimination": {
+    "D": "(x^3 - 12)^2",
+    "deduction": "u^2 x = 1",
+    "factorization": "(6 z - 1)(24 z^3 - 12 z^2 - 6 z - 1)",
+    "final_equation": "144 z^4 - 96 z^3 - 24 z^2 + 1 = 0",
+    "linear_combination": "second - u*first = 48 x (u^2 x - 1)",
+    "nonzero_conditions": [
+      "u != 0",
+      "x != 0"
+    ],
+    "remaining_equations": [
+      "D = 96 u x^2",
+      "144 u^2 x^2 - u D - 48 x = 0"
+    ],
+    "z_substitution": "z = u^3"
+  },
+  "identity": "Q(v)^2 - v^2 L(v)^3 = v^3 - S v^2 + 3 v + 1",
+  "modular_irreducibility": {
+    "conclusion": "the cubic has no rational root",
+    "cubic": "24 z^3 - 12 z^2 - 6 z - 1",
+    "has_root_mod_7": false,
+    "modulus": 7,
+    "values": [
+      6,
+      5,
+      5,
+      3,
+      3,
+      2,
+      4
+    ]
+  },
+  "normalization": {
+    "g": "3/2",
+    "h": "1 after replacing Q by -Q if necessary",
+    "leading_parameter": "u = d/a, hence a = u^2 and d = u^3"
+  },
+  "result": "no_rational_solution",
+  "schema_version": 1,
+  "scope": {
+    "L": "a v^2 + b v + c with a != 0",
+    "Q": "d v^4 + e v^3 + f v^2 + g v + h",
+    "field": "Q",
+    "limitation": "This rules out only this degree-(2,4) polynomial-section ansatz; it is not a rank-30 obstruction."
+  },
+  "substitutions": {
+    "b": "u x",
+    "c": "(x^3 + 24)/(12 x)",
+    "e": "(3/2) u^2 x",
+    "f": "u (x^3 + 6)/(2 x)"
+  },
+  "theorem": "No rational coefficients with deg(L)=2 and deg(Q)<=4 satisfy the stated identity for any S in Q.",
+  "verification": {
+    "coefficient_extraction": "exact sparse Laurent-polynomial arithmetic",
+    "factorization": "exact integer convolution",
+    "implementation": "Python standard library only",
+    "modular_root_check": "complete enumeration in F_7",
+    "reduction_identities": "exact sparse Laurent-polynomial arithmetic"
+  }
+}
