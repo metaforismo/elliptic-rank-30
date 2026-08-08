@@ -1,4 +1,4 @@
-# Checkpoint rerun with the corrected primitive mod-19 determinant quintic.
+# Checkpoint rerun with the corrected unit-ideal Groebner elimination.
 name: complete-polynomial-checkpoint
 
 on:
