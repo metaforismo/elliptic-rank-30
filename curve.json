@@ -1,0 +1,79 @@
+{
+  "candidate_id": "elkies_klagsbrun_2024_rank29",
+  "conditional_claims": {
+    "rank_equals_29": "Published announcement reports exact rank 29 under GRH; not used here."
+  },
+  "exact_point_verification": "baseline/verify_rank29_mod2.py",
+  "family_id": "elkies_klagsbrun_rank17_k3_specialization",
+  "field": "Q",
+  "independence_certificate": "baseline/rank29_mod2_certificate.json",
+  "invariants": {
+    "c4": "1296296795598284266484863302974277781668866621848145181827394481",
+    "c6": "-47742962588359813275036508446728062178987599342510036076588219145857596371879546057522868465129",
+    "discriminant": "-58514056884179895803252795545068205623215359270190478217393508483140281138663769634024489915971980794469429246265449489823479442097938729025702174957426421151737866434992604323840000000",
+    "j_invariant": {
+      "denominator": "-58514056884179895803252795545068205623215359270190478217393508483140281138663769634024489915971980794469429246265449489823479442097938729025702174957426421151737866434992604323840000000",
+      "numerator": "2178101516705326640532653592810917311342567301345358537114242958976570387337513100850438551503548393564279904406869693809782020661862076272514864443240024130711335031581592623069229460201529511494846632324576258506139302081768194717795041"
+    },
+    "nonsingular": true
+  },
+  "known_points_count": 29,
+  "model": {
+    "a_invariants": [
+      "1",
+      "0",
+      "0",
+      "-27006183241630922218434652145297453784768054621836357954737385",
+      "55258058551342376475736699591118191821521067032535079608372404779149413277716173425636721497"
+    ],
+    "equation": "y^2 + x*y = x^3 + a4*x + a6",
+    "minimality_status": "published integral model; global minimality not asserted by this verifier",
+    "type": "integral_generalized_weierstrass"
+  },
+  "parameter": {
+    "status": "not yet reconstructed from primary source"
+  },
+  "provenance": {
+    "announcement_date": "2024-08-29",
+    "coordinates_source": "Andrej Dujella high-rank elliptic curves table",
+    "discoverers": [
+      "Noam D. Elkies",
+      "Zev Klagsbrun"
+    ]
+  },
+  "published_discriminant_factorization": {
+    "known_factors": {
+      "11": 5,
+      "13": 3,
+      "17": 4,
+      "2": 19,
+      "233": 1,
+      "241": 2,
+      "3": 7,
+      "31": 3,
+      "41": 2,
+      "4139": 1,
+      "43": 2,
+      "5": 7,
+      "61": 2,
+      "7": 4
+    },
+    "remaining_cofactor": "477018630883536919001091688131508123977034338831321857273118745429009722716266262088193322764735201954054072137711042996555130117"
+  },
+  "subgroup_rank_lower_bound": 29,
+  "torsion": {
+    "certificate": {
+      "argument": "For any rational torsion point of prime order ell, reduction is injective at every good prime p != ell. If ell is neither 67 nor 71 it divides gcd(83,75)=1; ell=67 does not divide 75; ell=71 does not divide 83.",
+      "good_primes": [
+        67,
+        71
+      ],
+      "group_orders": {
+        "67": 83,
+        "71": 75
+      }
+    },
+    "proved_structure": "trivial"
+  },
+  "verification_status": "unconditional rank >= 29"
+}
