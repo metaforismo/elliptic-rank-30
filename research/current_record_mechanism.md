@@ -1,25 +1,32 @@
-# Current record mechanism: verified facts, inherited search machinery, and missing reconstruction
+# Current record mechanism: verified facts, reconstructed public machinery, and missing bridge
 
 ## Scope
 
-This document records only facts supported by primary sources or by exact
-certificates in this repository. It deliberately separates:
+This document separates four layers that must not be conflated:
 
-- the **unconditional rank-29 lower bound**;
-- the **conditional exact-rank statement**;
-- the publicly described search mechanism;
-- the record-specific geometric data that have not yet been recovered.
+1. the **unconditional rank-29 lower bound** for the published curve;
+2. the **conditional exact-rank statement**;
+3. the rank-17 K3/ Shimura geometry and search machinery described in primary
+   sources;
+4. the record-specific equation, sections, parameter, and transformation data
+   that are still missing.
 
 Primary sources:
 
-1. Noam Elkies, “\( \mathbf Z^{29} \) in \(E(\mathbf Q)\),” Number Theory
+1. Noam Elkies, “\(\mathbf Z^{29}\) in \(E(\mathbf Q)\),” Number Theory
    List, 29 August 2024:
    <https://listserv.nodak.edu/cgi-bin/wa.exe?A2=NMBRTHRY%3Bb9d018b1.2409&S=>
-2. Noam D. Elkies and Zev Klagsbrun, *New Rank Records for Elliptic Curves
+2. Noam D. Elkies, *Three lectures on elliptic surfaces and curves of high
+   rank*, arXiv:0709.2908:
+   <https://arxiv.org/abs/0709.2908>
+3. Noam D. Elkies, *Shimura curve computations via K3 surfaces of
+   Néron-Severi rank at least 19*, arXiv:0802.1301:
+   <https://arxiv.org/abs/0802.1301>
+4. Noam D. Elkies and Zev Klagsbrun, *New Rank Records for Elliptic Curves
    Having Rational Torsion*, arXiv:2003.00077:
    <https://arxiv.org/pdf/2003.00077>
-3. Zev Klagsbrun, Travis Sherman, and James Weigandt, *The Elkies
-   Rank Bound Algorithm*, Math. Comp. 88 (2019), 837–846:
+5. Zev Klagsbrun, Travis Sherman, and James Weigandt, *The Elkies Rank Bound
+   Algorithm*, Math. Comp. 88 (2019), 837-846:
    <https://arxiv.org/abs/1606.07178>
 
 ## 1. Record curve and proof status
@@ -46,7 +53,7 @@ The 2024 announcement states:
 - an analytic-rank upper bound of 29 is also conditional on an \(L\)-function
   GRH, with BSD needed to identify analytic and algebraic rank in that route.
 
-Only the lower bound is needed for the record and for this project’s
+Only the lower bound is needed for the record and for this project's
 baseline.
 
 ### Repository verification
@@ -58,7 +65,7 @@ The files
 - `baseline/verify_rank29_mod2.py`;
 - `baseline/rank29_mod2_certificate.json`;
 
-give a new exact standard-library verification of
+give an exact standard-library proof of
 
 \[
 \operatorname{rank}E_{29}(\mathbf Q)\ge29.
@@ -73,23 +80,125 @@ GRH, BSD, SageMath, Magma, or PARI/GP.
 This does not reproduce the conditional upper bound and does not claim that
 the 29-point subgroup is globally saturated.
 
-## 2. Record-specific geometry known publicly
+## 2. Geometric source of the rank-17 floor
 
-The public announcement gives the following geometric accounting:
+### 2.1 Why rank 17 is the K3 target
 
-- the search used a **rank-17 elliptic fibration** of the same K3 surface that
-  produced the 2006 rank-28 record;
-- for each high-scoring specialization, points were sought outside the
-  generic \(\mathbf Z^{17}\);
-- the record specialization produced **12 additional independent points**.
+For an elliptic K3 surface, the Néron-Severi rank is at most 20. The zero
+section and fiber contribute a hyperbolic plane \(U\), while reducible fibers
+consume root-lattice rank. Thus an elliptic K3 surface over \(\mathbf Q(t)\)
+with no reducible fibers can have Mordell-Weil rank at most 18.
 
-Thus the observed lower-bound decomposition is
+Elkies explains that rank 18 cannot occur over \(\mathbf Q\) in the desired
+form, while rank 17 is attainable through a Néron-Severi lattice of rank 19
+whose essential lattice is rootless. The corresponding moduli space is a
+curve rather than an isolated CM point.
+
+### 2.2 The exact Shimura anchor
+
+The successful moduli curve has level
+
+\[
+N=6\cdot79=474
+\]
+
+and is the genus-two Shimura quotient
+
+\[
+X(6,79)/\langle w_{474}\rangle.
+\]
+
+Its published equation is
+
+\[
+C:\quad u^2=16t^6-19t^4+88t^2-48.
+\]
+
+The source lists two rational points at infinity, four affine points with
+\(|t|=2\), \(|u|=32\), and four with
+
+\[
+|t|=\frac{14}{13},
+\qquad
+|u|=\frac{2^6\cdot251}{13^3}
+=
+\frac{16064}{2197}.
+\]
+
+It states that the last orbit is non-CM and yields an elliptic K3 surface of
+Mordell-Weil rank 17 over \(\mathbf Q(s)\).
+
+The repository now independently certifies the algebraic anchor in
+
+- `research/rank17_shimura_anchor.py`;
+- `certificates/rank17_shimura_anchor.json`;
+- `research/rank17_shimura_anchor.md`.
+
+The certificate proves that the sextic is squarefree and genus two, verifies
+all eight affine rational points and the two rational points at infinity, and
+proves that
+
+\[
+(t,u)\longmapsto(-t,-u)
+\]
+
+has the nonsingular genus-one quotient
+
+\[
+y^2=16x^4-19x^3+88x^2-48x,
+\qquad x=t^2,\quad y=tu.
+\]
+
+It deliberately does **not** prove the non-CM status or reconstruct the K3
+moduli map.
+
+### 2.3 Lattice and p-adic construction route
+
+The 2007 lectures describe how the original K3 equation and its generators
+were computed.
+
+1. **Essential-lattice design.** A suitable positive-definite essential
+   lattice is obtained as a slice of a Niemeier lattice. Roots and glue control
+   reducible fibers, Mordell-Weil torsion, and the target height pairing.
+2. **Finite-field seed.** The polynomial identities for the elliptic surface
+   and sections are solved modulo a suitable small prime by exhaustive search.
+3. **Multivariable p-adic Newton lifting.** An arbitrary characteristic-zero
+   lift is refined p-adically; finite differences approximate the Jacobian and
+   each iteration doubles the precision.
+4. **Rational reconstruction.** High-precision p-adic coefficients are
+   recognized as rational numbers by lattice reduction and then checked by
+   exact substitution.
+5. **Neighbor transformations.** One begins with an elliptic model whose
+   coefficients are easier to compute and follows chains of 2-neighbors and
+   occasional 3-neighbors, changing the root system and torsion until the
+   desired essential lattice is reached.
+6. **Picard-rank-19 deformation.** Starting from a known Picard-rank-20
+   surface, the one-dimensional family is deformed p-adically, coefficient
+   relations with a modular parameter are reconstructed, and the resulting
+   identities are verified symbolically before specializing at the non-CM
+   Shimura point.
+
+This is a concrete reconstruction algorithm. What is absent from the public
+papers is the record-specific finite-field seed, neighbor chain, final
+Weierstrass model, and 17 section formulas.
+
+### 2.4 Record accounting
+
+The public 2024 announcement gives the final specialization accounting:
+
+- the same rank-17 K3 surface used for the 2006 rank-28 record was searched
+  again;
+- high-scoring specializations were tested for points outside the generic
+  \(\mathbf Z^{17}\);
+- the rank-29 specialization supplied 12 additional independent directions.
+
+Thus
 
 \[
 29=17+12.
 \]
 
-The target rank 30 requires one of two broad improvements:
+The target rank 30 requires either
 
 \[
 17+13,
@@ -98,16 +207,7 @@ The target rank 30 requires one of two broad improvements:
 or a different fibration/construction with a larger generic floor and a
 smaller exceptional jump.
 
-The announcement says that the detailed K3 computation and search write-up
-were intended for later publication. The explicit rank-17 fibration,
-specialization parameter, 17 generic sections, and specialization map are
-not contained in the announcement itself. They must not be invented or
-inferred from the final curve alone.
-
-## 3. Search machinery described by Elkies--Klagsbrun
-
-The 2020 paper describes the search architecture later cited in the rank-29
-announcement.
+## 3. Search machinery
 
 ### 3.1 Generic rank as a floor
 
@@ -117,14 +217,15 @@ Start with an elliptic fibration
 \mathcal E/\mathbf Q(t)
 \]
 
-of Mordell--Weil rank \(r\). For all but finitely many specializations,
-Silverman’s specialization theorem preserves at least those \(r\) directions.
-The specialization search therefore hunts for an exceptional jump above a
-known generic subgroup instead of starting from rank zero.
+of Mordell-Weil rank \(r\). For all but finitely many specializations,
+Silverman's specialization theorem preserves at least those \(r\) directions.
+The search therefore hunts for exceptional points outside a known generic
+subgroup instead of starting from rank zero.
 
-### 3.2 Mestre--Nagao score
+### 3.2 Mestre-Nagao score
 
-For a specialization \(t\) and prime bound \(B\), the paper uses
+For a specialization \(t\) and prime bound \(B\), the later implementation
+uses
 
 \[
 S(t,B)
@@ -133,171 +234,221 @@ S(t,B)
 \log\!\left(\frac{\#E_t(\mathbf F_p)}{p}\right).
 \]
 
-This is a ranking heuristic only. A large score triggers more expensive
-arithmetic; it is never a rank certificate.
+The 2007 lecture describes the same principle as maximizing
+\(\sum_p\log(N_p/p)\) over literally thousands of primes. This is a ranking
+heuristic only, never a rank certificate.
 
-### 3.3 Precompute local traces
+### 3.3 Precomputed local traces and sieve evaluation
 
-For each prime \(p\), the trace \(a_p(E_t)\) depends only on \(t\bmod p\).
-The scanner can therefore precompute all local contributions for every
-residue class before evaluating a large rational search region.
+For each prime \(p\), \(\#E_t(\mathbf F_p)\) depends only on \(t\bmod p\).
+The scanner precomputes local contributions for all residue classes and then
+adds low-precision scores across large rational parameter regions in sieve
+style.
 
-### 3.4 Staged cutoffs
-
-Choose increasing prime bounds
-
-\[
-B_0\le B_1\le\cdots\le B_m=B
-\]
-
-and thresholds
-
-\[
-C_0\le C_1\le\cdots\le C_m.
-\]
-
-A parameter survives to stage \(i\) only if it passed every earlier score
-threshold. This prevents expensive large-\(B\) evaluations on the full
-search region.
-
-### 3.5 Sieve over rational parameters
-
-For fixed denominator \(b\) and a long interval of numerators \(a\), the
-score contributions are added to an array for all \(t=a/b\) at once.
-The paper reports:
+The 2020 paper reports implementation choices including:
 
 - fixed-point approximations to
   \(\log(\#E_t(\mathbf F_p)/p)\);
-- denominator \(D=1024\);
+- scale denominator \(D=1024\);
 - 16-bit score counters;
 - SIMD/vector additions;
-- the initial sieve as the dominant bulk stage.
+- staged prime cutoffs and thresholds;
+- skewed numerator/denominator regions when this lowers specialized
+  coefficient heights.
 
-These are implementation choices to reproduce and benchmark, not immutable
-constants.
+These constants must be reproduced and ablated, not treated as sacred.
 
-### 3.6 Descent before deep point search
+### 3.4 Quadratic sections and half-lattice holes
 
-After scoring, the 2020 pipeline applies descent/Selmer computations to
-obtain stronger rank information or rejection filters where practical. The
-exact descent depends on available torsion/isogeny structure.
+For a rootless rank-17 K3 surface, a quadratic section is governed by a coset
+of \(2E(\mathbf Q(t))\) whose norm is 2 modulo 4 and whose representatives
+have sufficiently large norm. Equivalently, one studies deep holes in the
+half Mordell-Weil lattice.
 
-For survivors, rational points are searched on covering curves, especially
-2-coverings, rather than only by direct bounded \(x\)-coordinate searches.
-When known points give new coverings, those coverings are added to the search.
+Elkies reports:
 
-### 3.7 Skewed parameter regions
+- literally thousands of relevant holes for the rank-17 surface;
+- a genus-zero quadratic cover for each such section;
+- millions of positive-rank genus-one biquadratic base changes;
+- no degeneration among those examples to a genus-zero cover producing
+  generic rank at least 19 over \(\mathbf Q(T)\).
 
-If the coefficient polynomials are unbalanced, square boxes in numerator and
-denominator need not minimize the size of specialized coefficients. The paper
-uses skewed regions to favor smaller resulting curves at comparable parameter
-height.
+This is important negative information: naive quadratic-base-change
+extension of the known surface had already been explored deeply. The
+three-character packet theorem in this repository remains useful as a general
+construction module, but a packet inside the record geometry must overcome
+this observed genus obstruction rather than ignore it.
 
-## 4. What likely mattered structurally
+### 3.5 Finding extra points: “fake 2-descent”
 
-The following are research hypotheses, not facts about the record until they
-are tested against the recovered fibration.
+The specialized coefficients are too large for a direct point search or, in
+the torsion-free case, a conventional 2-descent at record scale. Instead the
+known generic rank-17 sublattice is used to search near half-lattice holes.
+This produces quartics
 
-### H1. The score was identifying an exceptional local signature, not merely a
-large average.
+\[
+y^2=Q(x)
+\]
 
-The rank-29 parameter should be compared with controls prime by prime.
-Ablations must determine which primes contribute genuine predictive
-information for actual extra points.
+with much smaller coefficients. Elkies describes the procedure as close
+enough to a 2-descent to be called a **fake 2-descent**.
 
-### H2. Bad-reduction data may carry signal omitted by the classical score.
+The C program `ratpoints`, by C. Stahlke and M. Stoll, is then used to search
+for rational points on quartics attached to some of the deepest holes. The
+canonical height pairing determines the rank generated by the resulting
+points.
 
-The 2020 paper explicitly notes that split multiplicative reduction and
-Tamagawa behavior are not naturally represented in \(S(t,B)\), and reports
-that ad hoc bonuses sometimes helped. The record curve has a highly
-structured discriminant and many multiplicative primes; whether this
-structure predicted the twelve extra points is testable once the family is
-recovered.
+The rank-17 surface itself has 1311 pairs \((X,\pm Y)\) of polynomial integral
+points of canonical height 4. This unusually dense short-vector structure is
+a concrete invariant to reproduce and potentially exploit when enumerating
+alternative fibrations or search neighborhoods.
 
-### H3. The fibration may contain hidden character packets.
+### 3.6 Descent and coverings in later searches
 
-The verified theorem in `research/genus_zero_three_channel_packet.md` shows
-that two quadratic multisections can hide a third independent product-
-character section on a genus-zero biquadratic base. Every pair of quadratic
-multisections on the record fibration must therefore be audited across all
-three nontrivial character twists.
+The 2020 search architecture applies descent/Selmer computations as stronger
+filters where the available torsion or isogeny structure makes them feasible.
+For survivors, rational points are sought on covering curves rather than only
+by bounded direct \(x\)-searches. Known points can generate additional
+coverings, which are then added to the search.
 
-### H4. Coefficient size and point height must be separated from score.
+## 4. Structural hypotheses to test
 
-A score can remain large while the expected height of new points becomes too
-large for the covering search. Search regions should be evaluated by cost per
-additional independent point, not score alone.
+The following are research hypotheses, not facts about the rank-29 parameter
+until tested against the recovered fibration.
+
+### H1. The score identifies a structured local signature
+
+The record parameter should be compared with matched controls prime by prime.
+Ablations must determine which primes or prime bands predict actual additional
+points rather than merely an unusually large aggregate score.
+
+### H2. Bad-reduction data carry omitted signal
+
+Split multiplicative reduction, Tamagawa behavior, and congruence classes are
+not naturally represented in the classical score. The record curve has a
+highly structured discriminant. These features should be tested out of sample
+against actual point yield.
+
+### H3. The deepest useful holes have extra arithmetic structure
+
+The half-lattice method should not be treated as an undifferentiated list of
+quartics. Hole orbit, stabilizer, local solubility, quartic invariant, and
+covering height may identify neighborhoods with materially higher point yield.
+
+### H4. The Shimura quotient may expose a more efficient moduli coordinate
+
+The explicit genus-one quotient of the N=474 Shimura curve gives a second
+coordinate system for the non-CM point:
+
+\[
+(t,u)=\left(\frac{14}{13},\frac{16064}{2197}\right)
+\longmapsto
+\left(X,Y\right)
+=
+\left(\frac{169}{196},\frac{2008}{343}\right)
+\]
+
+on
+
+\[
+Y^2=-48X^3+88X^2-19X+16.
+\]
+
+A reconstructed K3 moduli map may be simpler in this quotient coordinate than
+in the original genus-two parameter.
+
+### H5. Coefficient size and point height must be separated from score
+
+A score can remain large while the expected height of extra points becomes
+infeasible. Search regions should be ranked by expected cost per additional
+independent point, incorporating coefficient growth, hole depth, and covering
+search cost.
 
 ## 5. Reconstruction acceptance criteria
 
 The current-record geometry is considered reproduced only when `main`
 contains exact data and scripts satisfying all of the following.
 
-### Geometry
+### Shimura/K3 bridge
+
+- an explicit map from the N=474 Shimura point to the Picard-rank-19 K3
+  family;
+- proof or independent verification that the chosen orbit is non-CM;
+- the finite-field seed and p-adic/rational-reconstruction data, or a new
+  independent derivation;
+- the exact neighbor chain leading to the rootless elliptic model.
+
+### Elliptic geometry
 
 - an explicit Weierstrass model over \(\mathbf Q(t)\);
-- the K3 surface/pencil from which it is derived;
-- singular fibers and Shioda--Tate accounting;
+- singular fibers and Shioda-Tate accounting;
 - 17 explicit sections over \(\mathbf Q(t)\);
 - an exact height-pairing matrix of rank 17;
-- the specialization parameter producing \(E_{29}\);
-- the exact isomorphism from the specialized fiber to `curve.json`.
+- verification of the claimed rootless essential lattice;
+- reproduction of the 1311 height-4 polynomial integral point pairs.
 
-### Point accounting
+### Record specialization
 
+- the parameter producing \(E_{29}\);
+- the exact isomorphism from the specialized fiber to `curve.json`;
 - specialization of all 17 generic sections;
 - identification of 12 additional independent directions;
-- an exact transition matrix from those 29 directions to the published
-  29-point basis;
-- checks that no point is introduced over a number field instead of
-  \(\mathbf Q\).
+- an exact transition matrix to the published 29-point basis;
+- checks that every point is rational over \(\mathbf Q\), not merely over an
+  auxiliary field.
 
 ### Search reproduction
 
 - the local-score table for every prime used;
-- exact \(B_i,C_i\), fixed-point scale, and search region;
+- exact prime cutoffs, thresholds, fixed-point scale, and search region;
 - a deterministic scan that ranks the known record parameter;
-- point-search/covering commands and seeds;
-- ablations connecting score features to actual extra points.
+- the half-lattice-hole enumeration and quartic-generation code;
+- `ratpoints` commands, bounds, and logs;
+- ablations connecting local and hole features to actual additional points.
 
 ### Independent verification
 
-- the existing exact mod-2 certificate;
-- a SageMath verification script;
-- a Magma verification script;
+- the existing exact mod-2 lower-bound certificate;
+- SageMath and Magma verification scripts;
 - software versions and logs;
 - a clear separation between unconditional lower bounds and conditional
   upper bounds.
 
-## 6. Immediate executable experiments after recovery
+## 6. Immediate experiments after recovery
 
-1. **Prime ablation:** remove one prime or one prime band at a time and measure
-   the change in record-parameter rank among controls.
-2. **Bad-prime features:** add only interpretable reduction-type/Tamagawa
+1. **Prime ablation:** remove one prime or prime band at a time and measure the
+   change in record-parameter rank among controls.
+2. **Bad-prime features:** add only interpretable reduction-type and Tamagawa
    features and test out-of-sample point yield.
-3. **Character audit:** enumerate squareclass spans of quadratic
-   multisections; test every product twist.
-4. **Exceptional-point height model:** regress actual covering-search cost and
-   point height against local features, not analytic-rank labels.
-5. **Neighbor fibrations:** reconstruct the Néron--Severi lattice and
-   enumerate alternative \(U\)-embeddings/neighbor steps, ranking them by
-   generic rank, rationality of sections, and coefficient growth.
+3. **Hole-orbit ablation:** compare actual rational-point yield across
+   half-lattice orbits, depths, local-solubility profiles, and quartic
+   invariants.
+4. **Character audit:** enumerate the full squareclass span of every pair of
+   quadratic multisections and inspect product-character twists, while
+   respecting the genus obstruction reported for the record surface.
+5. **Neighbor fibrations:** reconstruct the Néron-Severi lattice and enumerate
+   alternative \(U\)-embeddings/neighbor steps, ranking them by generic rank,
+   rationality of sections, coefficient growth, and short-vector density.
+6. **Shimura-coordinate comparison:** attempt the moduli reconstruction in
+   both \((t,u)\) and the genus-one quotient coordinate \((X,Y)\).
 
 ## 7. Current blocker
 
-The exact lower-bound verification is complete. The main blocker is no longer
-the final curve or its 29 points; it is the missing bridge back to the
-rank-17 K3 fibration:
+The exact lower-bound verification and the exact N=474 Shimura anchor are now
+complete. The unresolved bridge is
 
 \[
 \boxed{
-\text{explicit fibration}
-+\text{17 sections}
-+\text{record parameter}
-+\text{search provenance}.
+\text{non-CM Shimura point}
+\longrightarrow
+\text{explicit rootless elliptic K3}
+\longrightarrow
+17\text{ sections}
+\longrightarrow
+\text{rank-29 specialization and 12 extra points}.
 }
 \]
 
-Until that bridge is recovered from primary material or independently
-reconstructed, a production scan claiming to extend the original search
-would not be reproducible.
+Until that bridge is recovered from primary computational material or rebuilt
+independently, a production scan advertised as an extension of the original
+record search would not be reproducible.
