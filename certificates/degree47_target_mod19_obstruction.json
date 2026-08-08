@@ -1,6 +1,18 @@
 {
-  "certificate_id": "degree47-target-mod19-obstruction-v1",
+  "certificate_id": "degree47-target-mod19-obstruction-v2",
   "claim_status": "proved",
+  "determinant_quintic": {
+    "coefficients_low_to_high": [
+      -79764168,
+      357341556,
+      -533872086,
+      266432683,
+      -758384,
+      154704
+    ],
+    "content": 11,
+    "polynomial": "154704t^5-758384t^4+266432683t^3-533872086t^2+357341556t-79764168"
+  },
   "exceptional_branch": {
     "condition": "k=2-3t=0",
     "consequence": "the first reduced equation gives z=0, hence d=0",
@@ -11,28 +23,28 @@
     "G9": "(12t^2+5290t-3564)z-588t^3-4455t^2+6138t-1936=0"
   },
   "modular_obstruction": {
-    "leading_coefficient_mod_19": 6,
+    "leading_coefficient_mod_19": 4,
     "modulus": 19,
     "values_at_0_through_18": [
+      5,
+      13,
+      18,
+      1,
+      7,
       17,
       10,
-      8,
-      11,
-      1,
-      16,
-      15,
-      9,
-      2,
-      8,
-      11,
-      1,
-      10,
-      15,
-      12,
-      14,
-      11,
       6,
-      13
+      14,
+      18,
+      1,
+      7,
+      13,
+      10,
+      8,
+      3,
+      1,
+      4,
+      15
     ],
     "zero_count": 0
   },
@@ -42,27 +54,28 @@
     "t": "11b",
     "z": "121d"
   },
-  "quintic": {
+  "primitive_quintic": {
     "coefficients_low_to_high": [
-      -79764168,
-      357341556,
-      -533872086,
-      266432683,
-      -758384,
-      154704
+      -7251288,
+      32485596,
+      -48533826,
+      24221153,
+      -68944,
+      14064
     ],
     "content": 1,
-    "polynomial": "154704t^5-758384t^4+266432683t^3-533872086t^2+357341556t-79764168"
+    "polynomial": "14064t^5-68944t^4+24221153t^3-48533826t^2+32485596t-7251288"
   },
-  "rational_root_argument": "For a primitive integer polynomial, a rational root has denominator dividing the leading coefficient. Since 19 does not divide that coefficient, reduction gives a root in F_19, but the exhaustive value table has none.",
+  "rational_root_argument": "The determinant and its primitive part have the same rational roots. For the primitive integer quintic, a rational root has denominator dividing 14064. Since 19 does not divide 14064, reduction gives a root in F_19, but the exhaustive value table has none.",
   "result": "no_rational_solution",
-  "schema_version": 1,
+  "schema_version": 2,
   "scope": "generic squarefree/coprime degree-(4,7) target branch; repeated-root values are excluded separately",
   "theorem": "The generic degree-(4,7) polynomial target system has no rational solution.",
   "verification": {
+    "content_and_primitive_part": "exact coefficient gcd and scalar comparison",
     "determinant": "two independent exact checks: sparse Laurent-polynomial identity and integer convolution",
     "implementation": "Python standard library only",
-    "modular_check": "complete enumeration of F_19",
+    "modular_check": "complete enumeration of F_19 for the primitive quintic",
     "scaled_equations": "exact sparse Laurent-polynomial arithmetic over Q"
   }
 }
