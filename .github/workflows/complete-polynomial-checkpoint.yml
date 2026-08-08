@@ -1,4 +1,4 @@
-# Checkpoint rerun after exact S=15/4 factorization repair.
+# Checkpoint rerun with the corrected primitive mod-19 determinant quintic.
 name: complete-polynomial-checkpoint
 
 on:
