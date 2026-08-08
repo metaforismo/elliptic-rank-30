@@ -1,0 +1,183 @@
+{
+  "certificate_sha256": "e68cb5653098734c783307c048009d96bcd0693c9e21fccbcc01d007dfb585ee",
+  "character_signs": {
+    "chi_u": {
+      "sigma_u": -1,
+      "sigma_v": 1
+    },
+    "chi_uv": {
+      "sigma_u": -1,
+      "sigma_v": -1
+    },
+    "chi_v": {
+      "sigma_u": 1,
+      "sigma_v": -1
+    }
+  },
+  "claim": "For the displayed E/Q(t) and biquadratic genus-zero cover L/Q(t), rank E(L) >= rank E(Q(t)) + 3.",
+  "conditional_assumptions": [],
+  "cover": {
+    "branch_place_count": 3,
+    "degree": 4,
+    "field": "L=Q(t)(u,v), u^2=t, v^2=2t/(t+1)",
+    "genus": 0,
+    "rational_parameterization": {
+      "checks": {
+        "2t/(t+1)=v^2": true,
+        "t*2t/(t+1)=(uv)^2": true,
+        "t=u^2": true,
+        "v^2+w^2=2": true
+      },
+      "t": "u^2",
+      "u": "v/w",
+      "v": "(r^2-2*r-1)/(r^2+1)",
+      "w": "(1-2*r-r^2)/(r^2+1)"
+    }
+  },
+  "curve": {
+    "base_field": "Q(t)",
+    "equation": "y^2=x^3-((t^2+1)/(t+1))*x+t",
+    "generic_discriminant": "16*(4*t^6-27*t^5-69*t^4-81*t^3-15*t^2+4)/(t+1)^3",
+    "generic_nonsingular": true
+  },
+  "generic_twist_section_checks": {
+    "d1": true,
+    "d1*d2": true,
+    "d2": true
+  },
+  "implementation": {
+    "language": "Python standard library",
+    "script": "research/packet3_certificate.py"
+  },
+  "independence_argument": "In E(L) tensor Q, the commuting V4 involutions split the group into character eigenspaces. The three non-torsion sections lie in three distinct nontrivial characters, hence are Q-linearly, therefore Z-linearly, independent and independent from E(Q(t)).",
+  "non_torsion_specialization": {
+    "base_curve": {
+      "a": 5,
+      "b": -3,
+      "discriminant": -11888
+    },
+    "generic_conclusion": "A torsion section specializes to a torsion point at every smooth fiber where it is defined. Each displayed specialized point is non-torsion, so each generic character section is non-torsion.",
+    "t": -3,
+    "twists": [
+      {
+        "character": "chi_u",
+        "non_torsion_argument": "If the point were torsion, its displayed nonzero multiple would be torsion; Lutz-Nagell would force integral coordinates, contradicting the nonintegral x-coordinate.",
+        "nonintegral_multiple": {
+          "n": 2,
+          "point": [
+            "25/4",
+            "-197/8"
+          ]
+        },
+        "point": [
+          "0",
+          "9"
+        ],
+        "twist": {
+          "d": -3,
+          "discriminant": "-8666352",
+          "equation": "y^2=x^3+(45)*x+(81)"
+        }
+      },
+      {
+        "character": "chi_v",
+        "non_torsion_argument": "If the point were torsion, its displayed nonzero multiple would be torsion; Lutz-Nagell would force integral coordinates, contradicting the nonintegral x-coordinate.",
+        "nonintegral_multiple": {
+          "n": 3,
+          "point": [
+            "1479/49",
+            "58185/343"
+          ]
+        },
+        "point": [
+          "3",
+          "9"
+        ],
+        "twist": {
+          "d": 3,
+          "discriminant": "-8666352",
+          "equation": "y^2=x^3+(45)*x+(-81)"
+        }
+      },
+      {
+        "character": "chi_uv",
+        "non_torsion_argument": "If the point were torsion, its displayed nonzero multiple would be torsion; Lutz-Nagell would force integral coordinates, contradicting the nonintegral x-coordinate.",
+        "nonintegral_multiple": {
+          "n": 3,
+          "point": [
+            "13077/121",
+            "-1522395/1331"
+          ]
+        },
+        "point": [
+          "9",
+          "81"
+        ],
+        "twist": {
+          "d": -9,
+          "discriminant": "-6317770608",
+          "equation": "y^2=x^3+(405)*x+(2187)"
+        }
+      }
+    ]
+  },
+  "schema_version": 1,
+  "section_identity_checks": {
+    "f(-1)=d1*d2": true,
+    "f(0)=d1": true,
+    "f(1)=d2": true
+  },
+  "sections": [
+    {
+      "character": "chi_u",
+      "identity": "f_t(0)=t=u^2",
+      "point": [
+        "0",
+        "u"
+      ]
+    },
+    {
+      "character": "chi_v",
+      "identity": "f_t(1)=2t/(t+1)=v^2",
+      "point": [
+        "1",
+        "v"
+      ]
+    },
+    {
+      "character": "chi_uv",
+      "identity": "f_t(-1)=2t^2/(t+1)=(uv)^2",
+      "point": [
+        "-1",
+        "u*v"
+      ]
+    }
+  ],
+  "squareclasses": {
+    "d1": "t",
+    "d2": "2*t/(t+1)",
+    "parity_vectors": {
+      "d1": [
+        1,
+        0,
+        1
+      ],
+      "d1*d2": [
+        0,
+        1,
+        1
+      ],
+      "d2": [
+        1,
+        1,
+        0
+      ]
+    },
+    "rank_over_F2": 2,
+    "valuation_places": [
+      "t=0",
+      "t=-1",
+      "t=infinity"
+    ]
+  }
+}
