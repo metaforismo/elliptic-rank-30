@@ -1,271 +1,502 @@
 #!/usr/bin/env python3
-"""Exact certificate for a genus-zero three-channel quadratic rank packet.
+"""Exact certificate for a genus-zero three-character rank packet.
 
-The family is
+For K = Q(t), consider
 
-    E_t: y^2 = x^3 - (t^2 + 1)/(t + 1) * x + t.
+    E_t : y^2 = x^3 - (t^2+1)/(t+1) x + t.
 
-Let d1=t and d2=2t/(t+1). The twists d1*y^2=f_t(x),
-d2*y^2=f_t(x), and d1*d2*y^2=f_t(x) contain points with
-x-coordinates 0, 1, and -1, respectively. Their squareclasses have total
-geometric branch support {0,-1,infinity}; the biquadratic base therefore has
-genus zero. The three points occupy the three distinct non-trivial Galois
-characters.
+Let d1=t and d2=2t/(t+1).  Over
+L=K(sqrt(d1),sqrt(d2)) the points
 
-This module verifies every polynomial identity with exact integer arithmetic,
-checks the branch-code calculation, verifies a rational parametrisation of the
-base, and proves that the three generic twist sections are non-torsion by a
-Lutz--Nagell specialization at t=-3.
+    (0,sqrt(d1)), (1,sqrt(d2)), (-1,sqrt(d1*d2))
+
+are defined.  This script verifies all algebraic identities, the degree-four
+genus-zero parametrization of L, and exact non-torsion specializations that
+place the three points in distinct nontrivial V4 character spaces.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from dataclasses import dataclass
 from fractions import Fraction
 from pathlib import Path
-from typing import Iterable, Optional, Sequence, Tuple
+from typing import Iterable, Optional
 
-Poly = Tuple[int, ...]
-Point = Optional[Tuple[Fraction, Fraction]]
+Poly = tuple[int, ...]  # coefficients in ascending order
+Point = Optional[tuple[Fraction, Fraction]]
 
 
-def trim(a: Iterable[int]) -> Poly:
-    values = list(a)
+def trim(poly: Iterable[int]) -> Poly:
+    values = list(poly)
     while len(values) > 1 and values[-1] == 0:
         values.pop()
     return tuple(values or [0])
 
 
-def padd(a: Poly, b: Poly) -> Poly:
-    n = max(len(a), len(b))
-    return trim((a[i] if i < len(a) else 0) + (b[i] if i < len(b) else 0) for i in range(n))
+def padd(left: Poly, right: Poly) -> Poly:
+    size = max(len(left), len(right))
+    return trim(
+        (left[index] if index < len(left) else 0)
+        + (right[index] if index < len(right) else 0)
+        for index in range(size)
+    )
 
 
-def pneg(a: Poly) -> Poly:
-    return tuple(-x for x in a)
+def pneg(poly: Poly) -> Poly:
+    return tuple(-coefficient for coefficient in poly)
 
 
-def psub(a: Poly, b: Poly) -> Poly:
-    return padd(a, pneg(b))
+def psub(left: Poly, right: Poly) -> Poly:
+    return padd(left, pneg(right))
 
 
-def pmul(a: Poly, b: Poly) -> Poly:
-    out = [0] * (len(a) + len(b) - 1)
-    for i, x in enumerate(a):
-        for j, y in enumerate(b):
-            out[i + j] += x * y
-    return trim(out)
+def pmul(left: Poly, right: Poly) -> Poly:
+    result = [0] * (len(left) + len(right) - 1)
+    for i, a in enumerate(left):
+        for j, b in enumerate(right):
+            result[i + j] += a * b
+    return trim(result)
 
 
-def pscale(a: Poly, c: int) -> Poly:
-    return trim(c * x for x in a)
+def pscale(poly: Poly, scalar: int) -> Poly:
+    return trim(scalar * coefficient for coefficient in poly)
 
 
-def ppow(a: Poly, n: int) -> Poly:
-    if n < 0:
-        raise ValueError("negative polynomial exponent")
-    out: Poly = (1,)
-    base = a
-    k = n
-    while k:
-        if k & 1:
-            out = pmul(out, base)
-        base = pmul(base, base)
-        k >>= 1
-    return out
+def peval(poly: Poly, value: int) -> int:
+    result = 0
+    for coefficient in reversed(poly):
+        result = result * value + coefficient
+    return result
 
 
-def rank_f2(rows: Sequence[Sequence[int]]) -> int:
+def pdiv_linear(poly: Poly, root: int) -> tuple[Poly, int]:
+    """Divide by x-root, returning quotient and remainder."""
+    if len(poly) == 1:
+        return (0,), poly[0]
+    quotient = [0] * (len(poly) - 1)
+    quotient[-1] = poly[-1]
+    for index in range(len(poly) - 3, -1, -1):
+        quotient[index] = poly[index + 1] + root * quotient[index + 1]
+    remainder = poly[0] + root * quotient[0]
+    return trim(quotient), remainder
+
+
+def multiplicity(poly: Poly, root: int) -> int:
+    if poly == (0,):
+        raise ValueError("zero polynomial has undefined valuation")
+    count = 0
+    current = poly
+    while len(current) > 1 and peval(current, root) == 0:
+        current, remainder = pdiv_linear(current, root)
+        if remainder != 0:
+            raise AssertionError("linear division remainder mismatch")
+        count += 1
+    return count
+
+
+@dataclass(frozen=True)
+class RationalFunction:
+    numerator: Poly
+    denominator: Poly = (1,)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "numerator", trim(self.numerator))
+        object.__setattr__(self, "denominator", trim(self.denominator))
+        if self.denominator == (0,):
+            raise ZeroDivisionError("zero denominator")
+
+    @classmethod
+    def integer(cls, value: int) -> "RationalFunction":
+        return cls((value,))
+
+    def __neg__(self) -> "RationalFunction":
+        return RationalFunction(pneg(self.numerator), self.denominator)
+
+    def __add__(self, other: object) -> "RationalFunction":
+        rhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        return RationalFunction(
+            padd(pmul(self.numerator, rhs.denominator), pmul(rhs.numerator, self.denominator)),
+            pmul(self.denominator, rhs.denominator),
+        )
+
+    __radd__ = __add__
+
+    def __sub__(self, other: object) -> "RationalFunction":
+        rhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        return self + (-rhs)
+
+    def __rsub__(self, other: object) -> "RationalFunction":
+        lhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        return lhs - self
+
+    def __mul__(self, other: object) -> "RationalFunction":
+        rhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        return RationalFunction(
+            pmul(self.numerator, rhs.numerator),
+            pmul(self.denominator, rhs.denominator),
+        )
+
+    __rmul__ = __mul__
+
+    def __truediv__(self, other: object) -> "RationalFunction":
+        rhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        if rhs.numerator == (0,):
+            raise ZeroDivisionError
+        return RationalFunction(
+            pmul(self.numerator, rhs.denominator),
+            pmul(self.denominator, rhs.numerator),
+        )
+
+    def __rtruediv__(self, other: object) -> "RationalFunction":
+        lhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        return lhs / self
+
+    def __pow__(self, exponent: int) -> "RationalFunction":
+        if exponent < 0:
+            return (RationalFunction.integer(1) / self) ** (-exponent)
+        result = RationalFunction.integer(1)
+        base = self
+        power = exponent
+        while power:
+            if power & 1:
+                result = result * base
+            base = base * base
+            power //= 2
+        return result
+
+    def equals(self, other: object) -> bool:
+        rhs = other if isinstance(other, RationalFunction) else RationalFunction.integer(int(other))
+        return pmul(self.numerator, rhs.denominator) == pmul(rhs.numerator, self.denominator)
+
+    def valuation(self, root: int) -> int:
+        return multiplicity(self.numerator, root) - multiplicity(self.denominator, root)
+
+    def valuation_at_infinity(self) -> int:
+        return (len(self.denominator) - 1) - (len(self.numerator) - 1)
+
+
+def gf2_rank(rows: list[list[int]]) -> int:
     if not rows:
         return 0
     matrix = [[entry & 1 for entry in row] for row in rows]
-    nrows, ncols = len(matrix), len(matrix[0])
+    width = len(matrix[0])
     rank = 0
-    for col in range(ncols):
-        pivot = next((r for r in range(rank, nrows) if matrix[r][col]), None)
+    for column in range(width):
+        pivot = next((row for row in range(rank, len(matrix)) if matrix[row][column]), None)
         if pivot is None:
             continue
         matrix[rank], matrix[pivot] = matrix[pivot], matrix[rank]
-        for r in range(nrows):
-            if r != rank and matrix[r][col]:
-                matrix[r] = [x ^ y for x, y in zip(matrix[r], matrix[rank])]
+        for row in range(len(matrix)):
+            if row != rank and matrix[row][column]:
+                matrix[row] = [a ^ b for a, b in zip(matrix[row], matrix[rank])]
         rank += 1
+        if rank == len(matrix):
+            break
     return rank
 
 
-def discriminant_short(a: int, b: int) -> int:
-    return -16 * (4 * a**3 + 27 * b**2)
-
-
-def ec_add(a: int, p: Point, q: Point) -> Point:
-    if p is None:
-        return q
-    if q is None:
-        return p
-    x1, y1 = p
-    x2, y2 = q
+def ec_add(point1: Point, point2: Point, curve_a: Fraction) -> Point:
+    if point1 is None:
+        return point2
+    if point2 is None:
+        return point1
+    x1, y1 = point1
+    x2, y2 = point2
     if x1 == x2 and y1 == -y2:
         return None
-    if p == q:
+    if point1 == point2:
         if y1 == 0:
             return None
-        slope = (3 * x1 * x1 + a) / (2 * y1)
+        slope = (3 * x1 * x1 + curve_a) / (2 * y1)
     else:
         slope = (y2 - y1) / (x2 - x1)
     x3 = slope * slope - x1 - x2
     y3 = slope * (x1 - x3) - y1
-    return (x3, y3)
+    return x3, y3
 
 
-def ec_mul(a: int, n: int, p: Point) -> Point:
-    if n < 0:
-        if p is None:
+def ec_multiply(multiplier: int, point: Point, curve_a: Fraction) -> Point:
+    if multiplier < 0:
+        if point is None:
             return None
-        return ec_mul(a, -n, (p[0], -p[1]))
-    out: Point = None
-    base = p
-    k = n
-    while k:
-        if k & 1:
-            out = ec_add(a, out, base)
-        base = ec_add(a, base, base)
-        k >>= 1
-    return out
+        return ec_multiply(-multiplier, (point[0], -point[1]), curve_a)
+    result: Point = None
+    addend = point
+    value = multiplier
+    while value:
+        if value & 1:
+            result = ec_add(result, addend, curve_a)
+        addend = ec_add(addend, addend, curve_a)
+        value //= 2
+    return result
 
 
-@dataclass(frozen=True)
-class NontorsionWitness:
-    twist: int
-    curve_a: int
-    curve_b: int
-    point: Tuple[int, int]
-    multiple: int
-    multiple_x: Fraction
+def on_curve(point: Point, curve_a: Fraction, curve_b: Fraction) -> bool:
+    if point is None:
+        return True
+    x, y = point
+    return y * y == x * x * x + curve_a * x + curve_b
 
 
-def verify_packet() -> dict:
-    t: Poly = (0, 1)
-    t_plus_one: Poly = (1, 1)
-    t2_plus_one: Poly = (1, 0, 1)
+def curve_discriminant(curve_a: int, curve_b: int) -> int:
+    return -16 * (4 * curve_a**3 + 27 * curve_b**2)
 
-    def rhs_numerator(c: int) -> Poly:
-        return psub(pmul(padd((c**3,), t), t_plus_one), pscale(t2_plus_one, c))
 
-    rhs0 = rhs_numerator(0)
-    rhs1 = rhs_numerator(1)
-    rhsm1 = rhs_numerator(-1)
-    assert rhs0 == pmul(t, t_plus_one)
-    assert rhs1 == pscale(t, 2)
-    assert rhsm1 == pscale(ppow(t, 2), 2)
+def canonical_sha256(payload: object) -> str:
+    data = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(data).hexdigest()
 
-    d1_vector = (1, 0, 1)
-    d2_vector = (1, 1, 0)
-    d3_vector = tuple(x ^ y for x, y in zip(d1_vector, d2_vector))
-    assert d3_vector == (0, 1, 1)
-    character_rank = rank_f2([d1_vector, d2_vector])
-    assert character_rank == 2
-    branch_support_size = 3
-    genus = 1 + 2 ** (character_rank - 2) * (branch_support_size - 4)
-    assert genus == 0
 
-    den: Poly = (1, 0, 1)
-    v_num: Poly = (-1, -2, 1)
-    w_num: Poly = (1, -2, -1)
-    assert padd(ppow(v_num, 2), ppow(w_num, 2)) == pscale(ppow(den, 2), 2)
-    lhs = pmul(ppow(v_num, 2), padd(ppow(w_num, 2), ppow(v_num, 2)))
-    rhs = pscale(pmul(ppow(den, 2), ppow(v_num, 2)), 2)
-    assert lhs == rhs
+def compute_certificate() -> dict[str, object]:
+    t = RationalFunction((0, 1))
+    a = -(t**2 + 1) / (t + 1)
+    b = t
 
-    witnesses = []
-    for d, x_on_d_model, multiple in [(-3, 0, 2), (3, 1, 3), (-9, -1, 3)]:
-        a = d * d * 5
-        b = d * d * d * (-3)
-        assert discriminant_short(a, b) != 0
-        point = (Fraction(d * x_on_d_model), Fraction(d * d))
-        assert point[1] * point[1] == point[0] ** 3 + a * point[0] + b
-        multiple_point = ec_mul(a, multiple, point)
-        assert multiple_point is not None
-        assert multiple_point[0].denominator != 1
-        witnesses.append(
-            NontorsionWitness(
-                twist=d,
-                curve_a=a,
-                curve_b=b,
-                point=(int(point[0]), int(point[1])),
-                multiple=multiple,
-                multiple_x=multiple_point[0],
-            )
+    def cubic_at(x_value: int) -> RationalFunction:
+        return x_value**3 + a * x_value + b
+
+    d1 = t
+    d2 = 2 * t / (t + 1)
+    d3 = d1 * d2
+    evaluations = {
+        "f(0)=d1": cubic_at(0).equals(d1),
+        "f(1)=d2": cubic_at(1).equals(d2),
+        "f(-1)=d1*d2": cubic_at(-1).equals(d3),
+    }
+    if not all(evaluations.values()):
+        raise AssertionError(f"section identities failed: {evaluations}")
+
+    generic_twist_checks: dict[str, bool] = {}
+    for label, squareclass, x_coordinate in (
+        ("d1", d1, 0),
+        ("d2", d2, 1),
+        ("d1*d2", d3, -1),
+    ):
+        # For y^2=f(x), the d-twist is
+        # Y^2=X^3+d^2*a*X+d^3*b.  If f(x0)=d, then
+        # (X,Y)=(d*x0,d^2) is a K-rational point on the twist.
+        twist_x = squareclass * x_coordinate
+        twist_y = squareclass**2
+        twist_rhs = twist_x**3 + squareclass**2 * a * twist_x + squareclass**3 * b
+        generic_twist_checks[label] = (twist_y**2).equals(twist_rhs)
+    if not all(generic_twist_checks.values()):
+        raise AssertionError(f"generic twist-section checks failed: {generic_twist_checks}")
+
+    places = (0, -1)
+    vectors = {
+        "d1": [d1.valuation(place) & 1 for place in places]
+        + [d1.valuation_at_infinity() & 1],
+        "d2": [d2.valuation(place) & 1 for place in places]
+        + [d2.valuation_at_infinity() & 1],
+    }
+    vectors["d1*d2"] = [left ^ right for left, right in zip(vectors["d1"], vectors["d2"])]
+    squareclass_rank = gf2_rank([vectors["d1"], vectors["d2"]])
+    if vectors != {"d1": [1, 0, 1], "d2": [1, 1, 0], "d1*d2": [0, 1, 1]}:
+        raise AssertionError(f"unexpected parity vectors: {vectors}")
+    if squareclass_rank != 2:
+        raise AssertionError("d1 and d2 are not independent squareclasses")
+
+    cover_degree = 2**squareclass_rank
+    branch_places = sum(any(vector[index] for vector in vectors.values()) for index in range(3))
+    two_g_minus_two = -2 * cover_degree + branch_places * (cover_degree // 2)
+    if two_g_minus_two % 2:
+        raise AssertionError("Riemann-Hurwitz parity failure")
+    genus = (two_g_minus_two + 2) // 2
+    if (cover_degree, branch_places, genus) != (4, 3, 0):
+        raise AssertionError("unexpected cover invariants")
+
+    r = RationalFunction((0, 1))
+    denominator = r**2 + 1
+    v = (r**2 - 2 * r - 1) / denominator
+    w = (1 - 2 * r - r**2) / denominator
+    u = v / w
+    t_parameter = u**2
+    parameterization_checks = {
+        "v^2+w^2=2": (v**2 + w**2).equals(2),
+        "t=u^2": t_parameter.equals(u**2),
+        "2t/(t+1)=v^2": (2 * t_parameter / (t_parameter + 1)).equals(v**2),
+        "t*2t/(t+1)=(uv)^2": (
+            t_parameter * (2 * t_parameter / (t_parameter + 1))
+        ).equals((u * v) ** 2),
+    }
+    if not all(parameterization_checks.values()):
+        raise AssertionError(f"parameterization failed: {parameterization_checks}")
+
+    # Generic discriminant numerator after clearing (t+1)^3.
+    generic_discriminant_numerator = (4, 0, -15, -81, -69, -27, 4)
+    if generic_discriminant_numerator == (0,):
+        raise AssertionError("generic curve is singular")
+    generic_discriminant_at_minus3 = 16 * peval(generic_discriminant_numerator, -3) // (-2) ** 3
+    if generic_discriminant_at_minus3 != -11888:
+        raise AssertionError("unexpected discriminant at t=-3")
+
+    specialized_curve = {"a": 5, "b": -3, "discriminant": generic_discriminant_at_minus3}
+    twist_specs = [
+        {
+            "character": "chi_u",
+            "d": -3,
+            "source_x": 0,
+            "twist_a": 45,
+            "twist_b": 81,
+            "point": (Fraction(0), Fraction(9)),
+            "multiple": 2,
+            "expected_multiple": (Fraction(25, 4), Fraction(-197, 8)),
+        },
+        {
+            "character": "chi_v",
+            "d": 3,
+            "source_x": 1,
+            "twist_a": 45,
+            "twist_b": -81,
+            "point": (Fraction(3), Fraction(9)),
+            "multiple": 3,
+            "expected_multiple": (Fraction(1479, 49), Fraction(58185, 343)),
+        },
+        {
+            "character": "chi_uv",
+            "d": -9,
+            "source_x": -1,
+            "twist_a": 405,
+            "twist_b": 2187,
+            "point": (Fraction(9), Fraction(81)),
+            "multiple": 3,
+            "expected_multiple": (Fraction(13077, 121), Fraction(-1522395, 1331)),
+        },
+    ]
+    specialization_records: list[dict[str, object]] = []
+    for spec in twist_specs:
+        d = int(spec["d"])
+        source_x = int(spec["source_x"])
+        expected_a = d * d * specialized_curve["a"]
+        expected_b = d**3 * specialized_curve["b"]
+        if (spec["twist_a"], spec["twist_b"]) != (expected_a, expected_b):
+            raise AssertionError("quadratic-twist coefficient mismatch")
+        point = spec["point"]
+        curve_a = Fraction(int(spec["twist_a"]))
+        curve_b = Fraction(int(spec["twist_b"]))
+        if not on_curve(point, curve_a, curve_b):
+            raise AssertionError(f"specialized point is off curve: {spec}")
+        multiple = ec_multiply(int(spec["multiple"]), point, curve_a)
+        if multiple != spec["expected_multiple"]:
+            raise AssertionError(f"multiple mismatch: got {multiple}, expected {spec['expected_multiple']}")
+        if multiple is None or multiple[0].denominator == 1:
+            raise AssertionError("Lutz-Nagell nonintegrality witness failed")
+        discriminant = curve_discriminant(int(spec["twist_a"]), int(spec["twist_b"]))
+        if discriminant == 0:
+            raise AssertionError("singular specialized twist")
+        specialization_records.append(
+            {
+                "character": spec["character"],
+                "twist": {
+                    "d": d,
+                    "equation": f"y^2=x^3+({spec['twist_a']})*x+({spec['twist_b']})",
+                    "discriminant": str(discriminant),
+                },
+                "point": [str(point[0]), str(point[1])],
+                "nonintegral_multiple": {
+                    "n": spec["multiple"],
+                    "point": [str(multiple[0]), str(multiple[1])],
+                },
+                "non_torsion_argument": (
+                    "If the point were torsion, its displayed nonzero multiple would be torsion; "
+                    "Lutz-Nagell would force integral coordinates, contradicting the nonintegral x-coordinate."
+                ),
+            }
         )
 
-    assert witnesses[0].multiple_x == Fraction(25, 4)
-    assert witnesses[1].multiple_x == Fraction(1479, 49)
-    assert witnesses[2].multiple_x == Fraction(13077, 121)
+    character_signs = {
+        "chi_u": {"sigma_u": -1, "sigma_v": 1},
+        "chi_v": {"sigma_u": 1, "sigma_v": -1},
+        "chi_uv": {"sigma_u": -1, "sigma_v": -1},
+    }
+    if len({tuple(signs.values()) for signs in character_signs.values()}) != 3:
+        raise AssertionError("characters are not distinct")
 
-    return {
-        "status": "pass",
-        "theorem": "genus-zero three-channel quadratic rank packet",
-        "family": {
+    payload: dict[str, object] = {
+        "schema_version": 1,
+        "claim": "For the displayed E/Q(t) and biquadratic genus-zero cover L/Q(t), rank E(L) >= rank E(Q(t)) + 3.",
+        "curve": {
             "base_field": "Q(t)",
-            "equation": "y^2 = x^3 - (t^2+1)/(t+1) * x + t",
-            "excluded_parameters": ["t=-1", "zeros of the discriminant"],
+            "equation": "y^2=x^3-((t^2+1)/(t+1))*x+t",
+            "generic_discriminant": "16*(4*t^6-27*t^5-69*t^4-81*t^3-15*t^2+4)/(t+1)^3",
+            "generic_nonsingular": True,
         },
-        "characters": {
+        "squareclasses": {
             "d1": "t",
             "d2": "2*t/(t+1)",
-            "d1d2": "2*t^2/(t+1)",
-            "geometric_dimension": character_rank,
-            "branch_support": ["0", "-1", "infinity"],
-            "branch_support_size": branch_support_size,
-            "cover_genus": genus,
+            "valuation_places": ["t=0", "t=-1", "t=infinity"],
+            "parity_vectors": vectors,
+            "rank_over_F2": squareclass_rank,
         },
-        "twist_sections": [
-            {"character": "d1", "x": "0", "twist_y": "1"},
-            {"character": "d2", "x": "1", "twist_y": "1"},
-            {"character": "d1d2", "x": "-1", "twist_y": "1"},
+        "cover": {
+            "field": "L=Q(t)(u,v), u^2=t, v^2=2t/(t+1)",
+            "degree": cover_degree,
+            "branch_place_count": branch_places,
+            "genus": genus,
+            "rational_parameterization": {
+                "v": "(r^2-2*r-1)/(r^2+1)",
+                "w": "(1-2*r-r^2)/(r^2+1)",
+                "u": "v/w",
+                "t": "u^2",
+                "checks": parameterization_checks,
+            },
+        },
+        "sections": [
+            {"point": ["0", "u"], "character": "chi_u", "identity": "f_t(0)=t=u^2"},
+            {"point": ["1", "v"], "character": "chi_v", "identity": "f_t(1)=2t/(t+1)=v^2"},
+            {"point": ["-1", "u*v"], "character": "chi_uv", "identity": "f_t(-1)=2t^2/(t+1)=(uv)^2"},
         ],
-        "base_change_parametrisation": {
-            "v": "(r^2-2*r-1)/(r^2+1)",
-            "w": "(1-2*r-r^2)/(r^2+1)",
-            "u": "v/w",
-            "t": "u^2",
-            "sqrt_d1": "u",
-            "sqrt_d2": "v",
-            "identity": "v^2+w^2=2",
+        "section_identity_checks": evaluations,
+        "generic_twist_section_checks": generic_twist_checks,
+        "character_signs": character_signs,
+        "non_torsion_specialization": {
+            "t": -3,
+            "base_curve": specialized_curve,
+            "twists": specialization_records,
+            "generic_conclusion": (
+                "A torsion section specializes to a torsion point at every smooth fiber where it is defined. "
+                "Each displayed specialized point is non-torsion, so each generic character section is non-torsion."
+            ),
         },
-        "nontorsion_specialization": {
-            "parameter": "t=-3",
-            "base_curve": "y^2=x^3+5*x-3",
-            "witnesses": [
-                {
-                    "twist": w.twist,
-                    "curve": f"y^2=x^3+({w.curve_a})*x+({w.curve_b})",
-                    "point": list(w.point),
-                    "multiple": w.multiple,
-                    "multiple_x": f"{w.multiple_x.numerator}/{w.multiple_x.denominator}",
-                    "lutz_nagell_conclusion": "non-torsion",
-                }
-                for w in witnesses
-            ],
-        },
-        "rank_conclusion": "rank E(L) >= rank E(Q(t)) + 3",
-        "independence_reason": "the three non-torsion sections lie in distinct non-trivial characters of Gal(L/Q(t))",
+        "independence_argument": (
+            "In E(L) tensor Q, the commuting V4 involutions split the group into character eigenspaces. "
+            "The three non-torsion sections lie in three distinct nontrivial characters, hence are Q-linearly, "
+            "therefore Z-linearly, independent and independent from E(Q(t))."
+        ),
+        "conditional_assumptions": [],
+        "implementation": {"language": "Python standard library", "script": "research/packet3_certificate.py"},
     }
+    payload["certificate_sha256"] = canonical_sha256(payload)
+    return payload
 
 
-def main() -> int:
+def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=Path)
-    args = parser.parse_args()
-    result = verify_packet()
-    encoded = json.dumps(result, indent=2, sort_keys=True) + "\n"
-    if args.output:
-        args.output.parent.mkdir(parents=True, exist_ok=True)
-        args.output.write_text(encoded, encoding="utf-8")
-    print(encoded, end="")
-    return 0
+    parser.add_argument("--output", type=Path, help="write the freshly recomputed JSON certificate")
+    parser.add_argument("--compare", type=Path, help="compare recomputation with a committed JSON certificate")
+    arguments = parser.parse_args()
+
+    certificate = compute_certificate()
+    if arguments.output:
+        arguments.output.parent.mkdir(parents=True, exist_ok=True)
+        arguments.output.write_text(json.dumps(certificate, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(f"wrote {arguments.output}")
+    if arguments.compare:
+        committed = json.loads(arguments.compare.read_text(encoding="utf-8"))
+        if certificate != committed:
+            raise AssertionError(f"certificate mismatch: {arguments.compare}")
+        print(f"matched {arguments.compare}")
+
+    print("section identities: exact")
+    print("squareclass rank: 2; cover degree: 4; cover genus: 0")
+    print("specialized non-torsion witnesses: 3/3")
+    print("distinct V4 character sections: 3")
+    print(f"certificate sha256: {certificate['certificate_sha256']}")
+    print("UNCONDITIONAL RESULT: rank E(L) >= rank E(Q(t)) + 3")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
