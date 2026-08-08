@@ -13,12 +13,13 @@ The Wronskian identity recursively determines Q from L.  After setting
 
     c=2/11-3b.
 
-Three exact equations in b,d remain.  This script computes their Groebner
-elimination over Q, enumerates every rational pair, applies the leading
-cube-class condition, and reconstructs/verifies every full rational identity.
+Three exact equations in b,d remain.  Their lexicographic Groebner basis over
+Q is the unit ideal.  Thus the generic reduced system has no solution even
+over an algebraic closure, which is stronger than the rational nonexistence
+needed here.
 
 SymPy is used only with exact QQ polynomial arithmetic.  The generated JSON
-stores the full basis, factors, candidates, and exact reconstructions.
+stores the full basis and an explicit unit-ideal flag.
 """
 
 from __future__ import annotations
@@ -26,9 +27,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from fractions import Fraction
 from pathlib import Path
-from typing import Iterable
 
 import sympy as sp
 
@@ -120,26 +119,6 @@ def rational_cube_root(value: sp.Rational) -> sp.Rational | None:
     return sp.Rational(numerator, denominator)
 
 
-def rational_roots(polynomial: sp.Poly) -> list[sp.Rational]:
-    roots = sp.ground_roots(polynomial)
-    return sorted(sp.Rational(root) for root in roots)
-
-
-def common_d_roots(equations: Iterable[sp.Expr], b_value: sp.Rational) -> list[sp.Rational]:
-    specialized: list[sp.Poly] = []
-    for equation in equations:
-        polynomial = primitive_integer_poly(equation.subs(b, b_value), d)
-        if polynomial.is_zero:
-            continue
-        specialized.append(polynomial)
-    if not specialized:
-        raise AssertionError("all specialized equations vanished")
-    gcd_polynomial = specialized[0]
-    for polynomial in specialized[1:]:
-        gcd_polynomial = sp.gcd(gcd_polynomial, polynomial)
-    return rational_roots(gcd_polynomial)
-
-
 def rational_string(value: sp.Expr) -> str:
     value = sp.factor(value)
     if value.is_Rational:
@@ -148,114 +127,50 @@ def rational_string(value: sp.Expr) -> str:
     return str(value)
 
 
-def verify_full_identity(
-    A: sp.Rational,
-    b_value: sp.Rational,
-    d_value: sp.Rational,
-) -> dict:
-    v = sp.symbols("v")
-    c_value = sp.Rational(2, 11) - 3 * b_value
-    qs = q_coefficients(b_value, d_value)
-    L = sp.expand(A * (1 + b_value * v**2 + c_value * v**3 + d_value * v**4))
-    Q = sp.expand(sum(qs[index] * v**index for index in range(8)))
-    residual = sp.Poly(sp.expand(Q**2 - v**2 * L**3), v, domain=sp.QQ)
-    if residual.degree() != 3:
-        raise AssertionError("reconstructed residual is not cubic")
-    coefficients = {degree: residual.nth(degree) for degree in range(4)}
-    if coefficients[0] != 1 or coefficients[1] != 3 or coefficients[3] != 1:
-        raise AssertionError("reconstructed residual has wrong fixed coefficients")
-    S = -coefficients[2]
-    expected = sp.Poly(v**3 - S * v**2 + 3 * v + 1, v, domain=sp.QQ)
-    if residual != expected:
-        raise AssertionError("full target identity failed")
-    return {
-        "A": rational_string(A),
-        "L": rational_string(L),
-        "Q": rational_string(Q),
-        "S": rational_string(S),
-        "b": rational_string(b_value),
-        "c": rational_string(c_value),
-        "d": rational_string(d_value),
-    }
-
-
 def compute_elimination() -> dict:
     equations = reduced_equations()
-    integer_equations = [primitive_integer_poly(expression, d, b) for expression in equations]
+    integer_equations = [
+        primitive_integer_poly(expression, d, b) for expression in equations
+    ]
     basis = sp.groebner(integer_equations, d, b, order="lex", domain=sp.QQ)
-    basis_polynomials = [primitive_integer_poly(poly.as_expr(), d, b) for poly in basis.polys]
-    univariate = [poly for poly in basis_polynomials if not poly.as_expr().has(d)]
-    if not univariate:
-        raise AssertionError("Groebner basis has no b-elimination polynomial")
-    elimination = min(univariate, key=lambda poly: poly.degree())
-    factor_constant, factors = sp.factor_list(elimination.as_expr())
+    basis_polynomials = [
+        primitive_integer_poly(poly.as_expr(), d, b) for poly in basis.polys
+    ]
 
-    b_roots = rational_roots(elimination)
-    pairs: list[tuple[sp.Rational, sp.Rational]] = []
-    for b_value in b_roots:
-        for d_value in common_d_roots(equations, b_value):
-            if all(sp.factor(expression.subs({b: b_value, d: d_value})) == 0 for expression in equations):
-                pairs.append((b_value, d_value))
-    pairs = sorted(set(pairs))
-
-    leading_candidates: list[dict] = []
-    full_solutions: list[dict] = []
-    for b_value, d_value in pairs:
-        c_value = sp.Rational(2, 11) - 3 * b_value
-        q7 = sp.Rational(q_coefficients(b_value, d_value)[7])
-        record = {
-            "b": rational_string(b_value),
-            "c": rational_string(c_value),
-            "d": rational_string(d_value),
-            "q7": rational_string(q7),
-        }
-        if d_value == 0 or q7 == 0:
-            record["leading_status"] = "degenerate_degree"
-            leading_candidates.append(record)
-            continue
-        A_cubed = sp.factor(q7**2 / d_value**3)
-        record["A_cubed"] = rational_string(A_cubed)
-        A = rational_cube_root(sp.Rational(A_cubed))
-        if A is None or A == 0:
-            record["leading_status"] = "not_a_rational_cube"
-            leading_candidates.append(record)
-            continue
-        record["leading_status"] = "compatible"
-        record["A"] = rational_string(A)
-        leading_candidates.append(record)
-        full_solutions.append(verify_full_identity(A, b_value, d_value))
+    unit_ideal = any(poly.is_one for poly in basis_polynomials)
+    if not unit_ideal:
+        raise AssertionError(
+            "expected the exact reduced ideal to be the unit ideal; "
+            f"obtained {[str(poly.as_expr()) for poly in basis_polynomials]}"
+        )
 
     result = {
-        "certificate_id": "degree47-target-elimination-v1",
+        "certificate_id": "degree47-target-elimination-v2",
         "claim_status": "proved exact symbolic computation",
-        "elimination_polynomial": str(elimination.as_expr()),
-        "elimination_polynomial_degree": elimination.degree(),
-        "factor_constant": str(factor_constant),
-        "factorization": [
-            {"factor": str(sp.factor(factor)), "multiplicity": multiplicity}
-            for factor, multiplicity in factors
-        ],
-        "full_rational_solutions": full_solutions,
+        "full_rational_solutions": [],
         "groebner_basis": [str(poly.as_expr()) for poly in basis_polynomials],
-        "leading_candidates": leading_candidates,
+        "groebner_unit_ideal": True,
+        "input_equations_primitive": [
+            str(poly.as_expr()) for poly in integer_equations
+        ],
         "normalized_system": {
             "c": "2/11-3b",
             "equations": [str(sp.factor(expression)) for expression in equations],
             "q1": "3/2",
             "wronskian": "2LQ+3vL'Q-2vLQ'=constant",
         },
-        "rational_b_roots": [rational_string(root) for root in b_roots],
-        "rational_pair_count": len(pairs),
-        "result": "rational_solution_found" if full_solutions else "no_rational_solution",
-        "schema_version": 1,
+        "result": "no_rational_solution",
+        "schema_version": 2,
         "scope": "generic squarefree/coprime degree-(4,7) target system; repeated-root S values are covered by a separate certificate",
         "software": {
-            "engine": "SymPy exact QQ Groebner basis and polynomial factorization",
+            "engine": "SymPy exact QQ lexicographic Groebner basis",
             "sympy_version": sp.__version__,
         },
-        "theorem": "Every generic rational degree-(4,7) target identity appears in full_rational_solutions; an empty list proves nonexistence in this branch.",
+        "theorem": "The three reduced equations generate the unit ideal in Q[b,d], so the generic normalized degree-(4,7) target system has no solution over any field extension of Q.",
     }
-    unhashed = json.dumps(result, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    unhashed = json.dumps(result, sort_keys=True, separators=(",", ":")).encode(
+        "utf-8"
+    )
     result["record_sha256"] = hashlib.sha256(unhashed).hexdigest()
     return result
 
@@ -268,11 +183,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check", type=Path)
-    parser.add_argument("--expect-result", choices=("no_rational_solution", "rational_solution_found"))
+    parser.add_argument(
+        "--expect-result",
+        choices=("no_rational_solution", "rational_solution_found"),
+    )
     args = parser.parse_args()
     result = compute_elimination()
     if args.expect_result and result["result"] != args.expect_result:
-        raise SystemExit(f"expected {args.expect_result}, obtained {result['result']}")
+        raise SystemExit(
+            f"expected {args.expect_result}, obtained {result['result']}"
+        )
     payload = canonical_payload(result)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -282,8 +202,7 @@ def main() -> int:
     print(
         "VERIFIED degree-(4,7) target elimination",
         f"result={result['result']}",
-        f"pairs={result['rational_pair_count']}",
-        f"full={len(result['full_rational_solutions'])}",
+        "unit_ideal=true",
     )
     return 0
 
