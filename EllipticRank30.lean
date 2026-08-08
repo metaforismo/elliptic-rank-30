@@ -1,5 +1,4 @@
 import EllipticRank30.AlgebraicIdentities
-import EllipticRank30.CapacityArithmetic
-import EllipticRank30.MarkedFactorization
-import EllipticRank30.NormalizedSolutions
-import EllipticRank30.X03Isogeny
+import EllipticRank30.IntegralPolynomial
+import EllipticRank30.Norm31
+import EllipticRank30.Packet3
