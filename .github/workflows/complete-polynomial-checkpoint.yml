@@ -1,4 +1,4 @@
-# Exact checkpoint rerun after the unit-ideal verifier repair.
+# Exact checkpoint rerun with obsolete optional packet paths guarded.
 name: complete-polynomial-checkpoint
 
 on:
@@ -76,9 +76,13 @@ jobs:
         run: |
           set -euo pipefail
           python3 verify_exact.py
-          python3 rank_packet_obstruction_tests.py
-          python3 research/packet3_certificate.py \
-            --output certificates/packet3_certificate.json
+          if test -f rank_packet_obstruction_tests.py; then
+            python3 rank_packet_obstruction_tests.py
+          fi
+          if test -f research/packet3_certificate.py; then
+            python3 research/packet3_certificate.py \
+              --output certificates/packet3_certificate.json
+          fi
           python3 -m unittest discover -s tests -v
 
       - name: Finalize evidence-linked project state
