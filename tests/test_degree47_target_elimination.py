@@ -9,9 +9,10 @@ if SYMPY_AVAILABLE:
     import sympy as sp
 
     from research.degree47_target_elimination import (
-        c,
-        d,
         b,
+        c,
+        compute_elimination,
+        d,
         q_coefficients,
         rational_cube_root,
         reduced_equations,
@@ -26,7 +27,11 @@ class Degree47TargetEliminationTests(unittest.TestCase):
         L = 1 + b * v**2 + c * v**3 + d * v**4
         Q = sum(qs[index] * v**index for index in range(8))
         wronskian = sp.Poly(
-            sp.expand(2 * L * Q + 3 * v * sp.diff(L, v) * Q - 2 * v * L * sp.diff(Q, v)),
+            sp.expand(
+                2 * L * Q
+                + 3 * v * sp.diff(L, v) * Q
+                - 2 * v * L * sp.diff(Q, v)
+            ),
             v,
             domain=sp.QQ.frac_field(b, d),
         )
@@ -48,6 +53,13 @@ class Degree47TargetEliminationTests(unittest.TestCase):
         self.assertEqual(rational_cube_root(sp.Rational(8, 27)), sp.Rational(2, 3))
         self.assertEqual(rational_cube_root(sp.Rational(-125, 64)), sp.Rational(-5, 4))
         self.assertIsNone(rational_cube_root(sp.Rational(2, 3)))
+
+    def test_reduced_ideal_is_unit(self) -> None:
+        result = compute_elimination()
+        self.assertTrue(result["groebner_unit_ideal"])
+        self.assertEqual(result["groebner_basis"], ["1"])
+        self.assertEqual(result["full_rational_solutions"], [])
+        self.assertEqual(result["result"], "no_rational_solution")
 
 
 if __name__ == "__main__":
