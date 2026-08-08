@@ -1,0 +1,191 @@
+name: integrate-degree47-passport
+
+on:
+  push:
+    paths:
+      - ".github/workflows/integrate-degree47-passport.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  enumerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify structural certificates and unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polynomial_section_mason_bound.py \
+            --check certificates/polynomial_section_mason_bound.json
+          python3 -m unittest discover -s tests -v
+
+      - name: Exhaust the degree-14 passport
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/degree47_belyi_passport.py \
+            --output certificates/degree47_belyi_passport.json
+          python3 research/degree47_belyi_passport.py \
+            --check certificates/degree47_belyi_passport.json
+
+      - name: Integrate the finite result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          from pathlib import Path
+
+          root = Path('.')
+          certificate_path = root / 'certificates/degree47_belyi_passport.json'
+          result = json.loads(certificate_path.read_text(encoding='utf-8'))
+          dessins = int(result['dessin_count'])
+          labelled = int(result['raw_passport_count'])
+          transitive = int(result['transitive_passport_count'])
+          digest = result['record_sha256']
+
+          if dessins == 0:
+              conclusion = (
+                  'The nondegenerate degree-(4,7) polynomial ansatz is impossible: '
+                  'the required Belyi passport has no transitive dessin.'
+              )
+              next_action = (
+                  'Solve the two degenerate systems S=-3 and S=15/4; after those, '
+                  'Mason--Stothers closes every polynomial level.'
+              )
+              claim_status = 'proved nonexistence of the generic maximal level'
+          else:
+              conclusion = (
+                  f'The maximal passport has {dessins} dessin isomorphism class(es); '
+                  'their exact arithmetic fields and Belyi maps remain to be reconstructed.'
+              )
+              next_action = (
+                  'Reconstruct exact Belyi maps for every canonical dessin, determine fields '
+                  'of definition, and test the normalized coefficient of v.'
+              )
+              claim_status = 'proved complete topological enumeration'
+
+          report = f'''# Degree-(4,7) maximal-passport result
+
+**Status:** {claim_status}.
+
+The exhaustive standard-library enumeration inspected all `13!! = 135135`
+perfect matchings for the fixed `(11,1,1,1)` permutation and quotiented the
+transitive triples by the full centralizer `C_11 x S_3`.
+
+- labelled triples with the target cycle partition: **{labelled}**
+- transitive labelled triples: **{transitive}**
+- dessin isomorphism classes: **{dessins}**
+- canonical certificate SHA-256: `{digest}`
+
+## Exact conclusion
+
+{conclusion}
+
+## Highest-value next action
+
+{next_action}
+
+The machine-readable representatives and automorphism-group orders are in
+`certificates/degree47_belyi_passport.json`.
+'''
+          (root / 'research/degree47_belyi_passport_result.md').write_text(report, encoding='utf-8')
+
+          def append_section(filename: str, marker: str, body: str) -> None:
+              path = root / filename
+              text = path.read_text(encoding='utf-8') if path.exists() else f'# {path.stem}\n'
+              if marker not in text:
+                  path.write_text(text.rstrip() + '\n\n' + body.strip() + '\n', encoding='utf-8')
+
+          append_section(
+              'CLAIMS.md',
+              'degree47-passport-claim-2026-08-08',
+              f'''<!-- degree47-passport-claim-2026-08-08 -->
+## Maximal polynomial Belyi passport
+
+- Mason--Stothers degree bound: **proved**, certificate
+  `certificates/polynomial_section_mason_bound.json`.
+- Complete topological passport enumeration: **proved finite computation**,
+  `{dessins}` dessin class(es), certificate
+  `certificates/degree47_belyi_passport.json`.
+- Exact Belyi maps over number fields: **unknown unless the dessin count is zero**.
+- Rank-30 certificate: **unknown**.'''
+          )
+
+          append_section(
+              'STATUS.md',
+              'degree47-passport-status-2026-08-08',
+              f'''<!-- degree47-passport-status-2026-08-08 -->
+## Maximal polynomial level
+
+Mason--Stothers proves that `(deg L,deg Q)=(4,7)` is the final possible
+polynomial level.  Its nondegenerate Belyi passport was exhausted exactly:
+`{dessins}` dessin isomorphism class(es), `{transitive}` transitive labelled
+triple(s).  {conclusion}
+
+Next: {next_action}'''
+          )
+
+          checkpoint_path = root / 'CHECKPOINT.json'
+          checkpoint = json.loads(checkpoint_path.read_text(encoding='utf-8')) if checkpoint_path.exists() else {}
+          checkpoint['degree47_maximal_polynomial_level'] = {
+              'certificate': 'certificates/degree47_belyi_passport.json',
+              'dessin_count': dessins,
+              'record_sha256': digest,
+              'state': claim_status,
+              'next_action': next_action,
+          }
+          checkpoint['updated'] = '2026-08-08'
+          checkpoint_path.write_text(json.dumps(checkpoint, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+
+          frontier_path = root / 'STATUS.frontier.json'
+          frontier = json.loads(frontier_path.read_text(encoding='utf-8'))
+          frontier['maximal_polynomial_level'] = {
+              'mason_certificate': 'certificates/polynomial_section_mason_bound.json',
+              'passport_certificate': 'certificates/degree47_belyi_passport.json',
+              'dessin_count': dessins,
+              'claim_status': claim_status,
+              'next_action': next_action,
+          }
+          frontier['updated'] = '2026-08-08'
+          frontier_path.write_text(json.dumps(frontier, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          PY
+
+          rm -f .github/workflows/integrate-degree47-passport.yml
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+
+      - name: Reproduce the integrated result
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/polynomial_section_mason_bound.py \
+            --check certificates/polynomial_section_mason_bound.json
+          python3 research/degree47_belyi_passport.py \
+            --check certificates/degree47_belyi_passport.json
+          python3 -m unittest discover -s tests -v
+
+      - name: Rebuild manifest and commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -type d -name __pycache__ -prune -exec rm -rf {} +
+          find . -type f ! -path './.git/*' ! -name 'MANIFEST.sha256' \
+            -print0 | LC_ALL=C sort -z | xargs -0 sha256sum > MANIFEST.sha256
+          sha256sum -c MANIFEST.sha256
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --stat
+          git diff --cached --quiet && { echo "No integration changes" >&2; exit 1; }
+          git commit -m "Integrate the maximal degree-(4,7) passport enumeration"
+          git push
