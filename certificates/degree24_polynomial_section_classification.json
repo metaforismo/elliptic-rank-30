@@ -1,0 +1,64 @@
+{
+  "certificate_id": "degree24-polynomial-section-classification-v1",
+  "claim_status": "proved",
+  "classification": {
+    "assumption": "p != 0",
+    "if_and_only_if": "a rational solution exists iff p=t^12/186624-t^3/6 for some t in Q^*",
+    "parameter": "t in Q^*",
+    "parameter_map": "p(t)=t^12/186624-t^3/6"
+  },
+  "coefficient_formulas": {
+    "L": {
+      "a": "36/t^4",
+      "b": "t^2/6",
+      "c": "t^8/5184-4/t"
+    },
+    "Q": {
+      "d": "216/t^6",
+      "e": "3/2",
+      "f": "t^6/288-36/t^3",
+      "g": "p(t)/2",
+      "h": "1"
+    },
+    "S": "c^3-g^2-2f"
+  },
+  "identity": "Q(v)^2-v^2 L(v)^3=v^3-S v^2+p v+1",
+  "inverse_construction_view": {
+    "cube_coset_variable": "q=t^3/36",
+    "quartic_map": "p=9q^4-6q",
+    "research_use": "search high-multiplicity fibers and combine independent forcing mechanisms"
+  },
+  "p_equals_3": {
+    "cube_class_obstruction": "q=1 would require t^3=36, but v_2(36)=2 is not divisible by 3",
+    "factorization": "3q^4-2q-1=(q-1)(3q^3+3q^2+3q+1)",
+    "residual_cubic_rational_roots": [],
+    "result": "no rational degree-(2,4) decomposition"
+  },
+  "sample_t_3": {
+    "S": "-665/216",
+    "a": "4/9",
+    "b": "3/2",
+    "c": "-13/192",
+    "d": "8/27",
+    "e": "3/2",
+    "f": "115/96",
+    "g": "-423/512",
+    "h": "1",
+    "p": "-423/256"
+  },
+  "schema_version": 1,
+  "scope_limitation": "This classifies only the stated polynomial identity and does not itself construct a rank-30 elliptic curve.",
+  "theorem": "For p nonzero, the complete rational degree-(2,4) coefficient scheme is the displayed one-parameter family.",
+  "verification": {
+    "forward_reduction": "exact symbolic Laurent-polynomial identities",
+    "reverse_substitution": "exact symbolic Laurent-polynomial identity",
+    "sample_checks": [
+      "1",
+      "2",
+      "3",
+      "-3",
+      "5/2"
+    ],
+    "target_obstruction": "exact factorization, rational-root theorem, and 2-adic cube valuation"
+  }
+}
