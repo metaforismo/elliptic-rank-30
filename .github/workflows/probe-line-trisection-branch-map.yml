@@ -35,8 +35,8 @@ jobs:
           result = {'status': 'started', 'sage_version': str(version())}
 
           try:
-              R = PolynomialRing(QQ, names=('x','y','z','t'))
-              x,y,z,t = R.gens()
+              R = PolynomialRing(QQ, names=('x','y','z'))
+              x,y,z = R.gens()
               F = (
                   3972*x**3 + 8080*x**2*y - 65622*x**2*z + 31679*x*y**2
                   -104467*x*y*z -232614*x*z**2 +24484*y**3
@@ -48,20 +48,24 @@ jobs:
                   -122924*y**2*z +347376*y*z**2 +1042128*z**3
               )
 
-              S = PolynomialRing(QQ, names=('u','v','X','T'))
-              u,v,X,T = S.gens()
-              restricted = S(F(X,u*X+v,1)) + T*S(G(X,u*X+v,1))
-              discriminant = restricted.discriminant(X)
-              quartic = discriminant.polynomial(T)
-              affine_coefficients = [quartic[k] for k in range(5)]
+              UV = PolynomialRing(QQ, names=('u','v'))
+              u,v = UV.gens()
+              UVT = PolynomialRing(UV, 'T')
+              T = UVT.gen()
+              UVTX = PolynomialRing(UVT, 'X')
+              X = UVTX.gen()
+              restricted = UVTX(F(X,u*X+v,1)) + T*UVTX(G(X,u*X+v,1))
+              discriminant = restricted.discriminant()
+              if discriminant.degree() != 4:
+                  raise AssertionError(('branch degree',discriminant.degree()))
+              affine_coefficients = [UV(discriminant[k]) for k in range(5)]
 
               H = PolynomialRing(QQ, names=('A','B','C'))
               A,B,C = H.gens()
               homogeneous = []
               for coefficient in affine_coefficients:
-                  polynomial = coefficient.polynomial({u:0,v:1})
                   expression = H(0)
-                  for (i,j), value in polynomial.dict().items():
+                  for (i,j), value in coefficient.dict().items():
                       expression += QQ(value)*(-A)**i*(-C)**j*B**(6-i-j)
                   homogeneous.append(expression)
 
@@ -75,10 +79,11 @@ jobs:
 
               basepoint_charts = {}
               for name, variable in [('A',A),('B',B),('C',C)]:
-                  chart_ring = PolynomialRing(QQ, names=tuple(str(q) for q in (A,B,C) if q != variable))
+                  originals = tuple(q for q in (A,B,C) if q != variable)
+                  chart_ring = PolynomialRing(QQ, names=tuple(str(q) for q in originals))
                   variables = chart_ring.gens()
                   substitution = {variable: QQ(1)}
-                  for original, replacement in zip((q for q in (A,B,C) if q != variable),variables):
+                  for original, replacement in zip(originals,variables):
                       substitution[original] = replacement
                   generators = [chart_ring(q.subs(substitution)) for q in homogeneous]
                   ideal = chart_ring.ideal(generators)
@@ -107,16 +112,15 @@ jobs:
                   ideal = chart_ring.ideal(generators)
                   basis = ideal.groebner_basis()
                   fibre_charts[name] = [str(q) for q in basis]
-                  expected = [variables[0]-1, variables[1]-1]
-                  if ideal != chart_ring.ideal(expected):
+                  expected = chart_ring.ideal([variables[0]-1, variables[1]-1])
+                  if ideal != expected:
                       raise AssertionError((name,'unexpected fibre ideal',basis))
 
-              # Rank two of the projective differential at [1:1:1].  Work in
-              # B=1 and use the four affine target ratios q_i/q_pivot.
               affine_ring = PolynomialRing(QQ,names=('a','c'))
               a,c = affine_ring.gens()
+              field = affine_ring.fraction_field()
               qchart = [affine_ring(q(A=a,B=1,C=c)) for q in homogeneous]
-              ratios = [qchart[i]/qchart[pivot] for i in range(5) if i != pivot]
+              ratios = [field(qchart[i])/field(qchart[pivot]) for i in range(5) if i != pivot]
               jacobian = matrix(QQ,[
                   [f.derivative(a)(a=1,c=1),f.derivative(c)(a=1,c=1)]
                   for f in ratios
@@ -128,7 +132,7 @@ jobs:
                   'status':'proved',
                   'claim_status':'proved exact computation',
                   'source_surface':'research/small_split_e8_pencil.py',
-                  'map':'The line trisection [A:B:C] maps to the branch quartic Disc_x((F+tG)|_{Ax+By+Cz=0}).',
+                  'map':'The line trisection [A:B:C] maps to the branch quartic Disc_X((F+tG)|_{Ax+By+Cz=0}).',
                   'coordinate_degree':6,
                   'coordinate_count':5,
                   'projective_gcd':'1',
