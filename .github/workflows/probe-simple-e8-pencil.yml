@@ -1,0 +1,267 @@
+name: probe-simple-e8-pencil
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-simple-e8-pencil.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - name: Run exact Sage probe
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/simple-e8-pencil
+          cat > /tmp/probe_simple_e8.py <<'PY'
+          from __future__ import annotations
+
+          import json
+          import traceback
+          from pathlib import Path
+
+          from sage.all import (
+              EllipticCurve_from_cubic,
+              FunctionField,
+              PolynomialRing,
+              QQ,
+              gcd,
+              invariant_theory,
+              version,
+          )
+
+          OUT = Path('/tmp/simple-e8-pencil')
+
+          def qstr(value):
+              return str(value)
+
+          result = {
+              'status': 'started',
+              'sage_version': str(version()),
+          }
+
+          try:
+              R = PolynomialRing(QQ, names=('X', 'Y', 'Z'))
+              X, Y, Z = R.gens()
+
+              F = (
+                  1205 * X**3 - 7107 * X**2 * Y + 22560 * X**2 * Z
+                  + 11736 * X * Y**2 - 30072 * X * Y * Z - 96845 * X * Z**2
+                  - 2764 * Y**3 + 9864 * Y**2 * Z + 31855 * Y * Z**2
+              )
+              G = (
+                  3755 * X**3 + 3412 * X**2 * Y - 89290 * X**2 * Z
+                  - 25996 * X * Y**2 + 89032 * X * Y * Z + 230605 * X * Z**2
+                  + 5184 * Y**3 - 31264 * Y**2 * Z + 235450 * Z**3
+              )
+
+              points = [
+                  (QQ(1), QQ(7), QQ(1)),
+                  (QQ(-7), QQ(-6), QQ(1)),
+                  (QQ(5), QQ(1), QQ(1)),
+                  (QQ(3), QQ(4), QQ(1)),
+                  (QQ(-5), QQ(-5), QQ(1)),
+                  (QQ(-1), QQ(5), QQ(1)),
+                  (QQ(-3), QQ(-4), QQ(1)),
+                  (QQ(-2), QQ(-6), QQ(1)),
+                  (QQ(-2031) / 1145, QQ(-4021) / 1145, QQ(1)),
+              ]
+
+              point_checks = []
+              jacobian_checks = []
+              FX, FY, FZ = F.derivative(X), F.derivative(Y), F.derivative(Z)
+              GX, GY, GZ = G.derivative(X), G.derivative(Y), G.derivative(Z)
+              for index, P in enumerate(points):
+                  substitutions = {X: P[0], Y: P[1], Z: P[2]}
+                  fv = F.subs(substitutions)
+                  gv = G.subs(substitutions)
+                  point_checks.append({'index': index, 'F': qstr(fv), 'G': qstr(gv)})
+                  gradF = [H.subs(substitutions) for H in (FX, FY, FZ)]
+                  gradG = [H.subs(substitutions) for H in (GX, GY, GZ)]
+                  minors = [
+                      gradF[0] * gradG[1] - gradF[1] * gradG[0],
+                      gradF[0] * gradG[2] - gradF[2] * gradG[0],
+                      gradF[1] * gradG[2] - gradF[2] * gradG[1],
+                  ]
+                  jacobian_checks.append({
+                      'index': index,
+                      'minors': [qstr(x) for x in minors],
+                      'transverse': any(x != 0 for x in minors),
+                  })
+
+              if any(row['F'] != '0' or row['G'] != '0' for row in point_checks):
+                  raise RuntimeError('not all proposed base points lie on both cubics')
+              if not all(row['transverse'] for row in jacobian_checks):
+                  raise RuntimeError('at least one base point is not transverse')
+              if gcd(F, G) != 1:
+                  raise RuntimeError('the two cubics have a common factor')
+
+              K = FunctionField(QQ, 't')
+              t = K.gen()
+              S = PolynomialRing(K, names=('x', 'y', 'z'))
+              x, y, z = S.gens()
+              FK = S(str(F).replace('X', 'x').replace('Y', 'y').replace('Z', 'z'))
+              GK = S(str(G).replace('X', 'x').replace('Y', 'y').replace('Z', 'z'))
+              cubic = FK + t * GK
+
+              ternary = invariant_theory.ternary_cubic(cubic, x, y, z)
+              invS = ternary.S_invariant()
+              invT = ternary.T_invariant()
+
+              phi = EllipticCurve_from_cubic(cubic, [K(1), K(7), K(1)], morphism=True)
+              E = phi.codomain()
+              C = phi.domain()
+
+              mapped = []
+              for index, P in enumerate(points):
+                  CP = C([K(P[0]), K(P[1]), K(P[2])])
+                  try:
+                      EP = phi(CP)
+                      if EP.is_zero():
+                          coords = ['0']
+                      else:
+                          coords = [qstr(EP[0]), qstr(EP[1]), qstr(EP[2])]
+                      mapped.append({'index': index, 'status': 'ok', 'coords': coords})
+                  except Exception as exc:
+                      mapped.append({
+                          'index': index,
+                          'status': 'error',
+                          'error': repr(exc),
+                          'traceback': traceback.format_exc(),
+                      })
+
+              a_invariants = list(E.a_invariants())
+              c4 = E.c_invariants()[0]
+              c6 = E.c_invariants()[1]
+              delta = E.discriminant()
+              j = E.j_invariant()
+
+              candidate_minus = (4 * invS) ** 3 - invT**2
+              candidate_plus = (4 * invS) ** 3 + invT**2
+
+              def ratio_or_none(a, b):
+                  if b == 0:
+                      return None
+                  ratio = a / b
+                  return qstr(ratio) if ratio.derivative(t) == 0 else None
+
+              relation = {
+                  'delta_over_minus': ratio_or_none(delta, candidate_minus),
+                  'delta_over_plus': ratio_or_none(delta, candidate_plus),
+                  'j_minus_match': bool(j == 1728 * (4 * invS) ** 3 / candidate_minus),
+                  'j_plus_match': bool(j == 1728 * (4 * invS) ** 3 / candidate_plus),
+              }
+
+              delta_num = delta.numerator()
+              delta_den = delta.denominator()
+              c4_num = c4.numerator()
+              c4_den = c4.denominator()
+
+              delta_poly = delta_num.univariate_polynomial()
+              c4_poly = c4_num.univariate_polynomial()
+              squarefree = gcd(delta_poly, delta_poly.derivative()) == 1
+              multiplicative = gcd(delta_poly, c4_poly) == 1
+
+              specializations = []
+              for t0 in list(range(-12, 13)):
+                  try:
+                      if delta(t=t0) == 0:
+                          continue
+                      specialized_a = [QQ(ai(t=t0)) for ai in a_invariants]
+                      specialized_points = []
+                      valid = True
+                      for row in mapped:
+                          if row['status'] != 'ok':
+                              valid = False
+                              break
+                          if row['coords'] == ['0']:
+                              specialized_points.append(['0'])
+                              continue
+                          coords = []
+                          for raw in row['coords']:
+                              value = K(raw)
+                              den = value.denominator()
+                              if den(t=t0) == 0:
+                                  valid = False
+                                  break
+                              coords.append(qstr(QQ(value(t=t0))))
+                          if not valid:
+                              break
+                          specialized_points.append(coords)
+                      if valid:
+                          specializations.append({
+                              't0': t0,
+                              'a_invariants': [qstr(v) for v in specialized_a],
+                              'points': specialized_points,
+                          })
+                          if len(specializations) >= 5:
+                              break
+                  except Exception:
+                      continue
+
+              result.update({
+                  'status': 'ok',
+                  'F': qstr(F),
+                  'G': qstr(G),
+                  'points': [[qstr(c) for c in P] for P in points],
+                  'point_checks': point_checks,
+                  'jacobian_checks': jacobian_checks,
+                  'S_invariant': qstr(invS),
+                  'T_invariant': qstr(invT),
+                  'elliptic_curve': qstr(E),
+                  'a_invariants': [qstr(v) for v in a_invariants],
+                  'c4': qstr(c4),
+                  'c6': qstr(c6),
+                  'discriminant': qstr(delta),
+                  'j_invariant': qstr(j),
+                  'invariant_relation': relation,
+                  'delta_numerator': qstr(delta_num),
+                  'delta_denominator': qstr(delta_den),
+                  'delta_degree': int(delta_poly.degree()),
+                  'delta_factorization': qstr(delta_poly.factor()),
+                  'delta_squarefree': bool(squarefree),
+                  'gcd_delta_c4': qstr(gcd(delta_poly, c4_poly)),
+                  'all_finite_fibers_multiplicative': bool(multiplicative),
+                  'mapped_base_points': mapped,
+                  'specializations': specializations,
+                  'morphism': qstr(phi),
+              })
+          except Exception as exc:
+              result.update({
+                  'status': 'error',
+                  'error': repr(exc),
+                  'traceback': traceback.format_exc(),
+              })
+
+          (OUT / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          (OUT / 'summary.txt').write_text(
+              '\n'.join([
+                  f"status={result.get('status')}",
+                  f"sage_version={result.get('sage_version')}",
+                  f"delta_degree={result.get('delta_degree')}",
+                  f"delta_squarefree={result.get('delta_squarefree')}",
+                  f"multiplicative={result.get('all_finite_fibers_multiplicative')}",
+                  f"mapped={sum(1 for r in result.get('mapped_base_points', []) if r.get('status') == 'ok')}",
+                  f"specializations={len(result.get('specializations', []))}",
+                  f"error={result.get('error')}",
+              ]) + '\n'
+          )
+          print((OUT / 'summary.txt').read_text())
+          PY
+          sage -python /tmp/probe_simple_e8.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: simple-split-e8-pencil-probe
+          path: /tmp/simple-e8-pencil
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
