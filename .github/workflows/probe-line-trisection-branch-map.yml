@@ -1,0 +1,167 @@
+name: probe-line-trisection-branch-map
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-line-trisection-branch-map.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - name: Compute exact projective branch map and a degree-one fibre
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/line-trisection-map
+          cat > /tmp/certify_line_map.py <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import traceback
+          from pathlib import Path
+
+          from sage.all import QQ, PolynomialRing, gcd, matrix, version
+
+          OUT = Path('/tmp/line-trisection-map')
+          result = {'status': 'started', 'sage_version': str(version())}
+
+          try:
+              R = PolynomialRing(QQ, names=('x','y','z','t'))
+              x,y,z,t = R.gens()
+              F = (
+                  3972*x**3 + 8080*x**2*y - 65622*x**2*z + 31679*x*y**2
+                  -104467*x*y*z -232614*x*z**2 +24484*y**3
+                  -15556*y**2*z -173688*y*z**2
+              )
+              G = (
+                  33084*x**3 +44912*x**2*y -62778*x**2*z +24409*x*y**2
+                  -70613*x*y*z -138714*x*z**2 -36220*y**3
+                  -122924*y**2*z +347376*y*z**2 +1042128*z**3
+              )
+
+              S = PolynomialRing(QQ, names=('u','v','X','T'))
+              u,v,X,T = S.gens()
+              restricted = S(F(X,u*X+v,1)) + T*S(G(X,u*X+v,1))
+              discriminant = restricted.discriminant(X)
+              quartic = discriminant.polynomial(T)
+              affine_coefficients = [quartic[k] for k in range(5)]
+
+              H = PolynomialRing(QQ, names=('A','B','C'))
+              A,B,C = H.gens()
+              homogeneous = []
+              for coefficient in affine_coefficients:
+                  polynomial = coefficient.polynomial({u:0,v:1})
+                  expression = H(0)
+                  for (i,j), value in polynomial.dict().items():
+                      expression += QQ(value)*(-A)**i*(-C)**j*B**(6-i-j)
+                  homogeneous.append(expression)
+
+              if any(q.total_degree() != 6 for q in homogeneous):
+                  raise AssertionError('branch coordinates are not homogeneous sextics')
+              common = homogeneous[0]
+              for q in homogeneous[1:]:
+                  common = gcd(common,q)
+              if common.degree() != 0:
+                  raise AssertionError(f'nonconstant projective gcd: {common}')
+
+              basepoint_charts = {}
+              for name, variable in [('A',A),('B',B),('C',C)]:
+                  chart_ring = PolynomialRing(QQ, names=tuple(str(q) for q in (A,B,C) if q != variable))
+                  variables = chart_ring.gens()
+                  substitution = {variable: QQ(1)}
+                  for original, replacement in zip((q for q in (A,B,C) if q != variable),variables):
+                      substitution[original] = replacement
+                  generators = [chart_ring(q.subs(substitution)) for q in homogeneous]
+                  ideal = chart_ring.ideal(generators)
+                  basis = ideal.groebner_basis()
+                  basepoint_charts[name] = [str(q) for q in basis]
+                  if basis != [chart_ring(1)]:
+                      raise AssertionError((name,'projective base point',basis))
+
+              source = {A:QQ(1),B:QQ(1),C:QQ(1)}
+              target = [q.subs(source) for q in homogeneous]
+              pivot = next(i for i,q in enumerate(target) if q != 0)
+              fibre_equations = [
+                  homogeneous[i]*target[pivot]-homogeneous[pivot]*target[i]
+                  for i in range(5) if i != pivot
+              ]
+
+              fibre_charts = {}
+              for name, variable in [('A',A),('B',B),('C',C)]:
+                  originals = tuple(q for q in (A,B,C) if q != variable)
+                  chart_ring = PolynomialRing(QQ, names=tuple(str(q) for q in originals), order='lex')
+                  variables = chart_ring.gens()
+                  substitution = {variable:QQ(1)}
+                  for original,replacement in zip(originals,variables):
+                      substitution[original] = replacement
+                  generators = [chart_ring(q.subs(substitution)) for q in fibre_equations]
+                  ideal = chart_ring.ideal(generators)
+                  basis = ideal.groebner_basis()
+                  fibre_charts[name] = [str(q) for q in basis]
+                  expected = [variables[0]-1, variables[1]-1]
+                  if ideal != chart_ring.ideal(expected):
+                      raise AssertionError((name,'unexpected fibre ideal',basis))
+
+              # Rank two of the projective differential at [1:1:1].  Work in
+              # B=1 and use the four affine target ratios q_i/q_pivot.
+              affine_ring = PolynomialRing(QQ,names=('a','c'))
+              a,c = affine_ring.gens()
+              qchart = [affine_ring(q(A=a,B=1,C=c)) for q in homogeneous]
+              ratios = [qchart[i]/qchart[pivot] for i in range(5) if i != pivot]
+              jacobian = matrix(QQ,[
+                  [f.derivative(a)(a=1,c=1),f.derivative(c)(a=1,c=1)]
+                  for f in ratios
+              ])
+              if jacobian.rank() != 2:
+                  raise AssertionError(('differential rank',jacobian.rank()))
+
+              result.update({
+                  'status':'proved',
+                  'claim_status':'proved exact computation',
+                  'source_surface':'research/small_split_e8_pencil.py',
+                  'map':'The line trisection [A:B:C] maps to the branch quartic Disc_x((F+tG)|_{Ax+By+Cz=0}).',
+                  'coordinate_degree':6,
+                  'coordinate_count':5,
+                  'projective_gcd':'1',
+                  'basepoint_chart_groebner_bases':basepoint_charts,
+                  'test_source':['1','1','1'],
+                  'test_target':[str(q) for q in target],
+                  'fibre_chart_groebner_bases':fibre_charts,
+                  'differential_rank_at_test_source':2,
+                  'conclusion':'The branch-quartic morphism P2_dual -> P4 is generically finite and has a reduced fibre of length one; hence it is birational onto its image.',
+                  'truth_note':'Birationality rules out a generic positive-dimensional or generically multiple self-collision mechanism for line trisections. It does not exclude exceptional self-collisions or collisions with other trisection nets.',
+              })
+          except Exception as exc:
+              result.update({'status':'error','error':repr(exc),'traceback':traceback.format_exc()})
+
+          unhashed = json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          result['record_sha256'] = hashlib.sha256(unhashed).hexdigest()
+          (OUT/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'status':result.get('status'),
+              'coordinate_degree':result.get('coordinate_degree'),
+              'differential_rank':result.get('differential_rank_at_test_source'),
+              'error':result.get('error'),
+          },sort_keys=True))
+          if result.get('status') != 'proved':
+              raise SystemExit(1)
+          PY
+          sage -python /tmp/certify_line_map.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: line-trisection-branch-map
+          path: /tmp/line-trisection-map
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
