@@ -16,18 +16,18 @@ jobs:
     container:
       image: sagemath/sagemath:10.9
     steps:
-      - name: Specialize the exact three-trisection packet and certify rank growth
+      - name: Certify the fully split packet at t equals 1427161 over 111293
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/three-trisection-rank
-          cat > /tmp/certify_three_trisections.py <<'PY'
+          mkdir -p /tmp/split-packet-rank
+          cat > /tmp/certify_split_packet.py <<'PY'
           from __future__ import annotations
           import hashlib,json,traceback
           from pathlib import Path
-          from sage.all import EllipticCurve,EllipticCurve_from_cubic,GF,PolynomialRing,QQ,gcd,prime_range,version
+          from sage.all import EllipticCurve,EllipticCurve_from_cubic,GF,PolynomialRing,QQ,prime_range,version
 
-          OUT=Path('/tmp/three-trisection-rank')
+          OUT=Path('/tmp/split-packet-rank')
           result={'status':'started','sage_version':str(version())}
 
           def rank_mod(rows,l):
@@ -36,13 +36,20 @@ jobs:
               for c in range(n):
                   p=next((i for i in range(r,m) if A[i][c]),None)
                   if p is None:continue
-                  A[r],A[p]=A[p],A[r];inv=pow(A[r][c],-1,l);A[r]=[(inv*x)%l for x in A[r]]
+                  A[r],A[p]=A[p],A[r];z=pow(A[r][c],-1,l);A[r]=[(z*x)%l for x in A[r]]
                   for i in range(m):
                       if i!=r and A[i][c]:
                           z=A[i][c];A[i]=[(x-z*y)%l for x,y in zip(A[i],A[r])]
                   r+=1
                   if r==m:break
               return r
+
+          def independent_indices(rows,l):
+              chosen=[];r=0
+              for i in range(len(rows)):
+                  nr=rank_mod([rows[j] for j in chosen+[i]],l)
+                  if nr>r:chosen.append(i);r=nr
+              return chosen
 
           def local(E,points,p,l):
               Fp=GF(p);Ep=EllipticCurve(Fp,[Fp(a.numerator())/Fp(a.denominator()) for a in E.a_invariants()])
@@ -61,13 +68,13 @@ jobs:
               for P in points:
                   if P.is_zero():Q=Ep(0)
                   else:
-                      xx,yy=P[0],P[1]
-                      if xx.denominator()%p==0 or yy.denominator()%p==0:raise ZeroDivisionError
-                      Q=Ep(Fp(xx.numerator())/Fp(xx.denominator()),Fp(yy.numerator())/Fp(yy.denominator()))
+                      x,y=P[0],P[1]
+                      if x.denominator()%p==0 or y.denominator()%p==0:raise ZeroDivisionError
+                      Q=Ep(Fp(x.numerator())/Fp(x.denominator()),Fp(y.numerator())/Fp(y.denominator()))
                   vectors.append(span[which[Q]])
               return vectors,int(Ep.cardinality()),len(next(iter(span.values())))
 
-          def certify(E,points,l,bound=350):
+          def certify(E,points,l,bound=500):
               rows=[[] for _ in points];used=[];torsion=None;D=E.discriminant()
               for p0 in prime_range(5,bound):
                   p=int(p0)
@@ -80,74 +87,55 @@ jobs:
                       used.append({'prime':p,'group_order':N,'quotient_dimension':dim})
                       for i,v in enumerate(vectors):rows[i].extend(v)
                       rr=rank_mod(rows,l)
-                      if rr==len(points) and torsion:return {'ell':l,'rank':rr,'primes':used,'torsion_witness':torsion,'rows':rows}
-              return {'ell':l,'rank':rank_mod(rows,l),'primes':used,'torsion_witness':torsion,'rows':rows}
+                      if rr>=12 and torsion:
+                          return {'ell':l,'rank':rr,'independent_indices':independent_indices(rows,l),'primes':used,'torsion_witness':torsion,'rows':rows}
+              return {'ell':l,'rank':rank_mod(rows,l),'independent_indices':independent_indices(rows,l),'primes':used,'torsion_witness':torsion,'rows':rows}
 
-          def ev(coeffs,s):return sum(QQ(c)*s**i for i,c in enumerate(coeffs))
-          def point(s,kind):
-              if kind=='C1':
-                  den=ev([-118794,154067,179873,437604],s)
-                  return [ev([72912,289296,-2367708],s)/den,ev([-356382,535113,828915,-1054896],s)/den,QQ(1)]
-              if kind=='C2':
-                  den=ev([-17044,6464,-23081,13816],s)
-                  return [ev([46142,104745,-91352],s)/den,ev([-51132,65534,35502,-49904],s)/den,QQ(1)]
-              den=ev([5590868988,-13577828351,8426176988],s)
-              return [ev([-12673653216,25187117592,-7840260876],s)/den,ev([-4236741228,15734911491,-15419156388],s)/den,QQ(1)]
+          def ev(c,s):return sum(QQ(v)*s**i for i,v in enumerate(c))
+          def point(s,k):
+              if k=='C1':
+                  d=ev([-118794,154067,179873,437604],s);return [ev([72912,289296,-2367708],s)/d,ev([-356382,535113,828915,-1054896],s)/d,QQ(1)]
+              if k=='C2':
+                  d=ev([-17044,6464,-23081,13816],s);return [ev([46142,104745,-91352],s)/d,ev([-51132,65534,35502,-49904],s)/d,QQ(1)]
+              d=ev([5590868988,-13577828351,8426176988],s);return [ev([-12673653216,25187117592,-7840260876],s)/d,ev([-4236741228,15734911491,-15419156388],s)/d,QQ(1)]
 
           try:
               R=PolynomialRing(QQ,names=('X','Y','Z'));X,Y,Z=R.gens()
               F=(3972*X**3+8080*X**2*Y-65622*X**2*Z+31679*X*Y**2-104467*X*Y*Z-232614*X*Z**2+24484*Y**3-15556*Y**2*Z-173688*Y*Z**2)
               G=(33084*X**3+44912*X**2*Y-62778*X**2*Z+24409*X*Y**2-70613*X*Y*Z-138714*X*Z**2-36220*Y**3-122924*Y**2*Z+347376*Y*Z**2+1042128*Z**3)
-              base=[[-2,-1,1],[-4,2,1],[1,-3,1],[4,-3,1],[2,-2,1],[0,3,1],[3,4,1],[-3,0,1],[QQ(5264)/13547,QQ(-35295)/13547,1]]
-              base=[[QQ(v) for v in P] for P in base];origin=base[8]
-              tn=[1932817518,-3751492583,7878955272,-4386960832];td=[-1342798922,-12609842723,6173506772,658473248]
-              candidates=[QQ(0)]
-              for h in range(1,11):
-                  for den in range(1,h+1):
-                      for num in range(-h,h+1):
-                          if max(abs(num),den)==h and gcd(abs(num),den)==1:
-                              q=QQ(num)/den
-                              if q not in candidates:candidates.append(q)
-              trials=[];winner10=None;best_trial=None
-              for s0 in candidates:
-                  row={'s0':str(s0)}
-                  try:
-                      denominator=ev(td,s0)
-                      if denominator==0:row['status']='cover_pole';trials.append(row);continue
-                      t0=ev(tn,s0)/denominator;P1=point(s0,'C1');P2=point(s0,'C2');PQ=point(s0,'Q');cubic=F+t0*G
-                      if any(cubic(*P)!=0 for P in (P1,P2,PQ)):raise AssertionError('point off specialized cubic')
-                      phi=EllipticCurve_from_cubic(cubic,origin,morphism=True);E=phi.codomain();C=phi.domain()
-                      mapped_base=[phi(C(P)) for P in base[:8]]+[E(0)]
-                      M1,M2,MQ=(phi(C(P)) for P in (P1,P2,PQ));D1=M1-MQ;D2=M2-MQ
-                      points10=mapped_base[:8]+[D1,D2];certs=[]
-                      for l in (2,3,5,7,11):
-                          cert=certify(E,points10,l);certs.append(cert)
-                          if cert['rank']==10 and cert['torsion_witness']:break
-                      best=max(c['rank'] for c in certs)
-                      row.update({'status':'ok','t0':str(t0),'a_invariants':[str(a) for a in E.a_invariants()],'discriminant':str(E.discriminant()),
-                        'plane_points':{'C1':[str(v) for v in P1],'C2':[str(v) for v in P2],'Q':[str(v) for v in PQ]},
-                        'mapped_base_points':[[str(P[0]),str(P[1]),str(P[2])] for P in mapped_base[:8]],
-                        'mapped_packet_points':{'C1':[str(M1[0]),str(M1[1]),str(M1[2])],'C2':[str(M2[0]),str(M2[1]),str(M2[2])],'Q':[str(MQ[0]),str(MQ[1]),str(MQ[2])]},
-                        'difference_points':{'D1':[str(D1[0]),str(D1[1]),str(D1[2])],'D2':[str(D2[0]),str(D2[1]),str(D2[2])]},
-                        'certificates':certs,'best_rank':best,'proved_rank_at_least_10':bool(best==10)})
-                      trials.append(row)
-                      if best_trial is None or best>best_trial['best_rank']:best_trial=row
-                      if best==10:winner10=row;break
-                  except Exception as exc:
-                      row.update({'status':'error','error':repr(exc),'traceback':traceback.format_exc()});trials.append(row)
-              result.update({'status':'ok' if winner10 else 'no_rank10_winner','candidate_id':'small-split-e8-three-trisection-cover-packet-v1','trial_count':len(trials),'winner10':winner10,'best_trial':best_trial,'trials':trials,
-                'proved_specialization_rank_at_least_10':bool(winner10),'truth_note':'This proves only a specialized lower bound when a full finite-reduction certificate is present; it is not a rank-30 certificate.'})
+              base=[[-2,-1,1],[-4,2,1],[1,-3,1],[4,-3,1],[2,-2,1],[0,3,1],[3,4,1],[-3,0,1],[QQ(5264)/13547,QQ(-35295)/13547,1]];base=[[QQ(v) for v in P] for P in base]
+              roots=[QQ(-16253)/2248,QQ(-7838)/67937,QQ(34)/19];t0=QQ(1427161)/111293;cubic=F+t0*G
+              phi=EllipticCurve_from_cubic(cubic,base[8],morphism=True);E,C=phi.codomain(),phi.domain();mapped_base=[phi(C(P)) for P in base[:8]]
+              plane=[];mapped=[];extras=[];labels=[f'B{i}' for i in range(8)]
+              for j,s in enumerate(roots):
+                  P1,P2,PQ=point(s,'C1'),point(s,'C2'),point(s,'Q')
+                  if any(cubic(*P)!=0 for P in (P1,P2,PQ)):raise AssertionError(('point off cubic',j))
+                  M1,M2,MQ=(phi(C(P)) for P in (P1,P2,PQ));D1,D2=M1-MQ,M2-MQ
+                  plane.append({'source':str(s),'C1':[str(v) for v in P1],'C2':[str(v) for v in P2],'Q':[str(v) for v in PQ]})
+                  mapped.append({'source':str(s),'C1':[str(M1[0]),str(M1[1]),str(M1[2])],'C2':[str(M2[0]),str(M2[1]),str(M2[2])],'Q':[str(MQ[0]),str(MQ[1]),str(MQ[2])],'D1':[str(D1[0]),str(D1[1]),str(D1[2])],'D2':[str(D2[0]),str(D2[1]),str(D2[2])]})
+                  extras.extend([D1,D2]);labels.extend([f'D1_{j}',f'D2_{j}'])
+              points=mapped_base+extras;certs=[];winner=None
+              for l in (2,3,5,7,11,13):
+                  cert=certify(E,points,l);certs.append(cert)
+                  if cert['rank']>=12 and cert['torsion_witness']:
+                      selected=cert['independent_indices'][:12]
+                      if len(selected)==12:winner=(cert,selected);break
+              if winner is None:raise AssertionError('no rank-12 finite-reduction certificate')
+              cert,selected=winner;selected_points=[]
+              for i in selected:
+                  P=points[i];selected_points.append({'index':i,'label':labels[i],'point':[str(P[0]),str(P[1]),str(P[2])]})
+              result.update({'status':'proved','claim_status':'unconditional rank lower bound by exact finite reductions','t0':str(t0),'cover_roots':[str(s) for s in roots],'a_invariants':[str(a) for a in E.a_invariants()],'discriminant':str(E.discriminant()),'plane_packet_points':plane,'mapped_packet_points':mapped,'mapped_base_points':[[str(P[0]),str(P[1]),str(P[2])] for P in mapped_base],'all_point_labels':labels,'all_point_count':len(points),'certificates':certs,'winning_ell':cert['ell'],'finite_reduction_rank':cert['rank'],'selected_independent_points':selected_points,'proved_rank_at_least_12':True,'truth_note':'This proves rank at least 12 for this explicit specialized curve. It is not a rank-30 result.'})
           except Exception as exc:result.update({'status':'error','error':repr(exc),'traceback':traceback.format_exc()})
           raw=json.dumps(result,sort_keys=True,separators=(',',':')).encode();result['record_sha256']=hashlib.sha256(raw).hexdigest();(OUT/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
-          best=result.get('winner10') or result.get('best_trial')
-          print(json.dumps({'status':result.get('status'),'trial_count':result.get('trial_count'),'proved_rank_at_least_10':result.get('proved_specialization_rank_at_least_10'),'best_rank':None if not best else best.get('best_rank'),'best_s':None if not best else best.get('s0'),'best_t':None if not best else best.get('t0'),'error':result.get('error'),'record_sha256':result.get('record_sha256')},indent=2,sort_keys=True))
+          print(json.dumps({'status':result.get('status'),'proved_rank_at_least_12':result.get('proved_rank_at_least_12'),'winning_ell':result.get('winning_ell'),'finite_reduction_rank':result.get('finite_reduction_rank'),'selected_labels':[r['label'] for r in result.get('selected_independent_points',[])],'error':result.get('error'),'record_sha256':result.get('record_sha256')},indent=2,sort_keys=True))
+          if result.get('status')!='proved':raise SystemExit(1)
           PY
-          sage -python /tmp/certify_three_trisections.py | tee /tmp/three-trisection-rank/stdout.log
+          sage -python /tmp/certify_split_packet.py | tee /tmp/split-packet-rank/stdout.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: three-trisection-rank-probe
-          path: /tmp/three-trisection-rank
+          name: split-three-trisection-rank-certificate
+          path: /tmp/split-packet-rank
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
