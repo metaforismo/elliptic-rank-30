@@ -1,3 +1,4 @@
+# Retry after correcting the exact degree-(4,7) Wronskian equation.
 name: integrate-certified-rank12
 
 on:
