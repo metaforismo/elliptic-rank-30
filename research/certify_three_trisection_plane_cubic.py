@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Certify trisection-packet rank directly on specialized plane cubics.
 
-This is independent of any global cubic-to-Weierstrass transformation. It
+This is independent of any global cubic-to-Weierstrass transformation.  It
 reduces the plane cubic and all displayed rational points modulo good primes,
 forms the packet differences with the chord-tangent group law, and accumulates
 exact ranks in E(F_p)/ell E(F_p).
@@ -66,11 +66,22 @@ def qstr(value: Fraction | int) -> str:
     return str(value.numerator) if value.denominator == 1 else f"{value.numerator}/{value.denominator}"
 
 
+def as_fraction(value) -> Fraction:
+    """Coerce Python or Sage rational values to ``fractions.Fraction``."""
+    if isinstance(value, Fraction):
+        return value
+    numerator = value.numerator() if callable(getattr(value, "numerator", None)) else value.numerator
+    denominator = value.denominator() if callable(getattr(value, "denominator", None)) else value.denominator
+    return Fraction(int(numerator), int(denominator))
+
+
 def evaluate(coefficients: Sequence[int], s: Fraction) -> Fraction:
+    s = as_fraction(s)
     return sum((Fraction(c) * s**i for i, c in enumerate(coefficients)), Fraction(0))
 
 
 def plane_point(s: Fraction, kind: str) -> list[Fraction]:
+    s = as_fraction(s)
     formula = POINT_FORMULAS[kind]
     den = evaluate(formula["den"], s)
     if den == 0:
