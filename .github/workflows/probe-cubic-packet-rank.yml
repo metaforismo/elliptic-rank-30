@@ -16,107 +16,266 @@ jobs:
     container:
       image: sagemath/sagemath:10.9
     steps:
-      - name: Map the specialized cubic and certify anti-invariant rank
+      - name: Specialize the exact common cubic cover and certify rank growth
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/cubic-packet-rank
-          cat > /tmp/certify_packet.py <<'PY'
+          mkdir -p /tmp/cubic-conic-cover-rank
+          cat > /tmp/certify_cover_collision.py <<'PY'
           from __future__ import annotations
-          import json, traceback
-          from pathlib import Path
-          from sage.all import EllipticCurve, EllipticCurve_from_cubic, GF, PolynomialRing, QQ, prime_range, version
 
-          OUT=Path('/tmp/cubic-packet-rank')
-          result={'status':'started','sage_version':str(version())}
-          def q(s): return QQ(s)
-          def rank_mod(rows,l):
-            if not rows:return 0
-            A=[[int(x)%l for x in r] for r in rows];m=len(A);n=len(A[0]);r=0
-            for c in range(n):
-              p=next((i for i in range(r,m) if A[i][c]),None)
-              if p is None:continue
-              A[r],A[p]=A[p],A[r];z=pow(A[r][c],-1,l);A[r]=[(z*x)%l for x in A[r]]
-              for i in range(m):
-                if i!=r and A[i][c]:
-                  z=A[i][c];A[i]=[(x-z*y)%l for x,y in zip(A[i],A[r])]
-              r+=1
-              if r==m:break
-            return r
-          def local(E,points,p,l):
-            Fp=GF(p); ainvs=[Fp(a.numerator())/Fp(a.denominator()) for a in E.a_invariants()]
-            Ep=EllipticCurve(Fp,ainvs);elts=list(Ep);H={l*P for P in elts};un=set(elts);cos=[];which={}
-            while un:
-              a=next(iter(un));C={a+h for h in H};k=len(cos)
-              for P in C:which[P]=k
-              un-=C;cos.append(C)
-            zero=which[Ep(0)];reps=[next(iter(C)) for C in cos];span={zero:()}
-            while len(span)<len(cos):
-              b=next(i for i in range(len(cos)) if i not in span);new={}
-              for i,v in span.items():
-                for c in range(l):new[which[reps[i]+c*reps[b]]]=v+(c,)
-              span=new
-            vec=[]
-            for P in points:
-              if P.is_zero():Q=Ep(0)
-              else:
-                x,y=P[0],P[1]
-                if x.denominator()%p==0 or y.denominator()%p==0:raise ZeroDivisionError
-                Q=Ep(Fp(x.numerator())/Fp(x.denominator()),Fp(y.numerator())/Fp(y.denominator()))
-              vec.append(span[which[Q]])
-            return vec,int(Ep.cardinality()),len(next(iter(span.values())))
-          def certify(E,points,l):
-            rows=[[] for _ in points];used=[];torsion=None
-            for p0 in prime_range(5,500):
-              p=int(p0)
-              try:
-                D=E.discriminant()
-                if D.numerator()%p==0 or D.denominator()%p==0:continue
-                v,N,d=local(E,points,p,l)
-              except Exception:continue
-              if torsion is None and N%l:torsion={'prime':p,'group_order':N}
-              if d:
-                used.append({'prime':p,'group_order':N,'quotient_dimension':d})
-                for i,z in enumerate(v):rows[i].extend(z)
-                rr=rank_mod(rows,l)
-                if rr==len(points) and torsion:return {'ell':l,'rank':rr,'primes':used,'torsion_witness':torsion,'rows':rows}
-            return {'ell':l,'rank':rank_mod(rows,l),'primes':used,'torsion_witness':torsion,'rows':rows}
+          import hashlib
+          import json
+          import math
+          import traceback
+          from pathlib import Path
+
+          from sage.all import (
+              EllipticCurve,
+              EllipticCurve_from_cubic,
+              GF,
+              PolynomialRing,
+              QQ,
+              gcd,
+              prime_range,
+              version,
+          )
+
+          OUT = Path('/tmp/cubic-conic-cover-rank')
+          result = {'status': 'started', 'sage_version': str(version())}
+
+          def rank_mod(rows, ell):
+              if not rows:
+                  return 0
+              A = [[int(x) % ell for x in row] for row in rows]
+              m = len(A); n = len(A[0]); rank = 0
+              for col in range(n):
+                  pivot = next((r for r in range(rank, m) if A[r][col]), None)
+                  if pivot is None:
+                      continue
+                  A[rank], A[pivot] = A[pivot], A[rank]
+                  inv = pow(A[rank][col], -1, ell)
+                  A[rank] = [(inv*x) % ell for x in A[rank]]
+                  for r in range(m):
+                      if r != rank and A[r][col]:
+                          c = A[r][col]
+                          A[r] = [(x-c*y) % ell for x,y in zip(A[r], A[rank])]
+                  rank += 1
+                  if rank == m:
+                      break
+              return rank
+
+          def local_quotient(E, points, p, ell):
+              Fp = GF(p)
+              ainvs = [Fp(a.numerator()) / Fp(a.denominator()) for a in E.a_invariants()]
+              Ep = EllipticCurve(Fp, ainvs)
+              elements = list(Ep)
+              H = {ell*P for P in elements}
+              unassigned = set(elements)
+              cosets = []
+              which = {}
+              while unassigned:
+                  rep = next(iter(unassigned))
+                  coset = {rep+h for h in H}
+                  index = len(cosets)
+                  for P in coset:
+                      which[P] = index
+                  unassigned -= coset
+                  cosets.append(coset)
+              zero = which[Ep(0)]
+              representatives = [next(iter(C)) for C in cosets]
+              span = {zero: ()}
+              while len(span) < len(cosets):
+                  b = next(i for i in range(len(cosets)) if i not in span)
+                  new = {}
+                  for i, vec in span.items():
+                      for c in range(ell):
+                          new[which[representatives[i] + c*representatives[b]]] = vec + (c,)
+                  span = new
+              vectors = []
+              for P in points:
+                  if P.is_zero():
+                      Q = Ep(0)
+                  else:
+                      xx, yy = P[0], P[1]
+                      if xx.denominator() % p == 0 or yy.denominator() % p == 0:
+                          raise ZeroDivisionError
+                      Q = Ep(
+                          Fp(xx.numerator())/Fp(xx.denominator()),
+                          Fp(yy.numerator())/Fp(yy.denominator()),
+                      )
+                  vectors.append(span[which[Q]])
+              dimension = len(next(iter(span.values())))
+              return vectors, int(Ep.cardinality()), dimension
+
+          def certify(E, points, ell, prime_bound=250):
+              rows = [[] for _ in points]
+              used = []
+              torsion_witness = None
+              D = E.discriminant()
+              for p0 in prime_range(5, prime_bound):
+                  p = int(p0)
+                  try:
+                      if D.numerator() % p == 0 or D.denominator() % p == 0:
+                          continue
+                      vectors, order, dimension = local_quotient(E, points, p, ell)
+                  except Exception:
+                      continue
+                  if torsion_witness is None and order % ell:
+                      torsion_witness = {'prime': p, 'group_order': order}
+                  if dimension:
+                      used.append({'prime':p,'group_order':order,'quotient_dimension':dimension})
+                      for i, vector in enumerate(vectors):
+                          rows[i].extend(vector)
+                      rank = rank_mod(rows, ell)
+                      if rank == len(points) and torsion_witness is not None:
+                          return {
+                              'ell':ell,'rank':rank,'primes':used,
+                              'torsion_witness':torsion_witness,'rows':rows,
+                          }
+              return {
+                  'ell':ell,'rank':rank_mod(rows,ell),'primes':used,
+                  'torsion_witness':torsion_witness,'rows':rows,
+              }
+
+          def evaluate_poly(coefficients, s):
+              return sum(QQ(c) * s**i for i,c in enumerate(coefficients))
+
+          def point_formula(s, which):
+              if which == 'cubic':
+                  den = evaluate_poly([-118794,154067,179873,437604],s)
+                  return [
+                      evaluate_poly([72912,289296,-2367708],s)/den,
+                      evaluate_poly([-356382,535113,828915,-1054896],s)/den,
+                      QQ(1),
+                  ]
+              den = evaluate_poly([5590868988,-13577828351,8426176988],s)
+              return [
+                  evaluate_poly([-12673653216,25187117592,-7840260876],s)/den,
+                  evaluate_poly([-4236741228,15734911491,-15419156388],s)/den,
+                  QQ(1),
+              ]
+
           try:
-            R=PolynomialRing(QQ,names=('X','Y','Z'));X,Y,Z=R.gens()
-            F=(3972*X**3+8080*X**2*Y-65622*X**2*Z+31679*X*Y**2-104467*X*Y*Z-232614*X*Z**2+24484*Y**3-15556*Y**2*Z-173688*Y*Z**2)
-            G=(33084*X**3+44912*X**2*Y-62778*X**2*Z+24409*X*Y**2-70613*X*Y*Z-138714*X*Z**2-36220*Y**3-122924*Y**2*Z+347376*Y*Z**2+1042128*Z**3)
-            t0=QQ(-1877)/373;cubic=F+t0*G;origin=[QQ(5264)/13547,QQ(-35295)/13547,1]
-            branches=[
-             [(q('129660/292031'),q('-900249/292031'),1),(q('64/107'),q('-319/107'),1)],
-             [(q('63/41'),q('-268/123'),1),(q('1702884/1396775'),q('-3295026/1396775'),1)],
-             [(q('8276018/80391893'),q('-273106554/80391893'),1),(q('65380/164569'),q('-513586/164569'),1)],
-             [(q('1023660/376139'),q('-1327861/376139'),1),(q('18317104/5249567'),q('-55896457/15748701'),1)],
-            ]
-            for P in [P for pair in branches for P in pair]:
-              if cubic(*P)!=0:raise AssertionError(('off cubic',P))
-            phi=EllipticCurve_from_cubic(cubic,origin,morphism=True);E=phi.codomain();C=phi.domain()
-            mapped=[[phi(C(list(P))) for P in pair] for pair in branches]
-            anti=[pair[0]-pair[1] for pair in mapped]
-            certs=[]
-            for l in (2,3,5,7,11):
-              c=certify(E,anti,l);certs.append(c)
-              if c['rank']==4 and c['torsion_witness']:break
-            best=max(c['rank'] for c in certs)
-            result.update({'status':'ok','t0':str(t0),'elliptic_curve':str(E),'a_invariants':[str(a) for a in E.a_invariants()],'discriminant':str(E.discriminant()),
-              'mapped_branch_points':[[[str(P[0]),str(P[1]),str(P[2])] for P in pair] for pair in mapped],
-              'anti_invariant_points':[[str(P[0]),str(P[1]),str(P[2])] for P in anti],
-              'certificates':certs,'best_rank':best,'proved_anti_invariant_rank_4':bool(best==4),
-              'proved_quadratic_base_change_rank_at_least_12':bool(best==4)})
-          except Exception as exc:result.update({'status':'error','error':repr(exc),'traceback':traceback.format_exc()})
+              R = PolynomialRing(QQ, names=('X','Y','Z'))
+              X,Y,Z = R.gens()
+              F = (
+                  3972*X**3 + 8080*X**2*Y - 65622*X**2*Z + 31679*X*Y**2
+                  -104467*X*Y*Z -232614*X*Z**2 +24484*Y**3
+                  -15556*Y**2*Z -173688*Y*Z**2
+              )
+              G = (
+                  33084*X**3 +44912*X**2*Y -62778*X**2*Z +24409*X*Y**2
+                  -70613*X*Y*Z -138714*X*Z**2 -36220*Y**3
+                  -122924*Y**2*Z +347376*Y*Z**2 +1042128*Z**3
+              )
+              base = [
+                  [QQ(-2),QQ(-1),QQ(1)], [QQ(-4),QQ(2),QQ(1)],
+                  [QQ(1),QQ(-3),QQ(1)], [QQ(4),QQ(-3),QQ(1)],
+                  [QQ(2),QQ(-2),QQ(1)], [QQ(0),QQ(3),QQ(1)],
+                  [QQ(3),QQ(4),QQ(1)], [QQ(-3),QQ(0),QQ(1)],
+                  [QQ(5264)/13547,QQ(-35295)/13547,QQ(1)],
+              ]
+              origin = base[8]
+              t_num = [1932817518,-3751492583,7878955272,-4386960832]
+              t_den = [-1342798922,-12609842723,6173506772,658473248]
+
+              candidates = [QQ(0)]
+              for height in range(1,13):
+                  for den in range(1,height+1):
+                      for num in range(-height,height+1):
+                          if max(abs(num),den) != height or gcd(abs(num),den) != 1:
+                              continue
+                          q = QQ(num)/den
+                          if q not in candidates:
+                              candidates.append(q)
+
+              trials = []
+              winner = None
+              for s0 in candidates:
+                  trial = {'s0':str(s0)}
+                  try:
+                      td = evaluate_poly(t_den,s0)
+                      if td == 0:
+                          trial['status']='cover_pole';trials.append(trial);continue
+                      t0 = evaluate_poly(t_num,s0)/td
+                      PC = point_formula(s0,'cubic')
+                      PQ = point_formula(s0,'conic')
+                      cubic = F + t0*G
+                      if cubic(*PC) != 0 or cubic(*PQ) != 0:
+                          raise AssertionError('specialized point is off the cubic')
+                      phi = EllipticCurve_from_cubic(cubic, origin, morphism=True)
+                      E = phi.codomain(); C = phi.domain()
+                      mapped_base = [phi(C(P)) for P in base]
+                      mapped_PC = phi(C(PC)); mapped_PQ = phi(C(PQ))
+                      if not mapped_base[8].is_zero():
+                          raise AssertionError('origin did not map to zero')
+                      difference = mapped_PC - mapped_PQ
+                      points9 = mapped_base[:8] + [difference]
+                      certificates = []
+                      for ell in (2,3,5,7,11):
+                          cert = certify(E, points9, ell)
+                          certificates.append(cert)
+                          if cert['rank'] == 9 and cert['torsion_witness'] is not None:
+                              break
+                      best = max(c['rank'] for c in certificates)
+                      trial.update({
+                          'status':'ok','t0':str(t0),
+                          'a_invariants':[str(a) for a in E.a_invariants()],
+                          'discriminant':str(E.discriminant()),
+                          'cubic_point':[str(v) for v in PC],
+                          'conic_point':[str(v) for v in PQ],
+                          'mapped_base_points':[
+                              ['0'] if P.is_zero() else [str(P[0]),str(P[1]),str(P[2])]
+                              for P in mapped_base
+                          ],
+                          'mapped_cubic_point':[str(mapped_PC[0]),str(mapped_PC[1]),str(mapped_PC[2])],
+                          'mapped_conic_point':[str(mapped_PQ[0]),str(mapped_PQ[1]),str(mapped_PQ[2])],
+                          'difference_point':[str(difference[0]),str(difference[1]),str(difference[2])],
+                          'certificates':certificates,'best_rank':best,
+                          'proved_rank_at_least_9':bool(best==9),
+                      })
+                      trials.append(trial)
+                      if best == 9:
+                          winner = trial
+                          break
+                  except Exception as exc:
+                      trial.update({'status':'error','error':repr(exc),'traceback':traceback.format_exc()})
+                      trials.append(trial)
+
+              result.update({
+                  'status':'ok' if winner else 'no_winner',
+                  'candidate_id':'small-split-e8-cover-collision-C5-0368-Q034-v1',
+                  'trial_count':len(trials),
+                  'winner':winner,
+                  'trials':trials,
+                  'proved_specialization_rank_at_least_9':bool(winner),
+                  'truth_note':'A winning finite-reduction certificate proves only the displayed specialized rank lower bound. It is not a rank-30 result.',
+              })
+          except Exception as exc:
+              result.update({'status':'error','error':repr(exc),'traceback':traceback.format_exc()})
+
+          raw = json.dumps(result,sort_keys=True,separators=(',',':')).encode()
+          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
           (OUT/'result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
-          print(json.dumps({k:v for k,v in result.items() if k not in ('mapped_branch_points','anti_invariant_points','certificates')},indent=2,sort_keys=True))
+          print(json.dumps({
+              'status':result.get('status'),
+              'trial_count':result.get('trial_count'),
+              'proved_rank_at_least_9':result.get('proved_specialization_rank_at_least_9'),
+              'winning_s':None if not result.get('winner') else result['winner'].get('s0'),
+              'winning_t':None if not result.get('winner') else result['winner'].get('t0'),
+              'winning_rank':None if not result.get('winner') else result['winner'].get('best_rank'),
+              'error':result.get('error'),
+              'record_sha256':result.get('record_sha256'),
+          },indent=2,sort_keys=True))
           PY
-          sage -python /tmp/certify_packet.py | tee /tmp/cubic-packet-rank/stdout.log
+          sage -python /tmp/certify_cover_collision.py | tee /tmp/cubic-conic-cover-rank/stdout.log
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: cubic-packet-rank-probe
-          path: /tmp/cubic-packet-rank
+          name: cubic-conic-cover-rank-probe
+          path: /tmp/cubic-conic-cover-rank
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
