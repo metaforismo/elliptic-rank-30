@@ -1,0 +1,51 @@
+name: verify-rank12-direct
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "research/plane_cubic_finite_reduction.py"
+      - "research/certify_three_trisection_plane_cubic.py"
+      - "research/derive_three_trisection_split_quartic_tangent_point.py"
+      - "research/certify_tangent_split_rank12_exact.py"
+      - "certificates/small_split_e8_three_trisection_tangent_split_parameter.json"
+      - "certificates/small_split_e8_tangent_fibre_exact_rank12_packet.json"
+      - "tests/test_plane_cubic_finite_reduction.py"
+      - ".github/workflows/verify-rank12-direct.yml"
+  pull_request:
+    paths:
+      - "research/plane_cubic_finite_reduction.py"
+      - "research/certify_three_trisection_plane_cubic.py"
+      - "research/derive_three_trisection_split_quartic_tangent_point.py"
+      - "research/certify_tangent_split_rank12_exact.py"
+      - "certificates/small_split_e8_three_trisection_tangent_split_parameter.json"
+      - "certificates/small_split_e8_tangent_fibre_exact_rank12_packet.json"
+      - "tests/test_plane_cubic_finite_reduction.py"
+      - ".github/workflows/verify-rank12-direct.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python3 -m pip install --disable-pip-version-check sympy==1.14.0
+      - name: Verify tangent-derived split parameter
+        run: |
+          python3 research/derive_three_trisection_split_quartic_tangent_point.py \
+            --check certificates/small_split_e8_three_trisection_tangent_split_parameter.json
+      - name: Recompute the exact rank-12 packet certificate
+        run: |
+          python3 research/certify_tangent_split_rank12_exact.py \
+            --split-certificate certificates/small_split_e8_three_trisection_tangent_split_parameter.json \
+            --output /tmp/rank12.json \
+            --check certificates/small_split_e8_tangent_fibre_exact_rank12_packet.json
+      - name: Run plane-cubic regression tests
+        run: python3 -m unittest tests.test_plane_cubic_finite_reduction -v

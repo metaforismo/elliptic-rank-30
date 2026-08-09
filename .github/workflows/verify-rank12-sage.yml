@@ -1,0 +1,37 @@
+name: verify-rank12-sage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "research/certify_three_trisection_plane_cubic.py"
+      - "research/sage_verify_tangent_split_rank12.py"
+      - "certificates/small_split_e8_three_trisection_tangent_split_parameter.json"
+      - "certificates/small_split_e8_tangent_fibre_rank12_sage.json"
+      - ".github/workflows/verify-rank12-sage.yml"
+  pull_request:
+    paths:
+      - "research/certify_three_trisection_plane_cubic.py"
+      - "research/sage_verify_tangent_split_rank12.py"
+      - "certificates/small_split_e8_three_trisection_tangent_split_parameter.json"
+      - "certificates/small_split_e8_tangent_fibre_rank12_sage.json"
+      - ".github/workflows/verify-rank12-sage.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recompute the independent SageMath certificate
+        run: |
+          sage -python research/sage_verify_tangent_split_rank12.py \
+            --split-certificate certificates/small_split_e8_three_trisection_tangent_split_parameter.json \
+            --output /tmp/rank12-sage.json \
+            --check certificates/small_split_e8_tangent_fibre_rank12_sage.json

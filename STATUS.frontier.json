@@ -1,19 +1,25 @@
 {
   "active_workstreams": [
+    "enumerate and compare the remaining split-E8 trisection translation orbits against the certified common cubic cover",
+    "construct compatible low-genus packets whose specializations add more than four independent directions",
     "reconstruct the explicit rank-17 K3 bridge and historical specialization",
-    "audit the divergent modular-packet branch without merging it wholesale",
-    "search higher-degree and rational-function inverse constructions",
-    "benchmark independent high-generic-rank families under the common certificate funnel"
+    "audit the divergent modular-packet branch without merging it wholesale"
   ],
   "authoritative_lower_bound": 29,
   "canonical_branch": "main",
   "newest_result": {
-    "certificate": "certificates/degree24_polynomial_section_obstruction.json",
-    "claim_status": "proved",
-    "documentation": "research/degree24_polynomial_section_obstruction.md",
-    "limitation": "Rules out only Q(v)^2-v^2L(v)^3=v^3-Sv^2+3v+1 with deg(L)=2 and deg(Q)<=4; it is not a rank-30 obstruction.",
-    "name": "degree-(2,4) polynomial-section obstruction",
-    "verifier": "research/degree24_polynomial_section_obstruction.py"
+    "certificate": "certificates/small_split_e8_tangent_fibre_exact_rank12_packet.json",
+    "claim_status": "certified",
+    "documentation": "research/small_split_e8_tangent_rank12_packet.md",
+    "independent_certificate": "certificates/small_split_e8_tangent_fibre_rank12_sage.json",
+    "limitation": "This is a structural rank-12 component and does not improve the global rank-29 record lower bound.",
+    "name": "tangent-derived split-E8 three-trisection packet of exact subgroup rank 12",
+    "split_parameter_certificate": "certificates/small_split_e8_three_trisection_tangent_split_parameter.json",
+    "statement": "On one explicit fibre of the split-E8 cubic pencil, fourteen displayed rational points generate a subgroup of exact rank 12.",
+    "verifiers": [
+      "research/certify_tangent_split_rank12_exact.py",
+      "research/sage_verify_tangent_split_rank12.py"
+    ]
   },
   "record_claim": false,
   "required_final_theorem": "An explicit elliptic curve over Q with 30 rigorously certified independent rational points, or a universal unconditional rank upper bound of 29.",
@@ -22,6 +28,6 @@
     "formalization": "EllipticRank30/X03Isogeny.lean",
     "reason": "The referenced artifacts do not exist on main, so the former frontier entry was not evidence-backed."
   },
-  "truth_status": "UNSOLVED: exact rank lower bound 29; no rank-30 certificate",
-  "updated": "2026-08-08"
+  "truth_status": "UNSOLVED: exact global rank lower bound 29; certified split-E8 packet subgroup rank 12; no rank-30 certificate",
+  "updated": "2026-08-09"
 }

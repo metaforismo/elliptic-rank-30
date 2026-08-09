@@ -1,0 +1,52 @@
+{
+  "certificate_id": "small-split-e8-tangent-fibre-rank12-sage-v1",
+  "claim_status": "independent SageMath rank-12 finite-reduction certificate",
+  "ell": 5,
+  "fibre_parameter": "365818092477169760402380299908211814834104565489875941040628481071268018484711345301844462972962501/4142012125131051685428353254938159737590223591619867908992300338442756118014301584601172181648811",
+  "finite_reduction_rank": 12,
+  "local_records": [
+    {"group_order": 20, "prime": 13, "quotient_dimension": 1},
+    {"group_order": 75, "prime": 61, "quotient_dimension": 2},
+    {"group_order": 85, "prime": 73, "quotient_dimension": 1},
+    {"group_order": 150, "prime": 131, "quotient_dimension": 1},
+    {"group_order": 160, "prime": 139, "quotient_dimension": 1},
+    {"group_order": 150, "prime": 157, "quotient_dimension": 1},
+    {"group_order": 190, "prime": 179, "quotient_dimension": 1},
+    {"group_order": 205, "prime": 181, "quotient_dimension": 1},
+    {"group_order": 270, "prime": 251, "quotient_dimension": 1},
+    {"group_order": 275, "prime": 281, "quotient_dimension": 1},
+    {"group_order": 330, "prime": 307, "quotient_dimension": 1}
+  ],
+  "packet_points_sha256": "7147a324c8c2a31394ecce88778cb31dce90e2c18d523ff5cae7454def962ccb",
+  "parent_split_certificate_sha256": "d8ef81d6c14db7264782becd7af0ae2e28b2d7f00e39387d2c8277d2f765953f",
+  "proved_displayed_subgroup_rank_12": true,
+  "record_sha256": "52c443af1a6b0873406244554aa78cbb6a597c9a87dc959a5c5598a30ad93112",
+  "rows": [
+    [3,0,3,0,3,4,4,3,2,2,0,4],
+    [2,4,4,4,4,0,2,2,1,4,0,0],
+    [2,2,2,1,3,2,0,2,1,0,2,0],
+    [2,2,0,0,4,2,1,3,1,3,2,1],
+    [1,0,1,2,3,0,2,0,2,4,4,3],
+    [0,1,3,3,0,4,1,2,3,0,0,1],
+    [0,0,2,0,3,4,1,4,2,4,2,2],
+    [4,0,0,2,4,0,2,3,1,3,4,4],
+    [1,1,4,2,0,0,3,0,4,3,4,3],
+    [0,2,1,4,3,0,2,1,3,0,2,0],
+    [2,1,3,0,1,0,1,3,0,3,3,3],
+    [4,2,3,3,2,3,1,2,2,4,1,2]
+  ],
+  "sage_version": "SageMath version 10.9, Release Date: 2026-05-04",
+  "schema_version": 1,
+  "selected_labels": ["B0","B1","B2","B3","B4","B5","B6","B7","D1_0","D2_0","D1_1","D2_1"],
+  "selected_points_sha256": "39372ba166cab739b06c2be4c76582076fc9b1ffa5e0bf56c4192bb1a9481905",
+  "source_roots": [
+    "-119464831908712738048668746088299/1154597342847395736329951370502606",
+    "-74260562264603258716762922548661741/7211741447506945055617213747917800",
+    "45739488084726536936839594954840282/25287693007883871587271427228918477"
+  ],
+  "torsion_witness": {"group_order": 39, "prime": 29},
+  "trace_relation_checks": [true,true],
+  "truth_note": "The finite-reduction matrix proves twelve independent points. Together with two exact independent trace relations among fourteen displayed points, the displayed subgroup has rank exactly twelve. This is not a rank-30 result.",
+  "weierstrass_a_invariants_sha256": "ce42e4a8c61399381e35468d3ce3a2b68c5dbe073272f17388a84c9c632d0cc1",
+  "weierstrass_discriminant_sha256": "f89fd4b7e08f5048fd4c73f8941b27517c180e86a7816d79f741fc4902936921"
+}
