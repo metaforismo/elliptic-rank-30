@@ -34,6 +34,70 @@ def canonical_hash(payload: dict) -> str:
     ).hexdigest()
 
 
+def canonical_rref(rows, ell: int):
+    """Canonical reduced row-echelon basis over GF(ell)."""
+    matrix_rows = [
+        [int(value) % ell for value in row]
+        for row in rows
+        if any(int(value) % ell for value in row)
+    ]
+    if not matrix_rows:
+        return []
+    row_count = len(matrix_rows)
+    column_count = len(matrix_rows[0])
+    rank = 0
+    for column in range(column_count):
+        pivot = next(
+            (index for index in range(rank, row_count) if matrix_rows[index][column]),
+            None,
+        )
+        if pivot is None:
+            continue
+        matrix_rows[rank], matrix_rows[pivot] = matrix_rows[pivot], matrix_rows[rank]
+        inverse = pow(matrix_rows[rank][column], -1, ell)
+        matrix_rows[rank] = [(inverse * value) % ell for value in matrix_rows[rank]]
+        for index in range(row_count):
+            if index != rank and matrix_rows[index][column]:
+                coefficient = matrix_rows[index][column]
+                matrix_rows[index] = [
+                    (left - coefficient * right) % ell
+                    for left, right in zip(matrix_rows[index], matrix_rows[rank])
+                ]
+        rank += 1
+        if rank == row_count:
+            break
+    return matrix_rows[:rank]
+
+
+def canonical_local_subspaces(rows, local_records, ell: int):
+    """Remove arbitrary quotient-basis choices from the proof object.
+
+    A change of basis in E(F_p)/ell E(F_p) right-multiplies the point-image
+    matrix by an invertible matrix. Its column space inside GF(ell)^n is
+    invariant. Store the canonical RREF basis of that column space.
+    """
+    offset = 0
+    canonical_records = []
+    combined_basis = []
+    point_count = len(rows)
+    for record in local_records:
+        dimension = record["quotient_dimension"]
+        columns = [
+            [rows[point_index][offset + column] for point_index in range(point_count)]
+            for column in range(dimension)
+        ]
+        offset += dimension
+        basis = canonical_rref(columns, ell)
+        combined_basis.extend(basis)
+        canonical_records.append({
+            **record,
+            "canonical_point_class_subspace_basis": basis,
+        })
+    if rows and offset != len(rows[0]):
+        raise AssertionError(("local quotient block length mismatch", offset, len(rows[0])))
+    return canonical_records, canonical_rref(combined_basis, ell)
+
+
 def coords(point) -> list[str]:
     return ["0"] if point.is_zero() else [str(point[0]), str(point[1]), str(point[2])]
 
@@ -185,12 +249,18 @@ def build_certificate(split_certificate: Path, prime_bound: int = 700) -> dict:
     if rank != 12 or torsion_witness is None:
         raise AssertionError(("rank certificate failure", rank, torsion_witness))
 
+    local_subspace_records, combined_subspace_basis = canonical_local_subspaces(
+        rows, local_records, ell
+    )
+    if len(combined_subspace_basis) != 12:
+        raise AssertionError(("canonical combined rank", len(combined_subspace_basis)))
+
     a_invariants = [str(value) for value in curve.a_invariants()]
     discriminant_text = str(discriminant)
     selected_coordinates = [coords(point) for point in selected]
     payload = {
-        "schema_version": 1,
-        "certificate_id": "small-split-e8-tangent-fibre-rank12-sage-v1",
+        "schema_version": 2,
+        "certificate_id": "small-split-e8-tangent-fibre-rank12-sage-v2",
         "claim_status": "independent SageMath rank-12 finite-reduction certificate",
         "sage_version": str(version()),
         "parent_split_certificate_sha256": split["record_sha256"],
@@ -203,13 +273,13 @@ def build_certificate(split_certificate: Path, prime_bound: int = 700) -> dict:
         "packet_points_sha256": canonical_hash(packet_records),
         "trace_relation_checks": relation_checks,
         "ell": ell,
-        "finite_reduction_rank": rank,
-        "rows": rows,
-        "local_records": local_records,
+        "finite_reduction_rank": len(combined_subspace_basis),
+        "local_subspace_records": local_subspace_records,
+        "canonical_combined_point_class_subspace_basis": combined_subspace_basis,
         "torsion_witness": torsion_witness,
         "proved_displayed_subgroup_rank_12": True,
         "truth_note": (
-            "The finite-reduction matrix proves twelve independent points. "
+            "Canonical local point-class subspaces prove twelve independent points. "
             "Together with two exact independent trace relations among fourteen displayed points, "
             "the displayed subgroup has rank exactly twelve. This is not a rank-30 result."
         ),
@@ -237,7 +307,7 @@ def main() -> None:
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     print(json.dumps({
         "finite_reduction_rank": payload["finite_reduction_rank"],
-        "used_primes": len(payload["local_records"]),
+        "used_primes": len(payload["local_subspace_records"]),
         "torsion_witness": payload["torsion_witness"],
         "record_sha256": payload["record_sha256"],
     }, indent=2, sort_keys=True))
