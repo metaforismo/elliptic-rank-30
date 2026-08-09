@@ -1,0 +1,129 @@
+name: probe-rank29-descent
+
+on:
+  push:
+    paths:
+      - ".github/workflows/probe-rank29-descent.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  pari:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run PARI 2-descent with all 29 known points
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank29-pari
+          cat > /tmp/pari_probe.py <<'PY'
+          from __future__ import annotations
+          import json, time, traceback
+          from pathlib import Path
+          from sage.all import EllipticCurve, QQ, pari, version
+
+          out = Path('/tmp/rank29-pari')
+          result = {'status': 'started', 'sage_version': str(version())}
+          try:
+              curve = json.loads(Path('curve.json').read_text())
+              pdata = json.loads(Path('points.json').read_text())
+              ainvs = [QQ(x) for x in curve['model']['a_invariants']]
+              E = EllipticCurve(QQ, ainvs)
+              points = []
+              for row in pdata['points']:
+                  _, xn, xd, yn, yd = row
+                  points.append(E(QQ(xn) / QQ(xd), QQ(yn) / QQ(yd)))
+              gpE = pari.ellinit(pari(ainvs))
+              gp_points = pari([[P[0], P[1]] for P in points])
+              t0 = time.monotonic()
+              raw = pari.ellrank(gpE, 0, gp_points)
+              result.update({
+                  'status': 'ok',
+                  'elapsed_seconds': time.monotonic() - t0,
+                  'raw': str(raw),
+                  'lower': int(raw[0]),
+                  'upper': int(raw[1]),
+                  'sha_information': str(raw[2]),
+                  'returned_points': str(raw[3]),
+              })
+          except Exception as exc:
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+          (out / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+          timeout 3000s sage -python /tmp/pari_probe.py | tee /tmp/rank29-pari/stdout.log
+          test -f /tmp/rank29-pari/result.json || echo '{"status":"timeout_or_crash"}' > /tmp/rank29-pari/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank29-pari-descent
+          path: /tmp/rank29-pari
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  mwrank:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run eclib/mwrank Selmer-only 2-descent
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank29-mwrank
+          cat > /tmp/mwrank_probe.py <<'PY'
+          from __future__ import annotations
+          import json, time, traceback
+          from pathlib import Path
+          from sage.all import EllipticCurve, QQ, version
+          from sage.libs.eclib.interface import mwrank_EllipticCurve
+
+          out = Path('/tmp/rank29-mwrank')
+          result = {'status': 'started', 'sage_version': str(version())}
+          try:
+              curve = json.loads(Path('curve.json').read_text())
+              ainvs = [QQ(x) for x in curve['model']['a_invariants']]
+              M = mwrank_EllipticCurve([int(x) for x in ainvs])
+              t0 = time.monotonic()
+              succeeded = M.two_descent(
+                  verbose=True,
+                  selmer_only=True,
+                  first_limit=0,
+                  second_limit=0,
+                  n_aux=40,
+                  second_descent=True,
+              )
+              result.update({
+                  'status': 'ok',
+                  'elapsed_seconds': time.monotonic() - t0,
+                  'two_descent_return': bool(succeeded),
+                  'rank_lower_from_descent': int(M.rank()),
+                  'rank_upper_bound': int(M.rank_bound()),
+                  'selmer_rank': int(M.selmer_rank()),
+                  'certain': bool(M.certain()),
+              })
+          except Exception as exc:
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+          (out / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+          timeout 3000s sage -python /tmp/mwrank_probe.py | tee /tmp/rank29-mwrank/stdout.log
+          test -f /tmp/rank29-mwrank/result.json || echo '{"status":"timeout_or_crash"}' > /tmp/rank29-mwrank/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank29-mwrank-descent
+          path: /tmp/rank29-mwrank
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
