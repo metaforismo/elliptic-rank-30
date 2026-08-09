@@ -34,12 +34,12 @@ jobs:
           result={'status':'started','sage_version':str(version())}
           try:
               R=PolynomialRing(QQ,names=('X','Y','Z')); X,Y,Z=R.gens()
-              F=(1205*X^3-7107*X^2*Y+22560*X^2*Z+11736*X*Y^2
-                 -30072*X*Y*Z-96845*X*Z^2-2764*Y^3+9864*Y^2*Z
-                 +31855*Y*Z^2)
-              G=(3755*X^3+3412*X^2*Y-89290*X^2*Z-25996*X*Y^2
-                 +89032*X*Y*Z+230605*X*Z^2+5184*Y^3-31264*Y^2*Z
-                 +235450*Z^3)
+              F=(1205*X**3-7107*X**2*Y+22560*X**2*Z+11736*X*Y**2
+                 -30072*X*Y*Z-96845*X*Z**2-2764*Y**3+9864*Y**2*Z
+                 +31855*Y*Z**2)
+              G=(3755*X**3+3412*X**2*Y-89290*X**2*Z-25996*X*Y**2
+                 +89032*X*Y*Z+230605*X*Z**2+5184*Y**3-31264*Y**2*Z
+                 +235450*Z**3)
               points=[(1,7,1),(-7,-6,1),(5,1,1),(3,4,1),(-5,-5,1),
                       (-1,5,1),(-3,-4,1),(-2,-6,1),
                       (QQ(-2031)/1145,QQ(-4021)/1145,1)]
@@ -55,8 +55,8 @@ jobs:
               dp=delta.numerator().univariate_polynomial()
               dd=delta.denominator().univariate_polynomial()
               cp=c4.numerator().univariate_polynomial()
-              minus=(4*invS)^3-invT^2
-              plus=(4*invS)^3+invT^2
+              minus=(4*invS)**3-invT**2
+              plus=(4*invS)**3+invT**2
               def const_ratio(a,b):
                   if b==0:return None
                   q=a/b
