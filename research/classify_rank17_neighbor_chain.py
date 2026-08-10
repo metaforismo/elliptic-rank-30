@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-from fractions import Fraction
 from pathlib import Path
 
 from sage.all import Genus, IntegralLattice, Matrix, QQ, ZZ, matrix, vector
@@ -20,9 +19,13 @@ ROOT_TYPES[(6, 72)] = ("E6", 3)
 ROOT_TYPES[(7, 126)] = ("E7", 2)
 ROOT_TYPES[(8, 240)] = ("E8", 1)
 
+# The ADE lattice alone does not always determine the Kodaira symbol:
+# A1 can be I2 or III, and A2 can be I3 or IV.  Higher A_r types are
+# necessarily multiplicative I_{r+1} fibres.
 FIBER_TYPES = {
-    **{f"A{rank}": f"I{rank + 1}" for rank in range(2, 18)},
     "A1": "I2 or III",
+    "A2": "I3 or IV",
+    **{f"A{rank}": f"I{rank + 1}" for rank in range(3, 18)},
     **{f"D{rank}": f"I{rank - 4}*" for rank in range(4, 18)},
     "E6": "IV*",
     "E7": "III*",
@@ -31,7 +34,10 @@ FIBER_TYPES = {
 
 
 def serial_matrix(M: Matrix) -> list[list[int]]:
-    return [[int(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
+    return [
+        [int(M[i, j]) for j in range(M.ncols())]
+        for i in range(M.nrows())
+    ]
 
 
 def union_find_components(roots: list, gram: Matrix) -> list[list[int]]:
@@ -58,53 +64,94 @@ def union_find_components(roots: list, gram: Matrix) -> list[list[int]]:
     groups: dict[int, list[int]] = {}
     for index in range(len(roots)):
         groups.setdefault(find(index), []).append(index)
-    return sorted(groups.values(), key=lambda group: (len(group), group[0]), reverse=True)
+    return sorted(
+        groups.values(),
+        key=lambda group: (len(group), group[0]),
+        reverse=True,
+    )
 
 
 def classify_entry(entry: dict, target_genus) -> dict:
     gram = Matrix(ZZ, entry["gram"])
     if gram.det() != 948 or Genus(gram) != target_genus:
-        raise AssertionError(("entry outside target genus", entry["hash"], gram.det(), Genus(gram)))
+        raise AssertionError(
+            (
+                "entry outside target genus",
+                entry["hash"],
+                gram.det(),
+                Genus(gram),
+            )
+        )
     lattice = IntegralLattice(gram)
     roots = [vector(ZZ, row) for row in lattice.short_vectors(3)[2]]
     if len(roots) != entry["root_count"]:
-        raise AssertionError(("root count mismatch", entry["hash"], len(roots), entry["root_count"]))
+        raise AssertionError(
+            (
+                "root count mismatch",
+                entry["hash"],
+                len(roots),
+                entry["root_count"],
+            )
+        )
 
     components = []
     root_determinant = 1
     total_rank = 0
     if roots:
         for indices in union_find_components(roots, gram):
-            vectors = matrix(ZZ, [list(roots[index]) for index in indices])
+            vectors = matrix(
+                ZZ, [list(roots[index]) for index in indices]
+            )
             rank = int(vectors.rank())
             count = len(indices)
             if (rank, count) not in ROOT_TYPES:
-                raise AssertionError(("unclassified simply-laced component", rank, count, entry["hash"]))
+                raise AssertionError(
+                    (
+                        "unclassified simply-laced component",
+                        rank,
+                        count,
+                        entry["hash"],
+                    )
+                )
             name, determinant = ROOT_TYPES[(rank, count)]
             total_rank += rank
             root_determinant *= determinant
-            components.append({
-                "type": name,
-                "rank": rank,
-                "root_count": count,
-                "determinant": determinant,
-                "kodaira_fiber_candidates": FIBER_TYPES[name],
-            })
+            components.append(
+                {
+                    "type": name,
+                    "rank": rank,
+                    "root_count": count,
+                    "determinant": determinant,
+                    "kodaira_fiber_candidates": FIBER_TYPES[name],
+                }
+            )
 
-        root_module = matrix(ZZ, [list(root) for root in roots]).row_module(ZZ)
+        root_module = matrix(
+            ZZ, [list(root) for root in roots]
+        ).row_module(ZZ)
         root_basis = root_module.basis_matrix()
         saturation = root_module.saturation()
         saturation_index = int(root_module.index_in(saturation))
         root_gram = root_basis * gram * root_basis.transpose()
         if abs(int(root_gram.det())) != root_determinant:
-            raise AssertionError(("root determinant mismatch", root_gram.det(), root_determinant, components))
+            raise AssertionError(
+                (
+                    "root determinant mismatch",
+                    root_gram.det(),
+                    root_determinant,
+                    components,
+                )
+            )
     else:
         root_basis = matrix(ZZ, 0, 17)
         saturation_index = 1
         root_gram = matrix(ZZ, 0, 0)
 
     mw_rank = 17 - total_rank
-    mw_regulator = QQ(948 * saturation_index * saturation_index) / QQ(root_determinant)
+    mw_regulator = (
+        QQ(948 * saturation_index * saturation_index)
+        / QQ(root_determinant)
+    )
     return {
         "hash": entry["hash"],
         "source": entry.get("source"),
@@ -112,7 +159,11 @@ def classify_entry(entry: dict, target_genus) -> dict:
         "gram": entry["gram"],
         "root_count": len(roots),
         "norm4_count": entry["norm4_count"],
-        "root_system": " + ".join(component["type"] for component in components) if components else "0",
+        "root_system": (
+            " + ".join(component["type"] for component in components)
+            if components
+            else "0"
+        ),
         "root_components": components,
         "root_rank": total_rank,
         "root_lattice_determinant": root_determinant,
@@ -120,7 +171,9 @@ def classify_entry(entry: dict, target_genus) -> dict:
         "torsion_order_predicted_by_shioda_tate": saturation_index,
         "mordell_weil_rank": mw_rank,
         "mordell_weil_regulator": str(mw_regulator),
-        "rank_one_generator_height": str(mw_regulator) if mw_rank == 1 else None,
+        "rank_one_generator_height": (
+            str(mw_regulator) if mw_rank == 1 else None
+        ),
         "root_basis": serial_matrix(root_basis),
         "root_gram": serial_matrix(root_gram),
     }
@@ -133,53 +186,130 @@ def main() -> None:
     args = parser.parse_args()
 
     chain = json.loads(args.chain.read_text())
-    period = Matrix(ZZ, [[-316, 0, 288], [0, 474, -15], [288, -15, -262]])
-    target_genus = IntegralLattice(period).discriminant_group().genus((17, 0))
+    period = Matrix(
+        ZZ,
+        [[-316, 0, 288], [0, 474, -15], [288, -15, -262]],
+    )
+    target_genus = (
+        IntegralLattice(period)
+        .discriminant_group()
+        .genus((17, 0))
+    )
     records = [classify_entry(entry, target_genus) for entry in chain]
 
     seed = records[0]
     if seed["root_system"] != "A11 + A3 + A2":
-        raise AssertionError(("unexpected transparent seed root system", seed["root_system"]))
-    if seed["mordell_weil_rank"] != 1 or seed["rank_one_generator_height"] != "79/12":
-        raise AssertionError(("unexpected seed Mordell-Weil data", seed))
+        raise AssertionError(
+            (
+                "unexpected transparent seed root system",
+                seed["root_system"],
+            )
+        )
+    if (
+        seed["mordell_weil_rank"] != 1
+        or seed["rank_one_generator_height"] != "79/12"
+    ):
+        raise AssertionError(
+            ("unexpected seed Mordell-Weil data", seed)
+        )
+    seed_component_candidates = {
+        component["type"]: component["kodaira_fiber_candidates"]
+        for component in seed["root_components"]
+    }
+    expected_candidates = {
+        "A11": "I12",
+        "A3": "I4",
+        "A2": "I3 or IV",
+    }
+    if seed_component_candidates != expected_candidates:
+        raise AssertionError(
+            (
+                "unexpected seed Kodaira candidates",
+                seed_component_candidates,
+            )
+        )
+
     target = records[-1]
-    if target["root_system"] != "0" or target["mordell_weil_rank"] != 17:
-        raise AssertionError(("terminal lattice is not the rootless rank-17 target", target))
+    if (
+        target["root_system"] != "0"
+        or target["mordell_weil_rank"] != 17
+    ):
+        raise AssertionError(
+            ("terminal lattice is not the rootless rank-17 target", target)
+        )
 
     payload = {
         "status": "completed",
-        "claim_status": "exact ADE classification of every lattice in the frozen neighbor chain",
+        "claim_status": (
+            "exact ADE classification of every lattice in the frozen "
+            "neighbor chain"
+        ),
         "chain_sha256": hashlib.sha256(args.chain.read_bytes()).hexdigest(),
         "target_genus": str(target_genus),
         "records": records,
         "seed_fibration_data": {
             "essential_root_system": seed["root_system"],
             "reducible_fiber_root_lattice": seed["root_system"],
-            "semistable_kodaira_configuration": ["I12", "I4", "I3"],
+            "kodaira_configuration_possibilities": [
+                ["I12", "I4", "I3"],
+                ["I12", "I4", "IV"],
+            ],
             "mordell_weil_rank": seed["mordell_weil_rank"],
-            "torsion_order": seed["torsion_order_predicted_by_shioda_tate"],
+            "torsion_order": seed[
+                "torsion_order_predicted_by_shioda_tate"
+            ],
             "generator_height": seed["rank_one_generator_height"],
-            "remaining_euler_number_for_irreducible_singular_fibers": 5,
-            "generic_semistable_configuration_candidate": "I12 + I4 + I3 + 5 I1",
+            "semistable_configuration_candidate": (
+                "I12 + I4 + I3 + 5 I1"
+            ),
+            "additive_A2_configuration_candidate": (
+                "I12 + I4 + IV + 4 I1"
+            ),
         },
         "terminal_data": {
             "root_system": target["root_system"],
             "mordell_weil_rank": target["mordell_weil_rank"],
-            "mordell_weil_regulator": target["mordell_weil_regulator"],
+            "mordell_weil_regulator": target[
+                "mordell_weil_regulator"
+            ],
         },
-        "truth_note": "The ADE and lattice computations are exact. Naming I2 rather than III for an isolated A1 would require the corresponding Weierstrass model; the transparent seed contains only A-type components of rank at least two, so its I12/I4/I3 labels are unambiguous.",
+        "truth_note": (
+            "The ADE and lattice computations are exact.  A1 does not "
+            "distinguish I2 from III, and A2 does not distinguish I3 "
+            "from IV.  In the transparent seed, A11 forces I12 and A3 "
+            "forces I4, but the A2 fibre remains I3-or-IV until the "
+            "missing Weierstrass model or equivalent local monodromy "
+            "data is reconstructed."
+        ),
     }
-    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    raw = json.dumps(
+        payload, sort_keys=True, separators=(",", ":")
+    ).encode()
     payload["record_sha256"] = hashlib.sha256(raw).hexdigest()
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    print(json.dumps({
-        "status": payload["status"],
-        "record_sha256": payload["record_sha256"],
-        "root_systems": [record["root_system"] for record in records],
-        "mw_ranks": [record["mordell_weil_rank"] for record in records],
-        "seed_generator_height": seed["rank_one_generator_height"],
-    }, indent=2, sort_keys=True))
+    args.output.write_text(
+        json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    )
+    print(
+        json.dumps(
+            {
+                "status": payload["status"],
+                "record_sha256": payload["record_sha256"],
+                "root_systems": [
+                    record["root_system"] for record in records
+                ],
+                "mw_ranks": [
+                    record["mordell_weil_rank"] for record in records
+                ],
+                "seed_generator_height": seed[
+                    "rank_one_generator_height"
+                ],
+                "seed_kodaira_candidates": seed_component_candidates,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":
