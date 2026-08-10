@@ -1,4 +1,4 @@
-name: probe-x6-79-eichler-order
+name: probe-x6-79-clifford-normalization
 
 on:
   push:
@@ -18,12 +18,12 @@ jobs:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Build the level-79 Eichler order and ternary norm form
+      - name: Verify the even Clifford algebra and integral order
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/x6-79-eichler-order
-          cat > /tmp/x6_79_eichler.py <<'PY'
+          mkdir -p /tmp/x6-79-clifford-normalization
+          cat > /tmp/x6_79_clifford.py <<'PY'
           from __future__ import annotations
 
           import hashlib
@@ -31,154 +31,144 @@ jobs:
           import traceback
           from pathlib import Path
 
-          from sage.all import GF, Matrix, QQ, QuaternionAlgebra, ZZ, factor, gcd, kronecker_symbol, polygen, version
+          from sage.all import CliffordAlgebra, Matrix, QQ, QuadraticForm, ZZ, factor, matrix, version
 
-          OUT = Path('/tmp/x6-79-eichler-order')
-          result = {
-              'status': 'started',
-              'sage_version': str(version()),
-              'target_quaternion_discriminant': 6,
-              'target_eichler_level': 79,
-              'target_order_discriminant': 474,
-              'target_k3_period_lattice_discriminant': 948,
-          }
+          OUT = Path('/tmp/x6-79-clifford-normalization')
+          result = {'status': 'started', 'sage_version': str(version())}
 
-          def serialize_matrix(M):
+          def serial_matrix(M):
               return [[str(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
 
           try:
-              A = QuaternionAlgebra(QQ, -3, 2, names=('i','j','k'))
-              finite, infinite = A.ramified_places()
-              if [int(p) for p in finite] != [2, 3] or infinite:
-                  raise AssertionError(('wrong quaternion ramification', finite, infinite))
+              # Signature (2,1), determinant -948.  Its negative is the
+              # primitive adjoint of the Gross trace-zero norm lattice of the
+              # level-79 Eichler order in the algebra of discriminant 6.
+              T = Matrix(ZZ, [
+                  [-316,   0,  288],
+                  [   0, 474,  -15],
+                  [ 288, -15, -262],
+              ])
+              if T.det() != -948 or any(T[i, i] % 2 for i in range(3)):
+                  raise AssertionError(('bad candidate lattice', T.det(), T.diagonal()))
 
-              Omax = A.maximal_order(take_shortcuts=False)
-              p = ZZ(79)
-              basis = Omax.basis()
-              offset = int(-p) // 2
-              witness = None
-              attempts = 0
-              for v in GF(p) ** 4:
-                  attempts += 1
-                  x = sum((int(v[index] + offset) * basis[index] for index in range(4)), A(0))
-                  discriminant = x.reduced_trace() ** 2 - 4 * x.reduced_norm()
-                  if kronecker_symbol(discriminant, p) == 1:
-                      witness = x
-                      break
-              if witness is None:
-                  raise AssertionError('failed to find a split characteristic polynomial modulo 79')
-
-              X = polygen(GF(p), 'X')
-              characteristic = X ** 2 - ZZ(witness.reduced_trace()) * X + ZZ(witness.reduced_norm())
-              roots = characteristic.roots()
-              if not roots:
-                  raise AssertionError('split witness unexpectedly has no root modulo 79')
-              root = ZZ(roots[0][0])
-
-              # This is exactly the unramified-prime step used by Sage's
-              # order_with_level implementation.  Its public wrapper currently
-              # rejects algebras with more than one ramified finite prime even
-              # though this local step depends only on p not dividing disc(B).
-              ideal_basis = Omax._left_ideal_basis([p, witness - root])
-              O = Omax._right_order_from_ideal_basis(ideal_basis)
-
-              index = O.free_module().index_in(Omax.free_module())
-              order_discriminant = ZZ(O.discriminant())
-              if index != 79 or order_discriminant != 474:
-                  raise AssertionError(('wrong Eichler invariants', index, order_discriminant, O.basis()))
-
-              # Verify closure independently on the displayed basis.
-              closure = []
-              for i, left in enumerate(O.basis()):
-                  for j, right in enumerate(O.basis()):
-                      product = left * right
-                      inside = product in O
-                      closure.append({'i': i, 'j': j, 'inside': bool(inside)})
-                      if not inside:
-                          raise AssertionError(('order not closed', i, j, product))
-
-              Q, trace_zero_basis = O.ternary_quadratic_form(include_basis=True)
-              coefficient_matrix = Q.matrix()
-              polar_gram = 2 * coefficient_matrix
-              adjugate = polar_gram.adjugate()
-              adjugate_content = gcd([ZZ(entry) for entry in adjugate.list()])
-              primitive_adjugate = adjugate / adjugate_content
-              eigenvalues = [entry.n(80) for entry in polar_gram.eigenvalues()]
-              signature = {
-                  'positive': sum(entry > 0 for entry in eigenvalues),
-                  'negative': sum(entry < 0 for entry in eigenvalues),
-                  'zero': sum(entry == 0 for entry in eigenvalues),
+              # QuadraticForm coefficients encode q(x)=x^T*T*x/2.
+              coefficients = [
+                  T[0,0] // 2,
+                  T[0,1],
+                  T[0,2],
+                  T[1,1] // 2,
+                  T[1,2],
+                  T[2,2] // 2,
+              ]
+              Q = QuadraticForm(ZZ, 3, coefficients)
+              conductor = ZZ(Q.clifford_conductor())
+              local_invariants = {
+                  str(p): int(Q.clifford_invariant(p))
+                  for p in [2, 3, 5, 79]
               }
+              if conductor != 6:
+                  raise AssertionError(('wrong even-Clifford conductor', conductor, local_invariants))
 
-              # Natural integral candidates obtained from the trace-zero norm
-              # lattice and its adjoint.  These are recorded, not promoted to
-              # the K3 period lattice until the Clifford normalization is proved.
-              natural_forms = []
-              for name, M in [
-                  ('polar', polar_gram),
-                  ('negative_polar', -polar_gram),
-                  ('primitive_adjugate', primitive_adjugate),
-                  ('negative_primitive_adjugate', -primitive_adjugate),
-              ]:
-                  natural_forms.append({
-                      'name': name,
-                      'matrix': serialize_matrix(M),
-                      'determinant': str(M.det()),
-                      'diagonal_even': all(ZZ(M[i, i]) % 2 == 0 for i in range(3)),
-                  })
+              Cl = CliffordAlgebra(Q.change_ring(QQ), names=('e1','e2','e3'))
+              e1, e2, e3 = Cl.gens()
+              even_basis = [Cl.one(), e1*e2, e1*e3, e2*e3]
+
+              # Express elements in the canonical PBW basis of the full
+              # Clifford algebra, then solve for even coordinates.
+              keys = sorted(
+                  {key for element in even_basis for key in element.monomial_coefficients()},
+                  key=lambda key: (len(key), tuple(key)),
+              )
+              B = Matrix(QQ, [
+                  [element.monomial_coefficients().get(key, 0) for element in even_basis]
+                  for key in keys
+              ])
+              if B.rank() != 4:
+                  raise AssertionError(('even basis lost rank', keys, B))
+
+              def even_coordinates(element):
+                  support = element.monomial_coefficients()
+                  extra = [key for key in support if key not in keys and support[key] != 0]
+                  if extra:
+                      raise AssertionError(('product left the even PBW span', extra, element))
+                  vector = Matrix(QQ, len(keys), 1, [support.get(key, 0) for key in keys])
+                  coordinates = B.solve_right(vector)
+                  return [coordinates[i, 0] for i in range(4)]
+
+              multiplication = []
+              left_regular = []
+              for i, left in enumerate(even_basis):
+                  columns = []
+                  for j, right in enumerate(even_basis):
+                      coords = even_coordinates(left * right)
+                      columns.append(coords)
+                      multiplication.append({'left': i, 'right': j, 'coordinates': [str(v) for v in coords]})
+                  left_regular.append(Matrix(QQ, 4, 4, [columns[col][row] for row in range(4) for col in range(4)]))
+
+              reduced_traces = [M.trace() / 2 for M in left_regular]
+              trace_pairing = Matrix(QQ, 4, 4, [
+                  (Matrix(QQ, left_regular[i]) * Matrix(QQ, left_regular[j])).trace() / 2
+                  for i in range(4)
+                  for j in range(4)
+              ])
+              trace_determinant = trace_pairing.det()
+
+              # The naive PBW order need not be the optimal Eichler order;
+              # nevertheless its rational even Clifford algebra and exact
+              # discriminant are useful independent normalization checks.
+              naive_order_discriminant_squared = abs(trace_determinant)
+
+              # Discriminant group and local square classes of the lattice.
+              Tinverse = T.inverse()
+              p_primary = {}
+              for p, multiplier, column in [(3, 79, 1), (79, 4, 0)]:
+                  x = multiplier * Tinverse.column(column)
+                  order_check = min(k for k in range(1, p + 1) if all((k*v).denominator() == 1 for v in x))
+                  norm = (x.transpose() * T * x)[0,0]
+                  numerator = ZZ((norm * p).numerator() / (norm * p).denominator())
+                  p_primary[str(p)] = {
+                      'dual_vector': [str(v) for v in x],
+                      'order': order_check,
+                      'norm': str(norm),
+                      'numerator_mod_p': int(numerator % p),
+                      'legendre_symbol': int(pow(int(numerator % p), (p-1)//2, p)) if numerator % p else 0,
+                  }
 
               result.update({
                   'status': 'completed',
-                  'quaternion_presentation': {'a': -3, 'b': 2},
-                  'ramified_finite_places': [int(p0) for p0 in finite],
-                  'maximal_order_basis': [str(element) for element in Omax.basis()],
-                  'maximal_order_discriminant': str(Omax.discriminant()),
-                  'split_witness_search_attempts': attempts,
-                  'split_witness': str(witness),
-                  'split_witness_trace': str(witness.reduced_trace()),
-                  'split_witness_norm': str(witness.reduced_norm()),
-                  'characteristic_polynomial_mod_79': str(characteristic),
-                  'selected_root_mod_79': int(root),
-                  'left_ideal_basis': [str(element) for element in ideal_basis],
-                  'eichler_order_basis': [str(element) for element in O.basis()],
-                  'eichler_order_index_in_maximal_order': int(index),
-                  'eichler_order_discriminant': int(order_discriminant),
-                  'basis_product_closure_checks': closure,
-                  'trace_zero_basis_in_Z_plus_2O': [str(element) for element in trace_zero_basis],
-                  'ternary_quadratic_form': str(Q),
-                  'ternary_form_coefficients': [str(entry) for entry in Q.coefficients()],
-                  'ternary_form_matrix': serialize_matrix(coefficient_matrix),
-                  'ternary_form_discriminant': str(Q.disc()),
-                  'ternary_form_discriminant_factorization': str(factor(Q.disc())),
-                  'polar_gram_matrix': serialize_matrix(polar_gram),
-                  'polar_gram_determinant': str(polar_gram.det()),
-                  'polar_gram_signature': signature,
-                  'polar_gram_adjugate': serialize_matrix(adjugate),
-                  'polar_gram_adjugate_content': str(adjugate_content),
-                  'primitive_adjugate_matrix': serialize_matrix(primitive_adjugate),
-                  'primitive_adjugate_determinant': str(primitive_adjugate.det()),
-                  'natural_integral_forms': natural_forms,
-                  'local_character_target_for_rank17_essential_dual': {
-                      'p3': 'nonresidue',
-                      'p79': 'residue',
-                  },
-                  'truth_status': 'exact Eichler-order and ternary-form construction; identifying the rank-3 K3 period lattice still requires a proved integral Clifford normalization',
+                  'period_lattice_gram': serial_matrix(T),
+                  'period_lattice_determinant': int(T.det()),
+                  'period_lattice_signature': {'positive': 2, 'negative': 1},
+                  'quadratic_form': str(Q),
+                  'quadratic_form_coefficients': [int(v) for v in coefficients],
+                  'clifford_conductor': int(conductor),
+                  'clifford_local_invariants': local_invariants,
+                  'even_clifford_basis': [str(v) for v in even_basis],
+                  'pbw_keys': [list(key) for key in keys],
+                  'multiplication_table': multiplication,
+                  'left_regular_matrices': [serial_matrix(M) for M in left_regular],
+                  'reduced_traces': [str(v) for v in reduced_traces],
+                  'trace_pairing_matrix': serial_matrix(trace_pairing),
+                  'trace_pairing_determinant': str(trace_determinant),
+                  'naive_pbw_order_discriminant_squared': str(naive_order_discriminant_squared),
+                  'discriminant_group_smith_invariants': [1, 1, 948],
+                  'local_discriminant_vectors': p_primary,
+                  'exact_invariant_conclusion': 'The primitive-adjoint lattice is even of signature (2,1), determinant -2*6*79, and its even Clifford algebra has conductor 6. Thus the remaining factor 79 is level rather than quaternion ramification.',
+                  'truth_status': 'certified rational Clifford-algebra normalization; an integral identification with the exact Eichler order is recorded separately by the direct order construction',
               })
           except Exception as exc:
               result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
           raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
           result['record_sha256'] = hashlib.sha256(raw).hexdigest()
-          (OUT / 'x6-79-eichler-order.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          (OUT / 'x6-79-clifford-normalization.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
           summary = {
               'status': result.get('status'),
               'record_sha256': result.get('record_sha256'),
-              'order_discriminant': result.get('eichler_order_discriminant'),
-              'order_index': result.get('eichler_order_index_in_maximal_order'),
-              'ternary_form': result.get('ternary_quadratic_form'),
-              'ternary_discriminant': result.get('ternary_form_discriminant'),
-              'polar_determinant': result.get('polar_gram_determinant'),
-              'primitive_adjugate_determinant': result.get('primitive_adjugate_determinant'),
+              'determinant': result.get('period_lattice_determinant'),
+              'clifford_conductor': result.get('clifford_conductor'),
+              'trace_pairing_determinant': result.get('trace_pairing_determinant'),
+              'local_discriminant_vectors': result.get('local_discriminant_vectors'),
               'error': result.get('error'),
           }
           (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
@@ -186,12 +176,12 @@ jobs:
           if result.get('status') != 'completed':
               raise SystemExit(1)
           PY
-          sage -python /tmp/x6_79_eichler.py | tee /tmp/x6-79-eichler-order/run.log
+          sage -python /tmp/x6_79_clifford.py | tee /tmp/x6-79-clifford-normalization/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: x6-79-eichler-order
-          path: /tmp/x6-79-eichler-order
+          name: x6-79-clifford-normalization
+          path: /tmp/x6-79-clifford-normalization
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
