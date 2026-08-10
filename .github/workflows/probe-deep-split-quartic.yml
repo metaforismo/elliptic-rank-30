@@ -1,0 +1,43 @@
+name: probe-deep-split-quartic
+
+on:
+  push:
+    branches:
+      - research/deep-split-quartic-20260810-v2
+    paths:
+      - "research/sage_deep_split_quartic_search.py"
+      - ".github/workflows/probe-deep-split-quartic.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Search rank-12 split fibres for additional generators
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/deep-split-quartic
+          sage -python research/sage_deep_split_quartic_search.py \
+            --output /tmp/deep-split-quartic/result.json \
+            --multiples 48 \
+            --curves 14 \
+            --timeout 120 \
+            --prime-bound 700 \
+            --stop-rank 14 \
+            | tee /tmp/deep-split-quartic/stdout.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deep-split-quartic-search
+          path: /tmp/deep-split-quartic
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
