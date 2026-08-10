@@ -1,0 +1,191 @@
+name: probe-rank17-lattice-pari
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-lattice-pari.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install independent arithmetic tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq pari-gp python3-sympy
+      - name: Verify determinant, positivity, Smith form, and discriminant form
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-lattice-pari
+          cat > /tmp/verify_rank17_lattice.py <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import math
+          from fractions import Fraction
+          from pathlib import Path
+
+          import sympy as sp
+          from sympy.matrices.normalforms import smith_normal_form
+          from sympy.polys.domains import ZZ
+
+          OUT = Path('/tmp/rank17-lattice-pari')
+          G = sp.Matrix([
+              [4,-2,2,-2,-1,2,-2,-2,1,1,1,-2,1,-2,-1,0,1],
+              [-2,4,0,0,-1,0,0,1,-2,-2,-2,0,1,0,-1,1,1],
+              [2,0,4,0,0,2,-1,0,-1,-1,-1,-1,0,-1,-2,-1,0],
+              [-2,0,0,4,1,-1,1,2,0,0,0,1,-1,1,0,-2,-1],
+              [-1,-1,0,1,4,0,2,0,1,1,1,2,-1,0,2,-2,-1],
+              [2,0,2,-1,0,4,0,0,-1,1,-1,-2,2,-1,-1,0,0],
+              [-2,0,-1,1,2,0,4,2,0,1,0,1,-1,1,2,-1,-2],
+              [-2,1,0,2,0,0,2,4,-2,0,-1,0,-1,2,0,-1,-2],
+              [1,-2,-1,0,1,-1,0,-2,4,2,2,0,0,-1,2,-1,1],
+              [1,-2,-1,0,1,1,1,0,2,4,2,-1,0,0,2,-1,0],
+              [1,-2,-1,0,1,-1,0,-1,2,2,4,0,-1,-1,1,-1,0],
+              [-2,0,-1,1,2,-2,1,0,0,-1,0,4,-2,1,1,0,0],
+              [1,1,0,-1,-1,2,-1,-1,0,0,-1,-2,4,-2,-1,1,1],
+              [-2,0,-1,1,0,-1,1,2,-1,0,-1,1,-2,4,1,0,-1],
+              [-1,-1,-2,0,2,-1,2,0,2,2,1,1,-1,1,4,-1,0],
+              [0,1,-1,-2,-2,0,-1,-1,-1,-1,-1,0,1,0,-1,4,1],
+              [1,1,0,-1,-1,0,-2,-2,1,0,0,0,1,-1,0,1,4],
+          ])
+          T = sp.Matrix([
+              [-316,0,288],
+              [0,474,-15],
+              [288,-15,-262],
+          ])
+
+          assert G == G.T
+          assert all(G[i,i] % 2 == 0 for i in range(17))
+          determinant = int(G.det())
+          assert determinant == 948
+          principal_minors = [int(G[:k,:k].det()) for k in range(1,18)]
+          assert all(value > 0 for value in principal_minors)
+
+          smith = smith_normal_form(G, domain=ZZ)
+          smith_diagonal = [abs(int(smith[i,i])) for i in range(17)]
+          assert smith_diagonal == [1] * 16 + [948]
+
+          # Find generators of the two cyclic discriminant groups and compare
+          # their quadratic values modulo 2Z.  For an even Gram matrix M, a dual
+          # vector x has discriminant value x^T M x modulo 2Z.
+          def cyclic_generator(M, order):
+              inverse = M.inv()
+              candidates = []
+              for column in range(M.cols):
+                  x = inverse[:,column]
+                  denominators = [sp.denom(value) for value in x]
+                  element_order = math.lcm(*map(int, denominators))
+                  if element_order == order:
+                      q = sp.factor((x.T * M * x)[0])
+                      candidates.append((column, x, q))
+              if not candidates:
+                  raise AssertionError('no cyclic discriminant generator found')
+              return candidates[0]
+
+          g_column, g, qg = cyclic_generator(G, 948)
+          t_column, t, qt = cyclic_generator(T, 948)
+
+          # Two cyclic even finite quadratic forms are isometric exactly when
+          # qg = u^2*qt modulo 2Z for a unit u modulo 948.
+          modulus = 2 * 948
+          qg_scaled = int(sp.Integer(qg * 948)) % modulus
+          qt_scaled = int(sp.Integer(qt * 948)) % modulus
+          units = [u for u in range(1,948) if math.gcd(u,948) == 1]
+          isometries = [u for u in units if (u*u*qt_scaled - qg_scaled) % modulus == 0]
+          assert isometries, (qg, qt, qg_scaled, qt_scaled)
+
+          payload = {
+              'status': 'completed',
+              'claim_status': 'independent exact integral verification of the rank-17 lattice invariants',
+              'gram_matrix': [[int(G[i,j]) for j in range(17)] for i in range(17)],
+              'determinant': determinant,
+              'leading_principal_minors': principal_minors,
+              'positive_definite_by_sylvester': True,
+              'even': True,
+              'smith_invariants': smith_diagonal,
+              'discriminant_group': 'Z/948Z',
+              'period_lattice_gram': [[int(T[i,j]) for j in range(3)] for i in range(3)],
+              'rank17_discriminant_generator': {
+                  'source_column': g_column,
+                  'coordinates': [str(value) for value in g],
+                  'quadratic_value_mod_2Z': str(qg),
+                  'scaled_numerator_mod_1896': qg_scaled,
+              },
+              'period_discriminant_generator': {
+                  'source_column': t_column,
+                  'coordinates': [str(value) for value in t],
+                  'quadratic_value_mod_2Z': str(qt),
+                  'scaled_numerator_mod_1896': qt_scaled,
+              },
+              'discriminant_form_isometry_units_mod_948': isometries,
+              'discriminant_form_isometric_to_X6_79_period_lattice': True,
+              'truth_note': 'This verifies the exact integral and discriminant-form invariants. Minimal-vector enumeration is performed independently by PARI/GP in the companion output.',
+          }
+          raw = json.dumps(payload, sort_keys=True, separators=(',',':')).encode()
+          payload['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (OUT / 'integral-verification.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({
+              'determinant': determinant,
+              'smith_invariants': smith_diagonal,
+              'discriminant_form_isometry_count': len(isometries),
+              'record_sha256': payload['record_sha256'],
+          }, indent=2, sort_keys=True))
+          PY
+          python3 /tmp/verify_rank17_lattice.py | tee /tmp/rank17-lattice-pari/integral-run.log
+      - name: Independently enumerate short vectors with PARI GP
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/verify_rank17_lattice.gp <<'GP'
+          default(parisizemax, 4000000000);
+          default(parisize, 1000000000);
+          G = [
+          4,-2,2,-2,-1,2,-2,-2,1,1,1,-2,1,-2,-1,0,1;
+          -2,4,0,0,-1,0,0,1,-2,-2,-2,0,1,0,-1,1,1;
+          2,0,4,0,0,2,-1,0,-1,-1,-1,-1,0,-1,-2,-1,0;
+          -2,0,0,4,1,-1,1,2,0,0,0,1,-1,1,0,-2,-1;
+          -1,-1,0,1,4,0,2,0,1,1,1,2,-1,0,2,-2,-1;
+          2,0,2,-1,0,4,0,0,-1,1,-1,-2,2,-1,-1,0,0;
+          -2,0,-1,1,2,0,4,2,0,1,0,1,-1,1,2,-1,-2;
+          -2,1,0,2,0,0,2,4,-2,0,-1,0,-1,2,0,-1,-2;
+          1,-2,-1,0,1,-1,0,-2,4,2,2,0,0,-1,2,-1,1;
+          1,-2,-1,0,1,1,1,0,2,4,2,-1,0,0,2,-1,0;
+          1,-2,-1,0,1,-1,0,-1,2,2,4,0,-1,-1,1,-1,0;
+          -2,0,-1,1,2,-2,1,0,0,-1,0,4,-2,1,1,0,0;
+          1,1,0,-1,-1,2,-1,-1,0,0,-1,-2,4,-2,-1,1,1;
+          -2,0,-1,1,0,-1,1,2,-1,0,-1,1,-2,4,1,0,-1;
+          -1,-1,-2,0,2,-1,2,0,2,2,1,1,-1,1,4,-1,0;
+          0,1,-1,-2,-2,0,-1,-1,-1,-1,-1,0,1,0,-1,4,1;
+          1,1,0,-1,-1,0,-2,-2,1,0,0,0,1,-1,0,1,4
+          ];
+          if(matdet(G) != 948, error("determinant mismatch"));
+          s = qfsign(G);
+          if(s != [17,0], error("signature mismatch: ", s));
+          m = qfminim(G,,0);
+          if(m[1] != 2622 || m[2] != 4, error("minimal vector mismatch: ", m));
+          r = qfrep(G,4);
+          if(r != Vecsmall([0,0,0,1311]), error("representation count mismatch: ", r));
+          filewrite("/tmp/rank17-lattice-pari/pari-verification.json", Strprintf("{\n  \\"status\\": \\"completed\\",\n  \\"pari_version\\": \\"%s\\",\n  \\"signature\\": [%d, %d],\n  \\"determinant\\": 948,\n  \\"minimal_vector_count\\": %d,\n  \\"minimum_norm\\": %d,\n  \\"qfrep_through_norm4_half_counts\\": [%d, %d, %d, %d]\n}\n", version(), s[1], s[2], m[1], m[2], r[1], r[2], r[3], r[4]));
+          print("VERIFIED PARI rank17 lattice det=948 min=4 minimal_vectors=2622");
+          GP
+          gp -q /tmp/verify_rank17_lattice.gp | tee /tmp/rank17-lattice-pari/pari-run.log
+          sha256sum /tmp/rank17-lattice-pari/* > /tmp/rank17-lattice-pari/SHA256SUMS
+          sha256sum -c /tmp/rank17-lattice-pari/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-lattice-independent-verification
+          path: /tmp/rank17-lattice-pari
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
