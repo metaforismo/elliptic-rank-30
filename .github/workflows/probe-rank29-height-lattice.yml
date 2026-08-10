@@ -1,4 +1,4 @@
-name: probe-elkies-primary-source
+name: probe-x6-79-ternary-lattice
 
 on:
   push:
@@ -13,103 +13,159 @@ jobs:
   probe:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    container:
+      image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Download and inspect the arXiv source bundle
+      - name: Construct the quaternion algebra and Eichler order
         shell: bash
         run: |
           set -euo pipefail
-          out=/tmp/elkies-primary-source
-          mkdir -p "$out/source"
-          curl --fail --location --retry 3 --user-agent 'elliptic-rank-30-reproducible-research/1.0' \
-            https://arxiv.org/src/0709.2908 \
-            --output "$out/0709.2908-source"
-          file "$out/0709.2908-source" | tee "$out/file-type.txt"
-          sha256sum "$out/0709.2908-source" | tee "$out/source.sha256"
-          python3 - <<'PY'
+          mkdir -p /tmp/x6-79-ternary-lattice
+          cat > /tmp/x6_79_ternary.py <<'PY'
           from __future__ import annotations
 
-          import gzip
-          import shutil
-          import tarfile
-          from pathlib import Path
-
-          root = Path('/tmp/elkies-primary-source')
-          source = root / '0709.2908-source'
-          target = root / 'source'
-          if tarfile.is_tarfile(source):
-              with tarfile.open(source, 'r:*') as archive:
-                  for member in archive.getmembers():
-                      path = Path(member.name)
-                      if path.is_absolute() or '..' in path.parts:
-                          raise SystemExit(f'unsafe archive path: {member.name}')
-                  archive.extractall(target)
-          else:
-              try:
-                  with gzip.open(source, 'rb') as compressed:
-                      payload = compressed.read()
-                  (target / 'source.tex').write_bytes(payload)
-              except OSError:
-                  shutil.copy2(source, target / 'source.tex')
-          PY
-          find "$out/source" -type f -printf '%P\t%s bytes\n' | LC_ALL=C sort | tee "$out/source-files.tsv"
-          grep -RniE \
-            '1311|2622|948|6[[:space:]]*[.*x×\\]?[[:space:]]*79|Niemeier|Leech|Gram|lattice|height[ -]?4|Shimura|X\(6|disc\(|discriminant|slice|neighbor|neighbour' \
-            "$out/source" > "$out/relevant-contexts.txt" || true
-          python3 - <<'PY'
-          from __future__ import annotations
-
+          import hashlib
           import json
-          import re
+          import traceback
           from pathlib import Path
 
-          root = Path('/tmp/elkies-primary-source')
-          records = []
-          patterns = {
-              '1311': re.compile(r'1311', re.I),
-              '948': re.compile(r'948', re.I),
-              'niemeier': re.compile(r'Niemeier', re.I),
-              'leech': re.compile(r'Leech', re.I),
-              'gram': re.compile(r'Gram', re.I),
-              'shimura': re.compile(r'Shimura', re.I),
-              '79': re.compile(r'79'),
-              'lattice': re.compile(r'lattice', re.I),
-              'slice': re.compile(r'slice', re.I),
+          from sage.all import Matrix, QQ, QuaternionAlgebra, ZZ, factor, gcd, matrix, version
+
+          OUT = Path('/tmp/x6-79-ternary-lattice')
+          result = {
+              'status': 'started',
+              'sage_version': str(version()),
+              'target_quaternion_discriminant': 6,
+              'target_eichler_level': 79,
+              'target_order_discriminant': 474,
+              'target_k3_lattice_discriminant': 948,
           }
-          for path in sorted((root / 'source').rglob('*')):
-              if not path.is_file():
-                  continue
-              try:
-                  lines = path.read_text(errors='replace').splitlines()
-              except Exception:
-                  continue
-              for number, line in enumerate(lines, 1):
-                  hits = [name for name, pattern in patterns.items() if pattern.search(line)]
-                  if hits:
-                      lo = max(0, number - 4)
-                      hi = min(len(lines), number + 3)
-                      records.append({
-                          'file': str(path.relative_to(root / 'source')),
-                          'line': number,
-                          'hits': hits,
-                          'context': lines[lo:hi],
-                      })
-          payload = {
-              'source_file_count': len([p for p in (root / 'source').rglob('*') if p.is_file()]),
-              'match_record_count': len(records),
-              'records': records,
+
+          def serial_matrix(M):
+              return [[str(M[i,j]) for j in range(M.ncols())] for i in range(M.nrows())]
+
+          try:
+              candidates = []
+              for a in range(-30, 31):
+                  if a in (0, 1, -1):
+                      continue
+                  for b in range(-30, 31):
+                      if b in (0, 1, -1):
+                          continue
+                      try:
+                          A = QuaternionAlgebra(QQ, a, b)
+                          finite, infinite = A.ramified_places()
+                      except Exception:
+                          continue
+                      if [int(p) for p in finite] == [2, 3] and len(infinite) == 0:
+                          candidates.append((abs(a) + abs(b), abs(a*b), a, b))
+              if not candidates:
+                  raise AssertionError('no small presentation of the quaternion algebra ramified at 2 and 3')
+              _, _, a, b = min(candidates)
+              A = QuaternionAlgebra(QQ, a, b, names=('i','j','k'))
+              i, j, k = A.gens()
+              finite, infinite = A.ramified_places()
+              if [int(p) for p in finite] != [2,3] or infinite:
+                  raise AssertionError(('wrong ramification', finite, infinite))
+
+              Omax = A.maximal_order(take_shortcuts=False)
+              O = A.order_with_level(6 * 79)
+              order_discriminant = QQ(O.discriminant())
+              index = O.free_module().index_in(Omax.free_module())
+              if order_discriminant != 474 or index != 79:
+                  raise AssertionError(('wrong Eichler order invariants', order_discriminant, index))
+
+              Q, trace_zero_basis = O.ternary_quadratic_form(include_basis=True)
+              coefficient_matrix = Q.matrix()
+              polar_gram = 2 * coefficient_matrix
+              determinant = polar_gram.det()
+              eigenvalues = [value.n(80) for value in polar_gram.eigenvalues()]
+              signature = {
+                  'positive': sum(value > 0 for value in eigenvalues),
+                  'negative': sum(value < 0 for value in eigenvalues),
+                  'zero': sum(value == 0 for value in eigenvalues),
+              }
+
+              # The ternary form attached to an Eichler order has discriminant
+              # 16*disc(O)^2.  Record the exact ratio and several natural
+              # adjoint/dual forms so the K3 period lattice can be identified
+              # without guessing a normalization.
+              adjugate = polar_gram.adjugate()
+              inverse = polar_gram.inverse()
+              primitive_adjugate_gcd = gcd([ZZ(x) for x in adjugate.list()])
+              primitive_adjugate = adjugate / primitive_adjugate_gcd
+
+              forms = {
+                  'quadratic_form_coefficients': [str(x) for x in Q.coefficients()],
+                  'quadratic_form_matrix': serial_matrix(coefficient_matrix),
+                  'polar_gram_matrix': serial_matrix(polar_gram),
+                  'polar_gram_determinant': str(determinant),
+                  'quadratic_form_discriminant': str(Q.disc()),
+                  'quadratic_form_discriminant_factorization': str(factor(Q.disc())),
+                  'expected_order_form_discriminant': str(16 * order_discriminant**2),
+                  'discriminant_ratio': str(QQ(Q.disc()) / (16 * order_discriminant**2)),
+                  'adjugate_matrix': serial_matrix(adjugate),
+                  'primitive_adjugate_content': str(primitive_adjugate_gcd),
+                  'primitive_adjugate_matrix': serial_matrix(primitive_adjugate),
+                  'primitive_adjugate_determinant': str(primitive_adjugate.det()),
+                  'inverse_matrix': serial_matrix(inverse),
+              }
+
+              # Verify Elkies' local character conditions for N_ess^*: at p=3
+              # the numerator class must be a non-residue, and at p=79 a residue.
+              local_conditions = {
+                  'p3_required_legendre': -1,
+                  'p79_required_legendre': 1,
+                  'derivation': {
+                      '2N_over_3_mod_3': int((2 * 474 // 3) % 3),
+                      '2N_over_79_mod_79': int((2 * 474 // 79) % 79),
+                  },
+              }
+
+              result.update({
+                  'status': 'completed',
+                  'quaternion_presentation': {'a': a, 'b': b},
+                  'ramified_finite_places': [int(p) for p in finite],
+                  'ramified_infinite_place_count': len(infinite),
+                  'maximal_order_basis': [str(x) for x in Omax.basis()],
+                  'eichler_order_basis': [str(x) for x in O.basis()],
+                  'eichler_order_discriminant': str(order_discriminant),
+                  'eichler_order_index_in_maximal_order': int(index),
+                  'trace_zero_basis_in_Z_plus_2O': [str(x) for x in trace_zero_basis],
+                  'ternary_form_signature': signature,
+                  'forms': forms,
+                  'local_character_conditions_for_Ness_dual': local_conditions,
+                  'truth_status': 'exact quaternion/order computation; relation to the rank-17 K3 essential lattice still requires the integral Clifford-lattice normalization',
+              })
+          except Exception as exc:
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+
+          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
+          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (OUT / 'x6-79-ternary-lattice.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          summary = {
+              'status': result.get('status'),
+              'record_sha256': result.get('record_sha256'),
+              'presentation': result.get('quaternion_presentation'),
+              'order_discriminant': result.get('eichler_order_discriminant'),
+              'signature': result.get('ternary_form_signature'),
+              'polar_determinant': (result.get('forms') or {}).get('polar_gram_determinant'),
+              'form_discriminant': (result.get('forms') or {}).get('quadratic_form_discriminant'),
+              'error': result.get('error'),
           }
-          (root / 'source-index.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
-          print(json.dumps({k: payload[k] for k in ('source_file_count', 'match_record_count')}, indent=2))
+          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          if result.get('status') != 'completed':
+              raise SystemExit(1)
           PY
-          tar -C "$out/source" -czf "$out/0709.2908-extracted-source.tar.gz" .
-          sha256sum "$out/0709.2908-extracted-source.tar.gz" >> "$out/source.sha256"
+          sage -python /tmp/x6_79_ternary.py | tee /tmp/x6-79-ternary-lattice/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: elkies-0709.2908-primary-source
-          path: /tmp/elkies-primary-source
+          name: x6-79-ternary-lattice
+          path: /tmp/x6-79-ternary-lattice
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
