@@ -1,4 +1,4 @@
-name: probe-rank-record-height-comparison
+name: probe-elkies-primary-source
 
 on:
   push:
@@ -13,294 +13,103 @@ jobs:
   probe:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    container:
-      image: sagemath/sagemath:10.9
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Compare the rank-28 and rank-29 canonical-height lattices
+      - name: Download and inspect the arXiv source bundle
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/rank-record-height-comparison
-          cat > /tmp/rank_record_height_comparison.py <<'PY'
+          out=/tmp/elkies-primary-source
+          mkdir -p "$out/source"
+          curl --fail --location --retry 3 --user-agent 'elliptic-rank-30-reproducible-research/1.0' \
+            https://arxiv.org/src/0709.2908 \
+            --output "$out/0709.2908-source"
+          file "$out/0709.2908-source" | tee "$out/file-type.txt"
+          sha256sum "$out/0709.2908-source" | tee "$out/source.sha256"
+          python3 - <<'PY'
           from __future__ import annotations
 
-          import hashlib
-          import heapq
-          import itertools
-          import json
-          import math
-          import time
-          import traceback
+          import gzip
+          import shutil
+          import tarfile
           from pathlib import Path
 
-          from sage.all import EllipticCurve, Matrix, QQ, RealField, ZZ, matrix, vector, version
-
-          OUT = Path('/tmp/rank-record-height-comparison')
-          PRECISION = 160
-          KEEP = 2000
-          result = {
-              'status': 'started',
-              'sage_version': str(version()),
-              'precision_bits': PRECISION,
-              'truth_status': 'verified numerical comparison with exact point and basis-change checks; no generic-section provenance claim',
-          }
-
-          RANK28_A = 20067762415575526585033208209338542750930230312178956502
-          RANK28_B = 34481611795030556467032985690390720374855944359319180361266008296291939448732243429
-          RANK28_POINTS = [
-              (-2124150091254381073292137463, 259854492051899599030515511070780628911531),
-              (2334509866034701756884754537, 18872004195494469180868316552803627931531),
-              (-1671736054062369063879038663, 251709377261144287808506947241319126049131),
-              (2139130260139156666492982137, 36639509171439729202421459692941297527531),
-              (1534706764467120723885477337, 85429585346017694289021032862781072799531),
-              (-2731079487875677033341575063, 262521815484332191641284072623902143387531),
-              (2775726266844571649705458537, 12845755474014060248869487699082640369931),
-              (1494385729327188957541833817, 88486605527733405986116494514049233411451),
-              (1868438228620887358509065257, 59237403214437708712725140393059358589131),
-              (2008945108825743774866542537, 47690677880125552882151750781541424711531),
-              (2348360540918025169651632937, 17492930006200557857340332476448804363531),
-              (-1472084007090481174470008663, 246643450653503714199947441549759798469131),
-              (2924128607708061213363288937, 28350264431488878501488356474767375899531),
-              (5374993891066061893293934537, 286188908427263386451175031916479893731531),
-              (1709690768233354523334008557, 71898834974686089466159700529215980921631),
-              (2450954011353593144072595187, 4445228173532634357049262550610714736531),
-              (2969254709273559167464674937, 32766893075366270801333682543160469687531),
-              (2711914934941692601332882937, 2068436612778381698650413981506590613531),
-              (20078586077996854528778328937, 2779608541137806604656051725624624030091531),
-              (2158082450240734774317810697, 34994373401964026809969662241800901254731),
-              (2004645458247059022403224937, 48049329780704645522439866999888475467531),
-              (2975749450947996264947091337, 33398989826075322320208934410104857869131),
-              (-2102490467686285150147347863, 259576391459875789571677393171687203227531),
-              (311583179915063034902194537, 168104385229980603540109472915660153473931),
-              (2773931008341865231443771817, 12632162834649921002414116273769275813451),
-              (2156581188143768409363461387, 35125092964022908897004150516375178087331),
-              (3866330499872412508815659137, 121197755655944226293036926715025847322531),
-              (2230868289773576023778678737, 28558760030597485663387020600768640028531),
-          ]
-
-          def decimal(value, digits=45):
-              return str(value.n(digits=digits))
-
-          def canonical_sign(values):
-              values = tuple(int(v) for v in values)
-              for value in values:
-                  if value:
-                      return values if value > 0 else tuple(-v for v in values)
-              return values
-
-          def analyze(name, E, labels, points):
-              n = len(points)
-              RR = RealField(PRECISION)
-              if any(not E.is_on_curve(P[0], P[1]) for P in points):
-                  raise AssertionError(f'{name}: point-on-curve check failed')
-              H = Matrix(RR, E.height_pairing_matrix(points, precision=PRECISION))
-              eig = sorted(RR(v) for v in H.eigenvalues())
-              if eig[0] <= 0:
-                  raise AssertionError((name, 'height matrix not positive definite', eig[:3]))
-
-              reduced_points, U = E.lll_reduce(points, height_matrix=H)
-              U = Matrix(ZZ, U)
-              exact_transform = all(
-                  sum((U[i, j] * points[i] for i in range(n)), E(0)) == reduced_points[j]
-                  for j in range(n)
-              )
-              if not exact_transform or abs(U.det()) != 1:
-                  raise AssertionError((name, 'bad LLL transform', exact_transform, U.det()))
-              Hred = U.transpose() * H * U
-              Hred_check = Matrix(RR, E.height_pairing_matrix(reduced_points, precision=PRECISION))
-              pairing_error = max(abs(Hred[i, j] - Hred_check[i, j]) for i in range(n) for j in range(n))
-              heights = [Hred[i, i] for i in range(n)]
-              order = sorted(range(n), key=lambda i: heights[i])
-
-              gaps = []
-              for k in range(1, n):
-                  left = heights[order[k - 1]]
-                  right = heights[order[k]]
-                  gaps.append({
-                      'after_rank': k,
-                      'left_height': decimal(left),
-                      'right_height': decimal(right),
-                      'ratio': decimal(right / left),
-                      'difference': decimal(right - left),
-                  })
-
-              heap = []
-              seen = set()
-              count = 0
-              diagonal = [Hred[i, i] for i in range(n)]
-              for support in range(1, 5):
-                  for indices in itertools.combinations(range(n), support):
-                      for signs in itertools.product((-1, 1), repeat=support):
-                          count += 1
-                          coeff = [0] * n
-                          for index, sign in zip(indices, signs):
-                              coeff[index] = int(sign)
-                          key = canonical_sign(coeff)
-                          if key in seen:
-                              continue
-                          seen.add(key)
-                          height = sum(diagonal[i] for i in indices)
-                          for a in range(support):
-                              for b in range(a + 1, support):
-                                  height += 2 * signs[a] * signs[b] * Hred[indices[a], indices[b]]
-                          item = (-height, key)
-                          if len(heap) < KEEP:
-                              heapq.heappush(heap, item)
-                          elif height < -heap[0][0]:
-                              heapq.heapreplace(heap, item)
-
-              short = sorted([(-neg, coeff) for neg, coeff in heap], key=lambda item: (item[0], item[1]))
-              rows = Matrix(ZZ, 0, n)
-              rank_profile = []
-              selected = []
-              short_records = []
-              original_vectors = []
-              for position, (height, coeff) in enumerate(short):
-                  rv = vector(ZZ, coeff)
-                  ov = U * rv
-                  original_vectors.append(ov)
-                  trial = rows.stack(matrix(ZZ, 1, n, list(ov)))
-                  if trial.rank() > rows.rank():
-                      rows = trial
-                      selected.append(position)
-                      rank_profile.append({
-                          'rank': int(rows.rank()),
-                          'first_achieved_at_position': position + 1,
-                          'height': decimal(height),
-                      })
-                  short_records.append({
-                      'height': decimal(height),
-                      'reduced_coefficients': [int(v) for v in rv],
-                      'original_coefficients': [int(v) for v in ov],
-                  })
-              if rows.rank() != n:
-                  raise AssertionError((name, 'short pool failed to span full rank', rows.rank()))
-
-              C = Matrix(ZZ, n, n, [
-                  original_vectors[position][i]
-                  for i in range(n)
-                  for position in selected[:n]
-              ])
-              if abs(C.det()) < 1:
-                  raise AssertionError((name, 'greedy basis singular'))
-
-              threshold_records = []
-              h17 = RR(rank_profile[16]['height']) if n >= 17 else RR(rank_profile[-1]['height'])
-              for multiple in (1, 1.02, 1.05, 1.10, 1.20):
-                  bound = h17 * RR(multiple)
-                  eligible = [original_vectors[i] for i, (height, _) in enumerate(short) if height <= bound]
-                  eligible_rank = matrix(ZZ, [list(v) for v in eligible]).rank() if eligible else 0
-                  threshold_records.append({
-                      'multiple_of_17th_successive_height': str(multiple),
-                      'height_bound': decimal(bound),
-                      'vector_count': len(eligible),
-                      'span_rank': int(eligible_rank),
-                  })
-
-              return {
-                  'name': name,
-                  'rank_of_displayed_subgroup': n,
-                  'nonsingular': not E.is_singular(),
-                  'exact_point_checks': n,
-                  'regulator_numeric': decimal(H.det()),
-                  'minimum_eigenvalue_numeric': decimal(eig[0]),
-                  'maximum_eigenvalue_numeric': decimal(eig[-1]),
-                  'condition_number_numeric': decimal(eig[-1] / eig[0]),
-                  'lll_transform_determinant': int(U.det()),
-                  'lll_transform_verified_exactly': exact_transform,
-                  'lll_pairing_recomputation_max_error': decimal(pairing_error),
-                  'sorted_lll_basis_heights': [decimal(heights[i]) for i in order],
-                  'successive_height_gaps': gaps,
-                  'largest_successive_height_gap': max(gaps, key=lambda row: float(row['ratio'])),
-                  'gap_after_rank_17': gaps[16] if n > 17 else None,
-                  'bounded_short_vector_probe': {
-                      'support_bound': 4,
-                      'coefficient_alphabet': [-1, 0, 1],
-                      'enumerated_signed_vectors_before_sign_deduplication': count,
-                      'retained_vectors': len(short),
-                      'short_vectors': short_records,
-                      'rank_profile': rank_profile,
-                      'thresholds_relative_to_17th_successive_height': threshold_records,
-                  },
-                  'greedy_short_basis': {
-                      'selected_positions': selected[:n],
-                      'determinant_absolute_value': int(abs(C.det())),
-                  },
-              }
-
-          try:
-              started = time.time()
-              rank29_curve = json.loads(Path('curve.json').read_text())
-              rank29_points = json.loads(Path('points.json').read_text())['points']
-              E29 = EllipticCurve(QQ, [QQ(v) for v in rank29_curve['model']['a_invariants']])
-              labels29 = []
-              points29 = []
-              for label, xn, xd, yn, yd in rank29_points:
-                  labels29.append(label)
-                  points29.append(E29(QQ(xn) / QQ(xd), QQ(yn) / QQ(yd)))
-
-              E28 = EllipticCurve(QQ, [1, -1, 1, -RANK28_A, RANK28_B])
-              labels28 = [f'P{i}' for i in range(1, 29)]
-              points28 = [E28(QQ(x), QQ(y)) for x, y in RANK28_POINTS]
-
-              r28 = analyze('Elkies-2006-rank28', E28, labels28, points28)
-              r29 = analyze('Elkies-Klagsbrun-2024-rank29', E29, labels29, points29)
-
-              # Compare shape after rescaling by the 17th successive-minimum proxy.
-              h28 = [float(v) for v in r28['sorted_lll_basis_heights']]
-              h29 = [float(v) for v in r29['sorted_lll_basis_heights']]
-              scale28 = h28[16]
-              scale29 = h29[16]
-              common = min(len(h28), len(h29))
-              normalized_differences = [abs(h28[i] / scale28 - h29[i] / scale29) for i in range(common)]
-
-              result.update({
-                  'status': 'completed',
-                  'rank28': r28,
-                  'rank29': r29,
-                  'comparison': {
-                      'normalization': 'each sorted LLL height divided by the 17th sorted LLL height',
-                      'normalized_height_absolute_differences': normalized_differences,
-                      'mean_normalized_height_absolute_difference': sum(normalized_differences) / common,
-                      'maximum_normalized_height_absolute_difference': max(normalized_differences),
-                      'rank17_height_gap_ratios': {
-                          'rank28': r28['gap_after_rank_17']['ratio'],
-                          'rank29': r29['gap_after_rank_17']['ratio'],
-                      },
-                      'interpretation': 'A visible rank-17 break would require a pronounced gap after the 17th independent short direction. The recorded ratios quantify whether such a break is present; they do not identify generic sections.',
-                  },
-                  'elapsed_seconds': time.time() - started,
-              })
-          except Exception as exc:
-              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
-
-          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
-          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
-          output = OUT / 'rank-record-height-comparison.json'
-          output.write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
-          summary = {
-              'status': result.get('status'),
-              'record_sha256': result.get('record_sha256'),
-              'elapsed_seconds': result.get('elapsed_seconds'),
-              'rank28_gap_after_17': ((result.get('rank28') or {}).get('gap_after_rank_17') or {}).get('ratio'),
-              'rank29_gap_after_17': ((result.get('rank29') or {}).get('gap_after_rank_17') or {}).get('ratio'),
-              'rank28_largest_gap': ((result.get('rank28') or {}).get('largest_successive_height_gap') or {}).get('ratio'),
-              'rank29_largest_gap': ((result.get('rank29') or {}).get('largest_successive_height_gap') or {}).get('ratio'),
-              'error': result.get('error'),
-          }
-          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
-          print(json.dumps(summary, indent=2, sort_keys=True))
-          if result.get('status') != 'completed':
-              raise SystemExit(1)
+          root = Path('/tmp/elkies-primary-source')
+          source = root / '0709.2908-source'
+          target = root / 'source'
+          if tarfile.is_tarfile(source):
+              with tarfile.open(source, 'r:*') as archive:
+                  for member in archive.getmembers():
+                      path = Path(member.name)
+                      if path.is_absolute() or '..' in path.parts:
+                          raise SystemExit(f'unsafe archive path: {member.name}')
+                  archive.extractall(target)
+          else:
+              try:
+                  with gzip.open(source, 'rb') as compressed:
+                      payload = compressed.read()
+                  (target / 'source.tex').write_bytes(payload)
+              except OSError:
+                  shutil.copy2(source, target / 'source.tex')
           PY
-          sage -python /tmp/rank_record_height_comparison.py | tee /tmp/rank-record-height-comparison/run.log
+          find "$out/source" -type f -printf '%P\t%s bytes\n' | LC_ALL=C sort | tee "$out/source-files.tsv"
+          grep -RniE \
+            '1311|2622|948|6[[:space:]]*[.*x×\\]?[[:space:]]*79|Niemeier|Leech|Gram|lattice|height[ -]?4|Shimura|X\(6|disc\(|discriminant|slice|neighbor|neighbour' \
+            "$out/source" > "$out/relevant-contexts.txt" || true
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('/tmp/elkies-primary-source')
+          records = []
+          patterns = {
+              '1311': re.compile(r'1311', re.I),
+              '948': re.compile(r'948', re.I),
+              'niemeier': re.compile(r'Niemeier', re.I),
+              'leech': re.compile(r'Leech', re.I),
+              'gram': re.compile(r'Gram', re.I),
+              'shimura': re.compile(r'Shimura', re.I),
+              '79': re.compile(r'79'),
+              'lattice': re.compile(r'lattice', re.I),
+              'slice': re.compile(r'slice', re.I),
+          }
+          for path in sorted((root / 'source').rglob('*')):
+              if not path.is_file():
+                  continue
+              try:
+                  lines = path.read_text(errors='replace').splitlines()
+              except Exception:
+                  continue
+              for number, line in enumerate(lines, 1):
+                  hits = [name for name, pattern in patterns.items() if pattern.search(line)]
+                  if hits:
+                      lo = max(0, number - 4)
+                      hi = min(len(lines), number + 3)
+                      records.append({
+                          'file': str(path.relative_to(root / 'source')),
+                          'line': number,
+                          'hits': hits,
+                          'context': lines[lo:hi],
+                      })
+          payload = {
+              'source_file_count': len([p for p in (root / 'source').rglob('*') if p.is_file()]),
+              'match_record_count': len(records),
+              'records': records,
+          }
+          (root / 'source-index.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({k: payload[k] for k in ('source_file_count', 'match_record_count')}, indent=2))
+          PY
+          tar -C "$out/source" -czf "$out/0709.2908-extracted-source.tar.gz" .
+          sha256sum "$out/0709.2908-extracted-source.tar.gz" >> "$out/source.sha256"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rank-record-height-comparison
-          path: /tmp/rank-record-height-comparison
+          name: elkies-0709.2908-primary-source
+          path: /tmp/elkies-primary-source
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
