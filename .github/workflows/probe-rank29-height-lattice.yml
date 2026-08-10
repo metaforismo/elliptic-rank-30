@@ -18,7 +18,7 @@ jobs:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect discriminant-form and genus APIs
+      - name: Construct and inspect the positive rank-17 genus
         shell: bash
         run: |
           set -euo pipefail
@@ -39,20 +39,21 @@ jobs:
           def public_methods(obj):
               return sorted(name for name in dir(obj) if not name.startswith('_'))
 
-          def method_info(obj, name):
+          def callable_info(obj, name):
               if not hasattr(obj, name):
                   return None
               value = getattr(obj, name)
-              info = {'callable': callable(value), 'repr': repr(value)}
-              if callable(value):
-                  try:
-                      info['signature'] = str(inspect.signature(value))
-                  except Exception as exc:
-                      info['signature_error'] = repr(exc)
-                  try:
-                      info['source'] = inspect.getsource(value)
-                  except Exception as exc:
-                      info['source_error'] = repr(exc)
+              if not callable(value):
+                  return {'repr': repr(value), 'callable': False}
+              info = {'repr': repr(value), 'callable': True}
+              try:
+                  info['signature'] = str(inspect.signature(value))
+              except Exception as exc:
+                  info['signature_error'] = repr(exc)
+              try:
+                  info['source'] = inspect.getsource(value)
+              except Exception as exc:
+                  info['source_error'] = repr(exc)
               return info
 
           try:
@@ -63,16 +64,18 @@ jobs:
               ])
               L = IntegralLattice(T)
               D = L.discriminant_group()
-              DT = D.twist(-1)
-              genus = DT.genus((17, 0))
+
+              # NS = U + N(-1), q_NS = -q_N, and q_NS = -q_T in the
+              # unimodular K3 lattice.  Therefore q_N = q_T.
+              genus = D.genus((17, 0))
 
               interesting = [
-                  'representative', 'representatives', 'gram_matrix', 'is_global',
-                  'global_symbol', 'local_symbols', 'mass', 'genus', 'is_represented_by',
-                  'rational_representative', 'standard_representative', 'is_even',
-                  'signature_pair', 'discriminant_form', 'discriminant_group',
+                  'representative', 'representatives', 'gram_matrix',
+                  'rational_representative', 'standard_representative',
+                  'mass', 'local_symbols', 'global_symbol', 'is_even',
+                  'signature_pair', 'is_global', 'is_represented_by',
                   'neighbors', 'p_neighbors', 'neighbor', 'local_modification',
-                  'maximal_overlattice', 'overlattice', 'sublattices', 'short_vector_list_up_to_length',
+                  'short_vector_list_up_to_length', 'minimum', 'kissing_number',
               ]
               payload.update({
                   'status': 'completed',
@@ -80,33 +83,34 @@ jobs:
                   'period_lattice_genus': str(L.genus()),
                   'period_discriminant_group': str(D),
                   'period_discriminant_group_invariants': [int(v) for v in D.invariants()],
-                  'period_discriminant_form_gram': [[str(D.gram_matrix_quadratic()[i,j]) for j in range(D.gram_matrix_quadratic().ncols())] for i in range(D.gram_matrix_quadratic().nrows())],
-                  'twisted_discriminant_form': str(DT),
+                  'period_discriminant_form_gram': [
+                      [str(D.gram_matrix_quadratic()[i,j]) for j in range(D.gram_matrix_quadratic().ncols())]
+                      for i in range(D.gram_matrix_quadratic().nrows())
+                  ],
                   'target_genus': str(genus),
-                  'lattice_methods': public_methods(L),
-                  'discriminant_module_methods': public_methods(D),
                   'target_genus_methods': public_methods(genus),
+                  'discriminant_module_methods': public_methods(D),
+                  'lattice_methods': public_methods(L),
                   'interesting_methods': {},
               })
               for name in interesting:
-                  for owner_name, owner in [('lattice', L), ('discriminant', D), ('twisted', DT), ('genus', genus)]:
-                      info = method_info(owner, name)
+                  for owner_name, owner in [('genus', genus), ('discriminant', D), ('lattice', L)]:
+                      info = callable_info(owner, name)
                       if info is not None:
                           payload['interesting_methods'][f'{owner_name}.{name}'] = info
 
-              # Try every plausible constructor in fail-closed mode.  A successful
-              # result is accepted only after exact signature, determinant, parity,
-              # and discriminant-form checks.
               attempts = []
               for name in ('representative', 'standard_representative', 'rational_representative', 'gram_matrix'):
-                  if not hasattr(genus, name):
-                      continue
-                  method = getattr(genus, name)
-                  if not callable(method):
+                  if not hasattr(genus, name) or not callable(getattr(genus, name)):
                       continue
                   try:
-                      value = method()
-                      attempts.append({'method': name, 'status': 'returned', 'type': str(type(value)), 'repr': repr(value)[:5000]})
+                      value = getattr(genus, name)()
+                      attempts.append({
+                          'method': name,
+                          'status': 'returned',
+                          'type': str(type(value)),
+                          'repr': repr(value)[:12000],
+                      })
                   except Exception as exc:
                       attempts.append({'method': name, 'status': 'error', 'error': repr(exc)})
               payload['constructor_attempts'] = attempts
