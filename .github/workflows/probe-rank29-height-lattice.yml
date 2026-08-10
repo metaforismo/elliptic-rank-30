@@ -1,4 +1,4 @@
-name: probe-sage-quaternion-order-api
+name: probe-x6-79-eichler-order
 
 on:
   push:
@@ -13,111 +13,185 @@ jobs:
   probe:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     container:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Introspect quaternion algebra and order APIs
+      - name: Build the level-79 Eichler order and ternary norm form
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/sage-quaternion-order-api
-          cat > /tmp/probe.py <<'PY'
+          mkdir -p /tmp/x6-79-eichler-order
+          cat > /tmp/x6_79_eichler.py <<'PY'
           from __future__ import annotations
 
-          import inspect
+          import hashlib
           import json
           import traceback
           from pathlib import Path
 
-          from sage.all import QQ, QuaternionAlgebra, version
+          from sage.all import GF, Matrix, QQ, QuaternionAlgebra, ZZ, factor, gcd, kronecker_symbol, polygen, version
 
-          OUT = Path('/tmp/sage-quaternion-order-api')
-          payload = {'sage_version': str(version()), 'status': 'started'}
+          OUT = Path('/tmp/x6-79-eichler-order')
+          result = {
+              'status': 'started',
+              'sage_version': str(version()),
+              'target_quaternion_discriminant': 6,
+              'target_eichler_level': 79,
+              'target_order_discriminant': 474,
+              'target_k3_period_lattice_discriminant': 948,
+          }
 
-          def public_methods(obj):
-              return sorted(name for name in dir(obj) if not name.startswith('_'))
-
-          def source(obj):
-              try:
-                  return inspect.getsource(obj)
-              except Exception as exc:
-                  return f'UNAVAILABLE: {exc!r}'
+          def serialize_matrix(M):
+              return [[str(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
 
           try:
-              presentations = []
-              for a in range(-20, 21):
-                  if a in (-1, 0, 1):
-                      continue
-                  for b in range(-20, 21):
-                      if b in (-1, 0, 1):
-                          continue
-                      A0 = QuaternionAlgebra(QQ, a, b)
-                      finite, infinite = A0.ramified_places()
-                      if [int(p) for p in finite] == [2, 3] and not infinite:
-                          presentations.append((abs(a)+abs(b), abs(a*b), a, b))
-              _, _, a, b = min(presentations)
-              A = QuaternionAlgebra(QQ, a, b, names=('i','j','k'))
-              O = A.maximal_order(take_shortcuts=False)
-              I = O.unit_ideal()
+              A = QuaternionAlgebra(QQ, -3, 2, names=('i','j','k'))
+              finite, infinite = A.ramified_places()
+              if [int(p) for p in finite] != [2, 3] or infinite:
+                  raise AssertionError(('wrong quaternion ramification', finite, infinite))
 
-              payload.update({
+              Omax = A.maximal_order(take_shortcuts=False)
+              p = ZZ(79)
+              basis = Omax.basis()
+              offset = int(-p) // 2
+              witness = None
+              attempts = 0
+              for v in GF(p) ** 4:
+                  attempts += 1
+                  x = sum((int(v[index] + offset) * basis[index] for index in range(4)), A(0))
+                  discriminant = x.reduced_trace() ** 2 - 4 * x.reduced_norm()
+                  if kronecker_symbol(discriminant, p) == 1:
+                      witness = x
+                      break
+              if witness is None:
+                  raise AssertionError('failed to find a split characteristic polynomial modulo 79')
+
+              X = polygen(GF(p), 'X')
+              characteristic = X ** 2 - ZZ(witness.reduced_trace()) * X + ZZ(witness.reduced_norm())
+              roots = characteristic.roots()
+              if not roots:
+                  raise AssertionError('split witness unexpectedly has no root modulo 79')
+              root = ZZ(roots[0][0])
+
+              # This is exactly the unramified-prime step used by Sage's
+              # order_with_level implementation.  Its public wrapper currently
+              # rejects algebras with more than one ramified finite prime even
+              # though this local step depends only on p not dividing disc(B).
+              ideal_basis = Omax._left_ideal_basis([p, witness - root])
+              O = Omax._right_order_from_ideal_basis(ideal_basis)
+
+              index = O.free_module().index_in(Omax.free_module())
+              order_discriminant = ZZ(O.discriminant())
+              if index != 79 or order_discriminant != 474:
+                  raise AssertionError(('wrong Eichler invariants', index, order_discriminant, O.basis()))
+
+              # Verify closure independently on the displayed basis.
+              closure = []
+              for i, left in enumerate(O.basis()):
+                  for j, right in enumerate(O.basis()):
+                      product = left * right
+                      inside = product in O
+                      closure.append({'i': i, 'j': j, 'inside': bool(inside)})
+                      if not inside:
+                          raise AssertionError(('order not closed', i, j, product))
+
+              Q, trace_zero_basis = O.ternary_quadratic_form(include_basis=True)
+              coefficient_matrix = Q.matrix()
+              polar_gram = 2 * coefficient_matrix
+              adjugate = polar_gram.adjugate()
+              adjugate_content = gcd([ZZ(entry) for entry in adjugate.list()])
+              primitive_adjugate = adjugate / adjugate_content
+              eigenvalues = [entry.n(80) for entry in polar_gram.eigenvalues()]
+              signature = {
+                  'positive': sum(entry > 0 for entry in eigenvalues),
+                  'negative': sum(entry < 0 for entry in eigenvalues),
+                  'zero': sum(entry == 0 for entry in eigenvalues),
+              }
+
+              # Natural integral candidates obtained from the trace-zero norm
+              # lattice and its adjoint.  These are recorded, not promoted to
+              # the K3 period lattice until the Clifford normalization is proved.
+              natural_forms = []
+              for name, M in [
+                  ('polar', polar_gram),
+                  ('negative_polar', -polar_gram),
+                  ('primitive_adjugate', primitive_adjugate),
+                  ('negative_primitive_adjugate', -primitive_adjugate),
+              ]:
+                  natural_forms.append({
+                      'name': name,
+                      'matrix': serialize_matrix(M),
+                      'determinant': str(M.det()),
+                      'diagonal_even': all(ZZ(M[i, i]) % 2 == 0 for i in range(3)),
+                  })
+
+              result.update({
                   'status': 'completed',
-                  'presentation': {'a': a, 'b': b},
-                  'algebra_methods': public_methods(A),
-                  'order_methods': public_methods(O),
-                  'ideal_methods': public_methods(I),
-                  'order_with_level_source': source(A.order_with_level),
-                  'maximal_order_source': source(A.maximal_order),
-                  'order_source': source(A.order),
-                  'order_class': str(type(O)),
-                  'ideal_class': str(type(I)),
-                  'order_constructor_signature': str(inspect.signature(A.order)),
-                  'left_ideal_signature': str(inspect.signature(O.left_ideal)),
-                  'right_ideal_signature': str(inspect.signature(O.right_ideal)),
-                  'maximal_order_basis': [str(x) for x in O.basis()],
-                  'maximal_order_discriminant': str(O.discriminant()),
-                  'unit_ideal_left_order': [str(x) for x in I.left_order().basis()],
-                  'unit_ideal_right_order': [str(x) for x in I.right_order().basis()],
+                  'quaternion_presentation': {'a': -3, 'b': 2},
+                  'ramified_finite_places': [int(p0) for p0 in finite],
+                  'maximal_order_basis': [str(element) for element in Omax.basis()],
+                  'maximal_order_discriminant': str(Omax.discriminant()),
+                  'split_witness_search_attempts': attempts,
+                  'split_witness': str(witness),
+                  'split_witness_trace': str(witness.reduced_trace()),
+                  'split_witness_norm': str(witness.reduced_norm()),
+                  'characteristic_polynomial_mod_79': str(characteristic),
+                  'selected_root_mod_79': int(root),
+                  'left_ideal_basis': [str(element) for element in ideal_basis],
+                  'eichler_order_basis': [str(element) for element in O.basis()],
+                  'eichler_order_index_in_maximal_order': int(index),
+                  'eichler_order_discriminant': int(order_discriminant),
+                  'basis_product_closure_checks': closure,
+                  'trace_zero_basis_in_Z_plus_2O': [str(element) for element in trace_zero_basis],
+                  'ternary_quadratic_form': str(Q),
+                  'ternary_form_coefficients': [str(entry) for entry in Q.coefficients()],
+                  'ternary_form_matrix': serialize_matrix(coefficient_matrix),
+                  'ternary_form_discriminant': str(Q.disc()),
+                  'ternary_form_discriminant_factorization': str(factor(Q.disc())),
+                  'polar_gram_matrix': serialize_matrix(polar_gram),
+                  'polar_gram_determinant': str(polar_gram.det()),
+                  'polar_gram_signature': signature,
+                  'polar_gram_adjugate': serialize_matrix(adjugate),
+                  'polar_gram_adjugate_content': str(adjugate_content),
+                  'primitive_adjugate_matrix': serialize_matrix(primitive_adjugate),
+                  'primitive_adjugate_determinant': str(primitive_adjugate.det()),
+                  'natural_integral_forms': natural_forms,
+                  'local_character_target_for_rank17_essential_dual': {
+                      'p3': 'nonresidue',
+                      'p79': 'residue',
+                  },
+                  'truth_status': 'exact Eichler-order and ternary-form construction; identifying the rank-3 K3 period lattice still requires a proved integral Clifford normalization',
               })
-
-              interesting = [
-                  'intersection', 'intersect', 'basis_matrix', 'free_module',
-                  'left_ideal', 'right_ideal', 'left_order', 'right_order',
-                  'is_equivalent', 'equivalent', 'cyclic_right_subideals',
-                  'cyclic_left_subideals', 'ideal', 'order', 'p_neighbors',
-                  'neighbors', 'prime_ideal', 'random_element', 'conjugate',
-              ]
-              payload['interesting_method_sources'] = {}
-              for name in interesting:
-                  for owner_name, owner in [('algebra', A), ('order', O), ('ideal', I)]:
-                      if hasattr(owner, name):
-                          method = getattr(owner, name)
-                          payload['interesting_method_sources'][f'{owner_name}.{name}'] = {
-                              'signature': str(inspect.signature(method)) if callable(method) else None,
-                              'source': source(method),
-                          }
           except Exception as exc:
-              payload.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
-          (OUT / 'api.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
-          print(json.dumps({
-              'status': payload.get('status'),
-              'presentation': payload.get('presentation'),
-              'order_class': payload.get('order_class'),
-              'ideal_class': payload.get('ideal_class'),
-              'error': payload.get('error'),
-          }, indent=2, sort_keys=True))
-          if payload.get('status') != 'completed':
+          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
+          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (OUT / 'x6-79-eichler-order.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          summary = {
+              'status': result.get('status'),
+              'record_sha256': result.get('record_sha256'),
+              'order_discriminant': result.get('eichler_order_discriminant'),
+              'order_index': result.get('eichler_order_index_in_maximal_order'),
+              'ternary_form': result.get('ternary_quadratic_form'),
+              'ternary_discriminant': result.get('ternary_form_discriminant'),
+              'polar_determinant': result.get('polar_gram_determinant'),
+              'primitive_adjugate_determinant': result.get('primitive_adjugate_determinant'),
+              'error': result.get('error'),
+          }
+          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True))
+          if result.get('status') != 'completed':
               raise SystemExit(1)
           PY
-          sage -python /tmp/probe.py | tee /tmp/sage-quaternion-order-api/run.log
+          sage -python /tmp/x6_79_eichler.py | tee /tmp/x6-79-eichler-order/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sage-quaternion-order-api
-          path: /tmp/sage-quaternion-order-api
+          name: x6-79-eichler-order
+          path: /tmp/x6-79-eichler-order
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
