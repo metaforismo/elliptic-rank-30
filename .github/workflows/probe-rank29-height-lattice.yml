@@ -1,4 +1,4 @@
-name: probe-x6-79-clifford-normalization
+name: probe-rank17-lattice-catalogue
 
 on:
   push:
@@ -13,168 +13,159 @@ jobs:
   probe:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    container:
-      image: sagemath/sagemath:10.9
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - name: Verify the even Clifford algebra and integral order
+      - name: Download and search the Nebe-Sloane lattice catalogue
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/x6-79-clifford-normalization
-          cat > /tmp/x6_79_clifford.py <<'PY'
+          out=/tmp/rank17-lattice-catalogue
+          mkdir -p "$out"
+          curl --fail --location --retry 3 --user-agent 'elliptic-rank-30-reproducible-research/1.0' \
+            https://www.math.rwth-aachen.de/~Gabriele.Nebe/LATTICES/union.gz \
+            --output "$out/union.gz"
+          file "$out/union.gz" | tee "$out/file-type.txt"
+          sha256sum "$out/union.gz" | tee "$out/SHA256SUMS"
+          gzip -dc "$out/union.gz" > "$out/union.std"
+          wc -c -l "$out/union.std" | tee "$out/union-size.txt"
+          python3 - <<'PY'
           from __future__ import annotations
 
           import hashlib
           import json
-          import traceback
+          import math
+          import re
           from pathlib import Path
 
-          from sage.all import CliffordAlgebra, Matrix, QQ, QuadraticForm, ZZ, kronecker_symbol, version
+          root = Path('/tmp/rank17-lattice-catalogue')
+          text = (root / 'union.std').read_text(errors='replace')
 
-          OUT = Path('/tmp/x6-79-clifford-normalization')
-          result = {'status': 'started', 'sage_version': str(version())}
+          # Entries in union.std begin with NAME on its own line.  Keep every
+          # block intact so exact candidate records can be audited later.
+          starts = [match.start() for match in re.finditer(r'(?m)^NAME\s*$', text)]
+          entries = []
+          for index, start in enumerate(starts):
+              end = starts[index + 1] if index + 1 < len(starts) else len(text)
+              block = text[start:end].strip() + '\n'
+              lines = block.splitlines()
 
-          def serial_matrix(M):
-              return [[str(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
+              def field(label):
+                  for i, line in enumerate(lines):
+                      if line.strip() == label and i + 1 < len(lines):
+                          return lines[i + 1].strip()
+                  return None
 
-          try:
-              T = Matrix(ZZ, [
-                  [-316,   0,  288],
-                  [   0, 474,  -15],
-                  [ 288, -15, -262],
-              ])
-              if T.det() != -948 or any(T[i, i] % 2 for i in range(3)):
-                  raise AssertionError(('bad candidate lattice', T.det(), T.diagonal()))
-
-              coefficients = [
-                  T[0,0] // 2,
-                  T[0,1],
-                  T[0,2],
-                  T[1,1] // 2,
-                  T[1,2],
-                  T[2,2] // 2,
-              ]
-              Q = QuadraticForm(ZZ, 3, coefficients)
-              conductor = ZZ(Q.clifford_conductor())
-              local_invariants = {
-                  str(p): int(Q.clifford_invariant(p))
-                  for p in [2, 3, 5, 79]
+              name = field('NAME')
+              dimension = field('DIMENSION')
+              determinant = field('DET')
+              minimum = field('MINIMAL_NORM')
+              kissing = field('KISSING_NUMBER')
+              record = {
+                  'entry_index': index,
+                  'name': name,
+                  'dimension_raw': dimension,
+                  'determinant_raw': determinant,
+                  'minimal_norm_raw': minimum,
+                  'kissing_number_raw': kissing,
+                  'sha256': hashlib.sha256(block.encode()).hexdigest(),
+                  'block': block,
               }
-              if conductor != 6:
-                  raise AssertionError(('wrong even-Clifford conductor', conductor, local_invariants))
+              entries.append(record)
 
-              Cl = CliffordAlgebra(Q.change_ring(QQ), names=('e1','e2','e3'))
-              e1, e2, e3 = Cl.gens()
-              even_basis = [Cl.one(), e1*e2, e1*e3, e2*e3]
-              keys = sorted(
-                  {key for element in even_basis for key in element.monomial_coefficients()},
-                  key=lambda key: (len(key), tuple(key)),
-              )
-              B = Matrix(QQ, [
-                  [element.monomial_coefficients().get(key, 0) for element in even_basis]
-                  for key in keys
-              ])
-              if B.rank() != 4:
-                  raise AssertionError(('even basis lost rank', keys, B))
+          def rational_number(value):
+              if value is None:
+                  return None
+              value = value.strip().replace('D', 'E')
+              try:
+                  return float(value)
+              except Exception:
+                  try:
+                      return float(eval(value, {'__builtins__': {}}, {}))
+                  except Exception:
+                      return None
 
-              def even_coordinates(element):
-                  support = element.monomial_coefficients()
-                  extra = [key for key in support if key not in keys and support[key] != 0]
-                  if extra:
-                      raise AssertionError(('product left even PBW span', extra, element))
-                  rhs = Matrix(QQ, len(keys), 1, [support.get(key, 0) for key in keys])
-                  coordinates = B.solve_right(rhs)
-                  return [coordinates[i, 0] for i in range(4)]
+          dim17 = []
+          exact = []
+          near = []
+          for record in entries:
+              dimension = rational_number(record['dimension_raw'])
+              determinant = rational_number(record['determinant_raw'])
+              minimum = rational_number(record['minimal_norm_raw'])
+              kissing = rational_number(record['kissing_number_raw'])
+              if dimension == 17:
+                  summary = {key: value for key, value in record.items() if key != 'block'}
+                  dim17.append(summary)
+                  if determinant is not None and abs(determinant - 948) < 1e-9:
+                      exact.append(record)
+                  score = 0
+                  if determinant is not None and determinant > 0:
+                      score += abs(math.log(determinant / 948.0))
+                  else:
+                      score += 100
+                  if minimum is not None:
+                      score += abs(minimum - 4)
+                  else:
+                      score += 10
+                  if kissing is not None:
+                      score += abs(kissing - 2622) / 2622.0
+                  else:
+                      score += 10
+                  near.append((score, record))
 
-              multiplication = []
-              left_regular = []
-              for i, left in enumerate(even_basis):
-                  columns = []
-                  for j, right in enumerate(even_basis):
-                      coords = even_coordinates(left * right)
-                      columns.append(coords)
-                      multiplication.append({'left': i, 'right': j, 'coordinates': [str(v) for v in coords]})
-                  left_regular.append(Matrix(QQ, 4, 4, [columns[col][row] for row in range(4) for col in range(4)]))
-
-              reduced_traces = [M.trace() / 2 for M in left_regular]
-              trace_pairing = Matrix(QQ, 4, 4, [
-                  (left_regular[i] * left_regular[j]).trace() / 2
-                  for i in range(4)
-                  for j in range(4)
-              ])
-              trace_determinant = trace_pairing.det()
-
-              Tinverse = T.inverse()
-              p_primary = {}
-              for p, multiplier, column in [(3, 79, 1), (79, 4, 0)]:
-                  x = multiplier * Tinverse.column(column)
-                  order_check = min(k for k in range(1, p + 1) if all((k*v).denominator() == 1 for v in x))
-                  row = Matrix(QQ, 1, 3, list(x))
-                  col = Matrix(QQ, 3, 1, list(x))
-                  norm = (row * Matrix(QQ, T) * col)[0,0]
-                  scaled = norm * p
-                  if scaled.denominator() != 1:
-                      raise AssertionError(('local norm did not have denominator p', p, norm, x))
-                  numerator = ZZ(scaled)
-                  p_primary[str(p)] = {
-                      'dual_vector': [str(v) for v in x],
-                      'order': order_check,
-                      'norm': str(norm),
-                      'numerator_mod_p': int(numerator % p),
-                      'legendre_symbol': int(kronecker_symbol(numerator, p)),
-                  }
-
-              result.update({
-                  'status': 'completed',
-                  'period_lattice_gram': serial_matrix(T),
-                  'period_lattice_determinant': int(T.det()),
-                  'period_lattice_signature': {'positive': 2, 'negative': 1},
-                  'quadratic_form': str(Q),
-                  'quadratic_form_coefficients': [int(v) for v in coefficients],
-                  'clifford_conductor': int(conductor),
-                  'clifford_local_invariants': local_invariants,
-                  'even_clifford_basis': [str(v) for v in even_basis],
-                  'pbw_keys': [list(key) for key in keys],
-                  'multiplication_table': multiplication,
-                  'left_regular_matrices': [serial_matrix(M) for M in left_regular],
-                  'reduced_traces': [str(v) for v in reduced_traces],
-                  'trace_pairing_matrix': serial_matrix(trace_pairing),
-                  'trace_pairing_determinant': str(trace_determinant),
-                  'naive_pbw_order_discriminant_squared': str(abs(trace_determinant)),
-                  'discriminant_group_smith_invariants': [1, 1, 948],
-                  'local_discriminant_vectors': p_primary,
-                  'exact_invariant_conclusion': 'The primitive-adjoint lattice is even of signature (2,1), determinant -2*6*79, and its even Clifford algebra has conductor 6. Thus the remaining factor 79 is level rather than quaternion ramification.',
-                  'truth_status': 'certified rational Clifford-algebra normalization; the exact Eichler order is independently constructed from a maximal order and a level-79 ideal',
+          near.sort(key=lambda item: item[0])
+          exact_records = []
+          for record in exact:
+              path = root / f"exact-{record['entry_index']:06d}-{record['name'] or 'unnamed'}.std"
+              path.write_text(record['block'])
+              exact_records.append({key: value for key, value in record.items() if key != 'block'})
+          nearest_records = []
+          for rank, (score, record) in enumerate(near[:100], 1):
+              nearest_records.append({
+                  **{key: value for key, value in record.items() if key != 'block'},
+                  'distance_score': score,
+                  'rank': rank,
               })
-          except Exception as exc:
-              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
-          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
-          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
-          (OUT / 'x6-79-clifford-normalization.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
-          summary = {
-              'status': result.get('status'),
-              'record_sha256': result.get('record_sha256'),
-              'determinant': result.get('period_lattice_determinant'),
-              'clifford_conductor': result.get('clifford_conductor'),
-              'clifford_local_invariants': result.get('clifford_local_invariants'),
-              'trace_pairing_determinant': result.get('trace_pairing_determinant'),
-              'local_discriminant_vectors': result.get('local_discriminant_vectors'),
-              'error': result.get('error'),
+          payload = {
+              'status': 'completed',
+              'catalogue_entry_count': len(entries),
+              'dimension_17_entry_count': len(dim17),
+              'exact_dimension17_determinant948_count': len(exact_records),
+              'exact_records': exact_records,
+              'nearest_dimension17_records': nearest_records,
+              'target': {
+                  'dimension': 17,
+                  'determinant': 948,
+                  'minimal_norm': 4,
+                  'kissing_number': 2622,
+              },
+              'interpretation': 'An empty exact list means only that the target lattice is absent from this catalogue snapshot; it is not a nonexistence result.',
           }
-          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
-          print(json.dumps(summary, indent=2, sort_keys=True))
-          if result.get('status') != 'completed':
-              raise SystemExit(1)
+          (root / 'catalogue-search.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          (root / 'dimension17-index.json').write_text(json.dumps(dim17, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({
+              'catalogue_entry_count': len(entries),
+              'dimension_17_entry_count': len(dim17),
+              'exact_dimension17_determinant948_count': len(exact_records),
+              'nearest': [
+                  {
+                      'name': row['name'],
+                      'determinant': row['determinant_raw'],
+                      'minimum': row['minimal_norm_raw'],
+                      'kissing': row['kissing_number_raw'],
+                      'score': row['distance_score'],
+                  }
+                  for row in nearest_records[:10]
+              ],
+          }, indent=2, sort_keys=True))
           PY
-          sage -python /tmp/x6_79_clifford.py | tee /tmp/x6-79-clifford-normalization/run.log
+          sha256sum "$out/union.std" "$out/catalogue-search.json" "$out/dimension17-index.json" >> "$out/SHA256SUMS"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: x6-79-clifford-normalization
-          path: /tmp/x6-79-clifford-normalization
+          name: rank17-lattice-catalogue-search
+          path: /tmp/rank17-lattice-catalogue
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
