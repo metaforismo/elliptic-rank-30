@@ -1,4 +1,4 @@
-name: probe-x6-79-ternary-lattice
+name: probe-sage-quaternion-order-api
 
 on:
   push:
@@ -13,159 +13,111 @@ jobs:
   probe:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     container:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Construct the quaternion algebra and Eichler order
+      - name: Introspect quaternion algebra and order APIs
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/x6-79-ternary-lattice
-          cat > /tmp/x6_79_ternary.py <<'PY'
+          mkdir -p /tmp/sage-quaternion-order-api
+          cat > /tmp/probe.py <<'PY'
           from __future__ import annotations
 
-          import hashlib
+          import inspect
           import json
           import traceback
           from pathlib import Path
 
-          from sage.all import Matrix, QQ, QuaternionAlgebra, ZZ, factor, gcd, matrix, version
+          from sage.all import QQ, QuaternionAlgebra, version
 
-          OUT = Path('/tmp/x6-79-ternary-lattice')
-          result = {
-              'status': 'started',
-              'sage_version': str(version()),
-              'target_quaternion_discriminant': 6,
-              'target_eichler_level': 79,
-              'target_order_discriminant': 474,
-              'target_k3_lattice_discriminant': 948,
-          }
+          OUT = Path('/tmp/sage-quaternion-order-api')
+          payload = {'sage_version': str(version()), 'status': 'started'}
 
-          def serial_matrix(M):
-              return [[str(M[i,j]) for j in range(M.ncols())] for i in range(M.nrows())]
+          def public_methods(obj):
+              return sorted(name for name in dir(obj) if not name.startswith('_'))
+
+          def source(obj):
+              try:
+                  return inspect.getsource(obj)
+              except Exception as exc:
+                  return f'UNAVAILABLE: {exc!r}'
 
           try:
-              candidates = []
-              for a in range(-30, 31):
-                  if a in (0, 1, -1):
+              presentations = []
+              for a in range(-20, 21):
+                  if a in (-1, 0, 1):
                       continue
-                  for b in range(-30, 31):
-                      if b in (0, 1, -1):
+                  for b in range(-20, 21):
+                      if b in (-1, 0, 1):
                           continue
-                      try:
-                          A = QuaternionAlgebra(QQ, a, b)
-                          finite, infinite = A.ramified_places()
-                      except Exception:
-                          continue
-                      if [int(p) for p in finite] == [2, 3] and len(infinite) == 0:
-                          candidates.append((abs(a) + abs(b), abs(a*b), a, b))
-              if not candidates:
-                  raise AssertionError('no small presentation of the quaternion algebra ramified at 2 and 3')
-              _, _, a, b = min(candidates)
+                      A0 = QuaternionAlgebra(QQ, a, b)
+                      finite, infinite = A0.ramified_places()
+                      if [int(p) for p in finite] == [2, 3] and not infinite:
+                          presentations.append((abs(a)+abs(b), abs(a*b), a, b))
+              _, _, a, b = min(presentations)
               A = QuaternionAlgebra(QQ, a, b, names=('i','j','k'))
-              i, j, k = A.gens()
-              finite, infinite = A.ramified_places()
-              if [int(p) for p in finite] != [2,3] or infinite:
-                  raise AssertionError(('wrong ramification', finite, infinite))
+              O = A.maximal_order(take_shortcuts=False)
+              I = O.unit_ideal()
 
-              Omax = A.maximal_order(take_shortcuts=False)
-              O = A.order_with_level(6 * 79)
-              order_discriminant = QQ(O.discriminant())
-              index = O.free_module().index_in(Omax.free_module())
-              if order_discriminant != 474 or index != 79:
-                  raise AssertionError(('wrong Eichler order invariants', order_discriminant, index))
-
-              Q, trace_zero_basis = O.ternary_quadratic_form(include_basis=True)
-              coefficient_matrix = Q.matrix()
-              polar_gram = 2 * coefficient_matrix
-              determinant = polar_gram.det()
-              eigenvalues = [value.n(80) for value in polar_gram.eigenvalues()]
-              signature = {
-                  'positive': sum(value > 0 for value in eigenvalues),
-                  'negative': sum(value < 0 for value in eigenvalues),
-                  'zero': sum(value == 0 for value in eigenvalues),
-              }
-
-              # The ternary form attached to an Eichler order has discriminant
-              # 16*disc(O)^2.  Record the exact ratio and several natural
-              # adjoint/dual forms so the K3 period lattice can be identified
-              # without guessing a normalization.
-              adjugate = polar_gram.adjugate()
-              inverse = polar_gram.inverse()
-              primitive_adjugate_gcd = gcd([ZZ(x) for x in adjugate.list()])
-              primitive_adjugate = adjugate / primitive_adjugate_gcd
-
-              forms = {
-                  'quadratic_form_coefficients': [str(x) for x in Q.coefficients()],
-                  'quadratic_form_matrix': serial_matrix(coefficient_matrix),
-                  'polar_gram_matrix': serial_matrix(polar_gram),
-                  'polar_gram_determinant': str(determinant),
-                  'quadratic_form_discriminant': str(Q.disc()),
-                  'quadratic_form_discriminant_factorization': str(factor(Q.disc())),
-                  'expected_order_form_discriminant': str(16 * order_discriminant**2),
-                  'discriminant_ratio': str(QQ(Q.disc()) / (16 * order_discriminant**2)),
-                  'adjugate_matrix': serial_matrix(adjugate),
-                  'primitive_adjugate_content': str(primitive_adjugate_gcd),
-                  'primitive_adjugate_matrix': serial_matrix(primitive_adjugate),
-                  'primitive_adjugate_determinant': str(primitive_adjugate.det()),
-                  'inverse_matrix': serial_matrix(inverse),
-              }
-
-              # Verify Elkies' local character conditions for N_ess^*: at p=3
-              # the numerator class must be a non-residue, and at p=79 a residue.
-              local_conditions = {
-                  'p3_required_legendre': -1,
-                  'p79_required_legendre': 1,
-                  'derivation': {
-                      '2N_over_3_mod_3': int((2 * 474 // 3) % 3),
-                      '2N_over_79_mod_79': int((2 * 474 // 79) % 79),
-                  },
-              }
-
-              result.update({
+              payload.update({
                   'status': 'completed',
-                  'quaternion_presentation': {'a': a, 'b': b},
-                  'ramified_finite_places': [int(p) for p in finite],
-                  'ramified_infinite_place_count': len(infinite),
-                  'maximal_order_basis': [str(x) for x in Omax.basis()],
-                  'eichler_order_basis': [str(x) for x in O.basis()],
-                  'eichler_order_discriminant': str(order_discriminant),
-                  'eichler_order_index_in_maximal_order': int(index),
-                  'trace_zero_basis_in_Z_plus_2O': [str(x) for x in trace_zero_basis],
-                  'ternary_form_signature': signature,
-                  'forms': forms,
-                  'local_character_conditions_for_Ness_dual': local_conditions,
-                  'truth_status': 'exact quaternion/order computation; relation to the rank-17 K3 essential lattice still requires the integral Clifford-lattice normalization',
+                  'presentation': {'a': a, 'b': b},
+                  'algebra_methods': public_methods(A),
+                  'order_methods': public_methods(O),
+                  'ideal_methods': public_methods(I),
+                  'order_with_level_source': source(A.order_with_level),
+                  'maximal_order_source': source(A.maximal_order),
+                  'order_source': source(A.order),
+                  'order_class': str(type(O)),
+                  'ideal_class': str(type(I)),
+                  'order_constructor_signature': str(inspect.signature(A.order)),
+                  'left_ideal_signature': str(inspect.signature(O.left_ideal)),
+                  'right_ideal_signature': str(inspect.signature(O.right_ideal)),
+                  'maximal_order_basis': [str(x) for x in O.basis()],
+                  'maximal_order_discriminant': str(O.discriminant()),
+                  'unit_ideal_left_order': [str(x) for x in I.left_order().basis()],
+                  'unit_ideal_right_order': [str(x) for x in I.right_order().basis()],
               })
-          except Exception as exc:
-              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
-          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
-          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
-          (OUT / 'x6-79-ternary-lattice.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
-          summary = {
-              'status': result.get('status'),
-              'record_sha256': result.get('record_sha256'),
-              'presentation': result.get('quaternion_presentation'),
-              'order_discriminant': result.get('eichler_order_discriminant'),
-              'signature': result.get('ternary_form_signature'),
-              'polar_determinant': (result.get('forms') or {}).get('polar_gram_determinant'),
-              'form_discriminant': (result.get('forms') or {}).get('quadratic_form_discriminant'),
-              'error': result.get('error'),
-          }
-          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
-          print(json.dumps(summary, indent=2, sort_keys=True))
-          if result.get('status') != 'completed':
+              interesting = [
+                  'intersection', 'intersect', 'basis_matrix', 'free_module',
+                  'left_ideal', 'right_ideal', 'left_order', 'right_order',
+                  'is_equivalent', 'equivalent', 'cyclic_right_subideals',
+                  'cyclic_left_subideals', 'ideal', 'order', 'p_neighbors',
+                  'neighbors', 'prime_ideal', 'random_element', 'conjugate',
+              ]
+              payload['interesting_method_sources'] = {}
+              for name in interesting:
+                  for owner_name, owner in [('algebra', A), ('order', O), ('ideal', I)]:
+                      if hasattr(owner, name):
+                          method = getattr(owner, name)
+                          payload['interesting_method_sources'][f'{owner_name}.{name}'] = {
+                              'signature': str(inspect.signature(method)) if callable(method) else None,
+                              'source': source(method),
+                          }
+          except Exception as exc:
+              payload.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+
+          (OUT / 'api.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({
+              'status': payload.get('status'),
+              'presentation': payload.get('presentation'),
+              'order_class': payload.get('order_class'),
+              'ideal_class': payload.get('ideal_class'),
+              'error': payload.get('error'),
+          }, indent=2, sort_keys=True))
+          if payload.get('status') != 'completed':
               raise SystemExit(1)
           PY
-          sage -python /tmp/x6_79_ternary.py | tee /tmp/x6-79-ternary-lattice/run.log
+          sage -python /tmp/probe.py | tee /tmp/sage-quaternion-order-api/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: x6-79-ternary-lattice
-          path: /tmp/x6-79-ternary-lattice
+          name: sage-quaternion-order-api
+          path: /tmp/sage-quaternion-order-api
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
