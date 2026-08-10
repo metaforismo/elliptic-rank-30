@@ -1,4 +1,4 @@
-name: probe-rank17-genus-enumeration
+name: probe-rank17-root-elimination
 
 on:
   push:
@@ -18,216 +18,306 @@ jobs:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Enumerate the genus by exact Kneser neighbors
+      - name: Search exact p-neighbor chains that eliminate roots
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/rank17-genus-enumeration
-          cat > /tmp/enumerate_rank17_genus.py <<'PY'
+          mkdir -p /tmp/rank17-root-elimination
+          cat > /tmp/rank17_root_elimination.py <<'PY'
           from __future__ import annotations
 
           import hashlib
           import json
+          import math
+          import random
           import time
           import traceback
           from pathlib import Path
 
-          from sage.all import Genus, IntegralLattice, Matrix, QQ, QuadraticForm, ZZ, version
-          from sage.quadratic_forms.quadratic_form__neighbors import neighbor_iteration
+          from sage.all import Genus, IntegralLattice, Matrix, QuadraticForm, ZZ, block_diagonal_matrix, matrix, pari, random_seed, version
 
-          OUT = Path('/tmp/rank17-genus-enumeration')
+          OUT = Path('/tmp/rank17-root-elimination')
+          RANDOM_SEED = 2026081001
+          BEAM_SIZE = 12
+          SAMPLES_PER_STATE = 32
+          ROUNDS = 40
           result = {
               'status': 'started',
               'sage_version': str(version()),
-              'target': {
-                  'rank': 17,
-                  'determinant': 948,
-                  'minimum': 4,
-                  'kissing_number': 2622,
-              },
-              'truth_status': 'exact genus and neighbor enumeration; target identification requires completed mass and exact short-vector counts',
+              'random_seed': RANDOM_SEED,
+              'beam_size': BEAM_SIZE,
+              'samples_per_state': SAMPLES_PER_STATE,
+              'rounds': ROUNDS,
+              'target': {'rank': 17, 'determinant': 948, 'minimum': 4, 'kissing_number': 2622},
+              'truth_status': 'bounded deterministic random-neighbor search; a found target is checked exactly, absence is only a finite negative result',
           }
 
           def serial_matrix(M):
               return [[int(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
 
           def matrix_hash(M):
-              raw = json.dumps(serial_matrix(M), separators=(',', ':')).encode()
-              return hashlib.sha256(raw).hexdigest()
+              return hashlib.sha256(json.dumps(serial_matrix(M), separators=(',', ':')).encode()).hexdigest()
 
-          def write_checkpoint(payload):
-              (OUT / 'checkpoint.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          def lll_reduce_gram(G):
+              U = G.LLL_gram()
+              R = U.transpose() * G * U
+              return Matrix(ZZ, R)
+
+          def form_from_gram(G):
+              return QuadraticForm(ZZ, G)
+
+          def theta_data(Q):
+              # For an even lattice with Hessian/Gram G, Sage's quadratic
+              # form is q(x)=x^T G x/2.  Thus q^1 counts norm-2 roots and
+              # q^2 counts norm-4 vectors.
+              series = Q.theta_series(3)
+              return int(series[1]), int(series[2])
+
+          def state_from_form(Q, genus, parent=None, move=None, source=None):
+              G = lll_reduce_gram(Matrix(ZZ, Q.Hessian_matrix()))
+              if G.det() != 948 or any(G[i, i] % 2 for i in range(17)):
+                  raise AssertionError(('invalid neighbor Gram', G.det(), G.diagonal()))
+              if Genus(G) != genus:
+                  raise AssertionError(('neighbor left target genus', Genus(G), genus))
+              RQ = form_from_gram(G)
+              roots, norm4 = theta_data(RQ)
+              return {
+                  'gram': G,
+                  'form': RQ,
+                  'hash': matrix_hash(G),
+                  'root_count': roots,
+                  'norm4_count': norm4,
+                  'parent': parent,
+                  'move': move,
+                  'source': source,
+              }
+
+          def a_chain(n):
+              G = Matrix(ZZ, n, n, 0)
+              for i in range(n):
+                  G[i, i] = 2
+                  if i + 1 < n:
+                      G[i, i + 1] = G[i + 1, i] = -1
+              return G
+
+          def k6_det79():
+              G = a_chain(6)
+              G[3, 3] = 8
+              return G
+
+          def score(state):
+              # Root elimination dominates.  The second coordinate encourages
+              # movement toward the published theta coefficient once rootless.
+              return (state['root_count'], abs(state['norm4_count'] - 2622), state['norm4_count'])
+
+          def public_record(state, index_by_hash):
+              parent_index = None
+              if state['parent'] is not None:
+                  parent_index = index_by_hash.get(state['parent'])
+              return {
+                  'hash': state['hash'],
+                  'root_count': state['root_count'],
+                  'norm4_count': state['norm4_count'],
+                  'score': list(score(state)),
+                  'parent_hash': state['parent'],
+                  'parent_archive_index': parent_index,
+                  'move': state['move'],
+                  'source': state['source'],
+                  'gram': serial_matrix(state['gram']),
+              }
 
           try:
               started = time.time()
+              pari.allocatemem(2 * 1024**3)
+              random_seed(RANDOM_SEED)
+              random.seed(RANDOM_SEED)
+
               period = Matrix(ZZ, [
                   [-316,   0,  288],
                   [   0, 474,  -15],
                   [ 288, -15, -262],
               ])
-              period_lattice = IntegralLattice(period)
-              discriminant_form = period_lattice.discriminant_group()
-              genus = discriminant_form.genus((17, 0))
-              seed_gram = Matrix(ZZ, genus.representative())
-              if seed_gram.det() != 948 or Genus(seed_gram) != genus:
-                  raise AssertionError(('bad seed representative', seed_gram.det(), Genus(seed_gram), genus))
-              if any(seed_gram[i, i] % 2 for i in range(17)):
-                  raise AssertionError('seed is not even')
+              target_genus = IntegralLattice(period).discriminant_group().genus((17, 0))
 
-              seed_form = QuadraticForm(ZZ, seed_gram)
-              mass = QQ(seed_form.conway_mass())
-              spinor_primes = [ZZ(p) for p in genus.spinor_generators(proper=False)]
-              seeds = [seed_form]
-              spinor_seed_records = []
-              for p in spinor_primes:
-                  vector = seed_form.find_primitive_p_divisible_vector__next(p)
-                  neighbor = seed_form.find_p_neighbor_from_vec(p, vector)
-                  seeds.append(neighbor)
-                  spinor_seed_records.append({
-                      'prime': int(p),
-                      'vector': [int(v) for v in vector],
-                      'gram': serial_matrix(neighbor.Hessian_matrix()),
-                  })
+              sage_seed = Matrix(ZZ, target_genus.representative())
+              transparent_seed = block_diagonal_matrix(a_chain(11), k6_det79())
+              seed_matrices = [
+                  ('sage-genus-representative', sage_seed),
+                  ('A11-plus-K6-det79', transparent_seed),
+              ]
 
-              seed_lattice = IntegralLattice(seed_gram)
-              seed_short = seed_lattice.short_vectors(5)
-              checkpoint = {
-                  'status': 'enumerating',
-                  'target_genus': str(genus),
-                  'genus_mass': str(mass),
-                  'seed_gram': serial_matrix(seed_gram),
-                  'seed_gram_sha256': matrix_hash(seed_gram),
-                  'seed_root_count': len(seed_short[2]),
-                  'seed_norm4_count': len(seed_short[4]),
-                  'spinor_generators': [int(p) for p in spinor_primes],
-                  'spinor_seed_records': spinor_seed_records,
-                  'started_at_unix': started,
-              }
-              write_checkpoint(checkpoint)
-              print(json.dumps({
-                  'phase': 'starting-neighbor-enumeration',
-                  'mass': str(mass),
-                  'seed_root_count': len(seed_short[2]),
-                  'seed_norm4_count': len(seed_short[4]),
-                  'spinor_generators': [int(p) for p in spinor_primes],
-              }, indent=2, sort_keys=True), flush=True)
+              archive = []
+              index_by_hash = {}
+              beam = []
+              for source, G in seed_matrices:
+                  state = state_from_form(form_from_gram(G), target_genus, source=source)
+                  if state['hash'] not in index_by_hash:
+                      index_by_hash[state['hash']] = len(archive)
+                      archive.append(state)
+                      beam.append(state)
 
-              classes = neighbor_iteration(
-                  seeds,
-                  ZZ(2),
-                  mass=mass,
-                  max_classes=20000,
-                  algorithm='orbits',
-                  verbose=True,
-              )
+              initial = [public_record(state, index_by_hash) for state in beam]
+              if Genus(transparent_seed) != target_genus:
+                  raise AssertionError('transparent A11+K6 seed is not in the target genus')
 
-              mass_sum = sum((QQ(1) / q.number_of_automorphisms() for q in classes), QQ(0))
-              complete = mass_sum == mass
-              class_records = []
-              target_records = []
-              rootless_records = []
-              for index, q in enumerate(classes):
-                  gram = Matrix(ZZ, q.Hessian_matrix())
-                  if gram.det() != 948 or Genus(gram) != genus:
-                      raise AssertionError(('class left target genus', index, gram.det(), Genus(gram)))
-                  lattice = IntegralLattice(gram)
-                  roots = lattice.short_vectors(3)[2]
-                  root_count = len(roots)
-                  norm4_count = None
-                  minimum = 2 if root_count else None
-                  if root_count == 0:
-                      short = lattice.short_vectors(5)
-                      norm4_count = len(short[4])
-                      minimum = 4 if norm4_count else int(lattice.minimum())
-                  record = {
-                      'index': index,
-                      'gram_sha256': matrix_hash(gram),
-                      'gram': serial_matrix(gram),
-                      'automorphism_order': int(q.number_of_automorphisms()),
-                      'minimum': minimum,
-                      'root_count': root_count,
-                      'norm4_count': norm4_count,
-                  }
-                  class_records.append(record)
-                  if root_count == 0:
-                      rootless_records.append(record)
-                  if minimum == 4 and norm4_count == 2622:
-                      target_records.append(record)
-                      (OUT / f'target-class-{index:05d}.json').write_text(
-                          json.dumps(record, indent=2, sort_keys=True) + '\n'
+              best = min(beam, key=score)
+              targets = []
+              round_records = []
+              (OUT / 'initial-seeds.json').write_text(json.dumps(initial, indent=2, sort_keys=True) + '\n')
+
+              for round_index in range(ROUNDS):
+                  candidates = list(beam)
+                  generated = 0
+                  accepted_new = 0
+                  errors = []
+                  # Mostly use 2-neighbors, matching the construction described
+                  # by Elkies.  A smaller number of good-prime 5-neighbors is
+                  # included to escape local minima while preserving the genus.
+                  for parent in beam:
+                      for sample_index in range(SAMPLES_PER_STATE):
+                          p = ZZ(2 if sample_index < 26 else 5)
+                          try:
+                              vector = parent['form'].find_primitive_p_divisible_vector__random(p)
+                              neighbor = parent['form'].find_p_neighbor_from_vec(p, vector)
+                              generated += 1
+                              state = state_from_form(
+                                  neighbor,
+                                  target_genus,
+                                  parent=parent['hash'],
+                                  move={'prime': int(p), 'vector': [int(v) for v in vector]},
+                              )
+                          except Exception as exc:
+                              if len(errors) < 20:
+                                  errors.append({'prime': int(p), 'error': repr(exc)})
+                              continue
+                          if state['hash'] not in index_by_hash:
+                              index_by_hash[state['hash']] = len(archive)
+                              archive.append(state)
+                              accepted_new += 1
+                              candidates.append(state)
+                          if state['root_count'] == 0 and state['norm4_count'] == 2622:
+                              targets.append(state)
+                              (OUT / f'target-{state["hash"]}.json').write_text(
+                                  json.dumps(public_record(state, index_by_hash), indent=2, sort_keys=True) + '\n'
+                              )
+
+                  # Preserve exploitation and diversity.  Nine states are the
+                  # globally best by exact theta score; three are deterministic
+                  # picks from the remaining quartiles, preventing beam collapse.
+                  unique = {state['hash']: state for state in candidates}
+                  ordered = sorted(unique.values(), key=lambda state: (score(state), state['hash']))
+                  elite = ordered[:9]
+                  remainder = ordered[9:]
+                  diverse = []
+                  if remainder:
+                      for fraction in (0.25, 0.50, 0.75):
+                          diverse.append(remainder[min(len(remainder)-1, int(fraction * len(remainder)))])
+                  beam = []
+                  used = set()
+                  for state in elite + diverse:
+                      if state['hash'] not in used:
+                          used.add(state['hash'])
+                          beam.append(state)
+                  for state in ordered:
+                      if len(beam) >= BEAM_SIZE:
+                          break
+                      if state['hash'] not in used:
+                          used.add(state['hash'])
+                          beam.append(state)
+
+                  current_best = min(beam, key=score)
+                  if score(current_best) < score(best):
+                      best = current_best
+                      (OUT / 'best-so-far.json').write_text(
+                          json.dumps(public_record(best, index_by_hash), indent=2, sort_keys=True) + '\n'
                       )
-                  if index % 25 == 0:
-                      write_checkpoint({
-                          **checkpoint,
-                          'status': 'classifying',
-                          'classes_returned': len(classes),
-                          'classes_classified': index + 1,
-                          'mass_sum': str(mass_sum),
-                          'mass_complete': complete,
-                          'rootless_found_so_far': len(rootless_records),
-                          'target_found_so_far': len(target_records),
-                      })
+                  record = {
+                      'round': round_index + 1,
+                      'generated_neighbors': generated,
+                      'new_isometry-unfiltered_gram_hashes': accepted_new,
+                      'archive_size': len(archive),
+                      'beam_scores': [list(score(state)) for state in beam],
+                      'best_root_count': best['root_count'],
+                      'best_norm4_count': best['norm4_count'],
+                      'best_hash': best['hash'],
+                      'target_count': len(targets),
+                      'sample_errors': errors,
+                      'elapsed_seconds': time.time() - started,
+                  }
+                  round_records.append(record)
+                  checkpoint = {
+                      'status': 'searching',
+                      'target_genus': str(target_genus),
+                      'round_records': round_records,
+                      'best': public_record(best, index_by_hash),
+                      'beam': [public_record(state, index_by_hash) for state in beam],
+                      'target_count': len(targets),
+                  }
+                  (OUT / 'checkpoint.json').write_text(json.dumps(checkpoint, indent=2, sort_keys=True) + '\n')
+                  print(json.dumps(record, sort_keys=True), flush=True)
+                  if targets:
+                      break
+
+              target_records = [public_record(state, index_by_hash) for state in targets]
+              # Independently recompute the exact short-vector lists for every
+              # target instead of relying only on theta-series coefficients.
+              verified_targets = []
+              for record, state in zip(target_records, targets):
+                  lattice = IntegralLattice(state['gram'])
+                  short = lattice.short_vectors(5)
+                  exact_root_count = len(short[2])
+                  exact_norm4_count = len(short[4])
+                  verified = exact_root_count == 0 and exact_norm4_count == 2622
+                  record = {
+                      **record,
+                      'independent_short_vector_root_count': exact_root_count,
+                      'independent_short_vector_norm4_count': exact_norm4_count,
+                      'target_verified': verified,
+                  }
+                  if verified:
+                      verified_targets.append(record)
 
               result.update({
-                  'status': 'completed' if complete else 'incomplete_mass',
-                  'target_genus': str(genus),
-                  'genus_mass': str(mass),
-                  'enumerated_mass_sum': str(mass_sum),
-                  'mass_complete': complete,
-                  'neighbor_prime': 2,
-                  'neighbor_algorithm': 'orbits',
-                  'class_count': len(classes),
-                  'seed_gram': serial_matrix(seed_gram),
-                  'seed_gram_sha256': matrix_hash(seed_gram),
-                  'spinor_generators': [int(p) for p in spinor_primes],
-                  'class_records': class_records,
-                  'rootless_class_count': len(rootless_records),
-                  'rootless_records': rootless_records,
-                  'target_class_count': len(target_records),
-                  'target_records': target_records,
-                  'target_uniquely_identified': bool(complete and len(target_records) == 1),
+                  'status': 'target_found' if verified_targets else 'bounded_search_completed',
+                  'target_genus': str(target_genus),
+                  'initial_seeds': initial,
+                  'round_records': round_records,
+                  'archive_size': len(archive),
+                  'best': public_record(best, index_by_hash),
+                  'target_candidates': target_records,
+                  'verified_targets': verified_targets,
+                  'target_found': bool(verified_targets),
                   'elapsed_seconds': time.time() - started,
               })
-              if complete and not target_records:
-                  result['truth_status'] = 'exact completed genus enumeration found no class with the published target theta data; this would expose an inconsistency requiring audit'
-              elif complete and len(target_records) == 1:
-                  result['truth_status'] = 'certified unique class in the completed genus with rank 17, determinant 948, minimum 4, and 2622 minimal vectors'
-              elif target_records:
-                  result['truth_status'] = 'exact target candidates found, but uniqueness awaits completed genus mass'
+              if verified_targets:
+                  result['truth_status'] = 'certified lattice in the target genus with determinant 948, no roots, and exactly 2622 norm-4 vectors'
           except Exception as exc:
-              result.update({
-                  'status': 'error',
-                  'error': repr(exc),
-                  'traceback': traceback.format_exc(),
-              })
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
           raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
           result['record_sha256'] = hashlib.sha256(raw).hexdigest()
-          (OUT / 'rank17-genus-enumeration.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          (OUT / 'rank17-root-elimination.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
           summary = {
               'status': result.get('status'),
               'record_sha256': result.get('record_sha256'),
-              'genus_mass': result.get('genus_mass'),
-              'enumerated_mass_sum': result.get('enumerated_mass_sum'),
-              'mass_complete': result.get('mass_complete'),
-              'class_count': result.get('class_count'),
-              'rootless_class_count': result.get('rootless_class_count'),
-              'target_class_count': result.get('target_class_count'),
-              'target_uniquely_identified': result.get('target_uniquely_identified'),
+              'archive_size': result.get('archive_size'),
+              'best': result.get('best'),
+              'target_found': result.get('target_found'),
+              'verified_target_count': len(result.get('verified_targets') or []),
               'elapsed_seconds': result.get('elapsed_seconds'),
               'error': result.get('error'),
           }
           (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
           print(json.dumps(summary, indent=2, sort_keys=True), flush=True)
-          if result.get('status') not in ('completed', 'incomplete_mass'):
+          if result.get('status') == 'error':
               raise SystemExit(1)
           PY
-          sage -python /tmp/enumerate_rank17_genus.py | tee /tmp/rank17-genus-enumeration/run.log
+          sage -python /tmp/rank17_root_elimination.py | tee /tmp/rank17-root-elimination/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rank17-genus-enumeration
-          path: /tmp/rank17-genus-enumeration
+          name: rank17-root-elimination
+          path: /tmp/rank17-root-elimination
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
