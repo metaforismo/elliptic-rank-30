@@ -69,5 +69,10 @@ jobs:
           python3 research/rank17_shimura_anchor.py \
             --compare certificates/rank17_shimura_anchor.json
 
+      - name: Recompute the rank-17 seed glue certificate
+        run: |
+          python3 research/rank17_seed_glue_certificate.py \
+            --compare certificates/rank17_seed_glue.json
+
       - name: Run exact unit tests
         run: python3 -m unittest discover -s tests -v
