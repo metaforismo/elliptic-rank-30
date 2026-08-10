@@ -1,4 +1,4 @@
-name: probe-rank17-genus-api
+name: probe-rank17-genus-enumeration
 
 on:
   push:
@@ -13,126 +13,221 @@ jobs:
   probe:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 60
     container:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Construct and inspect the positive rank-17 genus
+      - name: Enumerate the genus by exact Kneser neighbors
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/rank17-genus-api
-          cat > /tmp/probe_genus.py <<'PY'
+          mkdir -p /tmp/rank17-genus-enumeration
+          cat > /tmp/enumerate_rank17_genus.py <<'PY'
           from __future__ import annotations
 
-          import inspect
+          import hashlib
           import json
+          import time
           import traceback
           from pathlib import Path
 
-          from sage.all import IntegralLattice, Matrix, ZZ, version
+          from sage.all import Genus, IntegralLattice, Matrix, QQ, QuadraticForm, ZZ, version
+          from sage.quadratic_forms.quadratic_form__neighbors import neighbor_iteration
 
-          OUT = Path('/tmp/rank17-genus-api')
-          payload = {'status': 'started', 'sage_version': str(version())}
+          OUT = Path('/tmp/rank17-genus-enumeration')
+          result = {
+              'status': 'started',
+              'sage_version': str(version()),
+              'target': {
+                  'rank': 17,
+                  'determinant': 948,
+                  'minimum': 4,
+                  'kissing_number': 2622,
+              },
+              'truth_status': 'exact genus and neighbor enumeration; target identification requires completed mass and exact short-vector counts',
+          }
 
-          def public_methods(obj):
-              return sorted(name for name in dir(obj) if not name.startswith('_'))
+          def serial_matrix(M):
+              return [[int(M[i, j]) for j in range(M.ncols())] for i in range(M.nrows())]
 
-          def callable_info(obj, name):
-              if not hasattr(obj, name):
-                  return None
-              value = getattr(obj, name)
-              if not callable(value):
-                  return {'repr': repr(value), 'callable': False}
-              info = {'repr': repr(value), 'callable': True}
-              try:
-                  info['signature'] = str(inspect.signature(value))
-              except Exception as exc:
-                  info['signature_error'] = repr(exc)
-              try:
-                  info['source'] = inspect.getsource(value)
-              except Exception as exc:
-                  info['source_error'] = repr(exc)
-              return info
+          def matrix_hash(M):
+              raw = json.dumps(serial_matrix(M), separators=(',', ':')).encode()
+              return hashlib.sha256(raw).hexdigest()
+
+          def write_checkpoint(payload):
+              (OUT / 'checkpoint.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
 
           try:
-              T = Matrix(ZZ, [
+              started = time.time()
+              period = Matrix(ZZ, [
                   [-316,   0,  288],
                   [   0, 474,  -15],
                   [ 288, -15, -262],
               ])
-              L = IntegralLattice(T)
-              D = L.discriminant_group()
+              period_lattice = IntegralLattice(period)
+              discriminant_form = period_lattice.discriminant_group()
+              genus = discriminant_form.genus((17, 0))
+              seed_gram = Matrix(ZZ, genus.representative())
+              if seed_gram.det() != 948 or Genus(seed_gram) != genus:
+                  raise AssertionError(('bad seed representative', seed_gram.det(), Genus(seed_gram), genus))
+              if any(seed_gram[i, i] % 2 for i in range(17)):
+                  raise AssertionError('seed is not even')
 
-              # NS = U + N(-1), q_NS = -q_N, and q_NS = -q_T in the
-              # unimodular K3 lattice.  Therefore q_N = q_T.
-              genus = D.genus((17, 0))
+              seed_form = QuadraticForm(ZZ, seed_gram)
+              mass = QQ(seed_form.conway_mass())
+              spinor_primes = [ZZ(p) for p in genus.spinor_generators(proper=False)]
+              seeds = [seed_form]
+              spinor_seed_records = []
+              for p in spinor_primes:
+                  vector = seed_form.find_primitive_p_divisible_vector__next(p)
+                  neighbor = seed_form.find_p_neighbor_from_vec(p, vector)
+                  seeds.append(neighbor)
+                  spinor_seed_records.append({
+                      'prime': int(p),
+                      'vector': [int(v) for v in vector],
+                      'gram': serial_matrix(neighbor.Hessian_matrix()),
+                  })
 
-              interesting = [
-                  'representative', 'representatives', 'gram_matrix',
-                  'rational_representative', 'standard_representative',
-                  'mass', 'local_symbols', 'global_symbol', 'is_even',
-                  'signature_pair', 'is_global', 'is_represented_by',
-                  'neighbors', 'p_neighbors', 'neighbor', 'local_modification',
-                  'short_vector_list_up_to_length', 'minimum', 'kissing_number',
-              ]
-              payload.update({
-                  'status': 'completed',
-                  'period_lattice_gram': [[int(T[i,j]) for j in range(3)] for i in range(3)],
-                  'period_lattice_genus': str(L.genus()),
-                  'period_discriminant_group': str(D),
-                  'period_discriminant_group_invariants': [int(v) for v in D.invariants()],
-                  'period_discriminant_form_gram': [
-                      [str(D.gram_matrix_quadratic()[i,j]) for j in range(D.gram_matrix_quadratic().ncols())]
-                      for i in range(D.gram_matrix_quadratic().nrows())
-                  ],
+              seed_lattice = IntegralLattice(seed_gram)
+              seed_short = seed_lattice.short_vectors(5)
+              checkpoint = {
+                  'status': 'enumerating',
                   'target_genus': str(genus),
-                  'target_genus_methods': public_methods(genus),
-                  'discriminant_module_methods': public_methods(D),
-                  'lattice_methods': public_methods(L),
-                  'interesting_methods': {},
-              })
-              for name in interesting:
-                  for owner_name, owner in [('genus', genus), ('discriminant', D), ('lattice', L)]:
-                      info = callable_info(owner, name)
-                      if info is not None:
-                          payload['interesting_methods'][f'{owner_name}.{name}'] = info
+                  'genus_mass': str(mass),
+                  'seed_gram': serial_matrix(seed_gram),
+                  'seed_gram_sha256': matrix_hash(seed_gram),
+                  'seed_root_count': len(seed_short[2]),
+                  'seed_norm4_count': len(seed_short[4]),
+                  'spinor_generators': [int(p) for p in spinor_primes],
+                  'spinor_seed_records': spinor_seed_records,
+                  'started_at_unix': started,
+              }
+              write_checkpoint(checkpoint)
+              print(json.dumps({
+                  'phase': 'starting-neighbor-enumeration',
+                  'mass': str(mass),
+                  'seed_root_count': len(seed_short[2]),
+                  'seed_norm4_count': len(seed_short[4]),
+                  'spinor_generators': [int(p) for p in spinor_primes],
+              }, indent=2, sort_keys=True), flush=True)
 
-              attempts = []
-              for name in ('representative', 'standard_representative', 'rational_representative', 'gram_matrix'):
-                  if not hasattr(genus, name) or not callable(getattr(genus, name)):
-                      continue
-                  try:
-                      value = getattr(genus, name)()
-                      attempts.append({
-                          'method': name,
-                          'status': 'returned',
-                          'type': str(type(value)),
-                          'repr': repr(value)[:12000],
+              classes = neighbor_iteration(
+                  seeds,
+                  ZZ(2),
+                  mass=mass,
+                  max_classes=20000,
+                  algorithm='orbits',
+                  verbose=True,
+              )
+
+              mass_sum = sum((QQ(1) / q.number_of_automorphisms() for q in classes), QQ(0))
+              complete = mass_sum == mass
+              class_records = []
+              target_records = []
+              rootless_records = []
+              for index, q in enumerate(classes):
+                  gram = Matrix(ZZ, q.Hessian_matrix())
+                  if gram.det() != 948 or Genus(gram) != genus:
+                      raise AssertionError(('class left target genus', index, gram.det(), Genus(gram)))
+                  lattice = IntegralLattice(gram)
+                  roots = lattice.short_vectors(3)[2]
+                  root_count = len(roots)
+                  norm4_count = None
+                  minimum = 2 if root_count else None
+                  if root_count == 0:
+                      short = lattice.short_vectors(5)
+                      norm4_count = len(short[4])
+                      minimum = 4 if norm4_count else int(lattice.minimum())
+                  record = {
+                      'index': index,
+                      'gram_sha256': matrix_hash(gram),
+                      'gram': serial_matrix(gram),
+                      'automorphism_order': int(q.number_of_automorphisms()),
+                      'minimum': minimum,
+                      'root_count': root_count,
+                      'norm4_count': norm4_count,
+                  }
+                  class_records.append(record)
+                  if root_count == 0:
+                      rootless_records.append(record)
+                  if minimum == 4 and norm4_count == 2622:
+                      target_records.append(record)
+                      (OUT / f'target-class-{index:05d}.json').write_text(
+                          json.dumps(record, indent=2, sort_keys=True) + '\n'
+                      )
+                  if index % 25 == 0:
+                      write_checkpoint({
+                          **checkpoint,
+                          'status': 'classifying',
+                          'classes_returned': len(classes),
+                          'classes_classified': index + 1,
+                          'mass_sum': str(mass_sum),
+                          'mass_complete': complete,
+                          'rootless_found_so_far': len(rootless_records),
+                          'target_found_so_far': len(target_records),
                       })
-                  except Exception as exc:
-                      attempts.append({'method': name, 'status': 'error', 'error': repr(exc)})
-              payload['constructor_attempts'] = attempts
-          except Exception as exc:
-              payload.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
-          (OUT / 'genus-api.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
-          print(json.dumps({
-              'status': payload.get('status'),
-              'target_genus': payload.get('target_genus'),
-              'constructor_attempts': payload.get('constructor_attempts'),
-              'error': payload.get('error'),
-          }, indent=2, sort_keys=True))
-          if payload.get('status') != 'completed':
+              result.update({
+                  'status': 'completed' if complete else 'incomplete_mass',
+                  'target_genus': str(genus),
+                  'genus_mass': str(mass),
+                  'enumerated_mass_sum': str(mass_sum),
+                  'mass_complete': complete,
+                  'neighbor_prime': 2,
+                  'neighbor_algorithm': 'orbits',
+                  'class_count': len(classes),
+                  'seed_gram': serial_matrix(seed_gram),
+                  'seed_gram_sha256': matrix_hash(seed_gram),
+                  'spinor_generators': [int(p) for p in spinor_primes],
+                  'class_records': class_records,
+                  'rootless_class_count': len(rootless_records),
+                  'rootless_records': rootless_records,
+                  'target_class_count': len(target_records),
+                  'target_records': target_records,
+                  'target_uniquely_identified': bool(complete and len(target_records) == 1),
+                  'elapsed_seconds': time.time() - started,
+              })
+              if complete and not target_records:
+                  result['truth_status'] = 'exact completed genus enumeration found no class with the published target theta data; this would expose an inconsistency requiring audit'
+              elif complete and len(target_records) == 1:
+                  result['truth_status'] = 'certified unique class in the completed genus with rank 17, determinant 948, minimum 4, and 2622 minimal vectors'
+              elif target_records:
+                  result['truth_status'] = 'exact target candidates found, but uniqueness awaits completed genus mass'
+          except Exception as exc:
+              result.update({
+                  'status': 'error',
+                  'error': repr(exc),
+                  'traceback': traceback.format_exc(),
+              })
+
+          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
+          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (OUT / 'rank17-genus-enumeration.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          summary = {
+              'status': result.get('status'),
+              'record_sha256': result.get('record_sha256'),
+              'genus_mass': result.get('genus_mass'),
+              'enumerated_mass_sum': result.get('enumerated_mass_sum'),
+              'mass_complete': result.get('mass_complete'),
+              'class_count': result.get('class_count'),
+              'rootless_class_count': result.get('rootless_class_count'),
+              'target_class_count': result.get('target_class_count'),
+              'target_uniquely_identified': result.get('target_uniquely_identified'),
+              'elapsed_seconds': result.get('elapsed_seconds'),
+              'error': result.get('error'),
+          }
+          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True), flush=True)
+          if result.get('status') not in ('completed', 'incomplete_mass'):
               raise SystemExit(1)
           PY
-          sage -python /tmp/probe_genus.py | tee /tmp/rank17-genus-api/run.log
+          sage -python /tmp/enumerate_rank17_genus.py | tee /tmp/rank17-genus-enumeration/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rank17-genus-api
-          path: /tmp/rank17-genus-api
+          name: rank17-genus-enumeration
+          path: /tmp/rank17-genus-enumeration
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
