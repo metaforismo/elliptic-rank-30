@@ -1,0 +1,109 @@
+name: probe-rank17-explicit-semistable-model
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-explicit-semistable-model.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect function-field Mordell-Weil capabilities and search for sections
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-explicit-model
+          cat > /tmp/probe_model.py <<'PY'
+          from __future__ import annotations
+
+          import inspect
+          import json
+          import traceback
+          from pathlib import Path
+
+          from sage.all import EllipticCurve, PolynomialRing, QQ, version
+
+          OUT = Path('/tmp/rank17-explicit-model')
+          result = {'status': 'started', 'sage_version': str(version())}
+          R = PolynomialRing(QQ, 't')
+          t = R.gen()
+          c4 = t**8 - 4*t**7 + 16*t**6 - 44*t**5 + 78*t**4 - 76*t**3 + 64*t**2 + 28*t + 1
+          c6 = t**12 - 6*t**11 + 30*t**10 - 110*t**9 + 303*t**8 - 636*t**7 + 1068*t**6 - 1164*t**5 + 735*t**4 - 142*t**3 + 390*t**2 + 42*t + 1
+          K = R.fraction_field()
+          E = EllipticCurve(K, [0, 0, 0, -3*K(c4), -2*K(c6)])
+
+          def method_info(name):
+              if not hasattr(E, name):
+                  return {'present': False}
+              value = getattr(E, name)
+              info = {'present': True, 'callable': callable(value), 'repr': repr(value)[:1000]}
+              if callable(value):
+                  try:
+                      info['signature'] = str(inspect.signature(value))
+                  except Exception as exc:
+                      info['signature_error'] = repr(exc)
+                  try:
+                      info['source'] = inspect.getsource(value)[:12000]
+                  except Exception as exc:
+                      info['source_error'] = repr(exc)
+              return info
+
+          interesting = [
+              'rank', 'gens', 'ngens', 'point_search', 'integral_points',
+              'torsion_subgroup', 'torsion_points', 'local_data',
+              'minimal_model', 'global_minimal_model', 'elliptic_surface',
+              'height', 'height_pairing_matrix', 'regulator', 'two_descent',
+              'selmer_rank', 'lift_x', 'division_polynomial',
+          ]
+          attempts = []
+          for name, args, kwargs in [
+              ('torsion_points', (), {}),
+              ('torsion_subgroup', (), {}),
+              ('rank', (), {}),
+              ('gens', (), {}),
+              ('point_search', (10,), {}),
+              ('integral_points', (), {}),
+              ('elliptic_surface', (), {}),
+          ]:
+              if not hasattr(E, name):
+                  attempts.append({'method': name, 'status': 'absent'})
+                  continue
+              try:
+                  value = getattr(E, name)(*args, **kwargs)
+                  attempts.append({'method': name, 'status': 'returned', 'type': str(type(value)), 'repr': repr(value)[:12000]})
+              except Exception as exc:
+                  attempts.append({'method': name, 'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()[-8000:]})
+
+          result.update({
+              'status': 'completed',
+              'curve': str(E),
+              'base_ring': str(E.base_ring()),
+              'curve_class': str(type(E)),
+              'discriminant_factorization': str(E.discriminant().factor()),
+              'j_invariant': str(E.j_invariant()),
+              'public_methods': sorted(name for name in dir(E) if not name.startswith('_')),
+              'interesting_methods': {name: method_info(name) for name in interesting},
+              'attempts': attempts,
+          })
+          (OUT / 'sage-function-field-probe.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({'status': result['status'], 'curve_class': result['curve_class'], 'attempts': attempts}, indent=2, sort_keys=True))
+          PY
+          sage -python /tmp/probe_model.py | tee /tmp/rank17-explicit-model/run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-explicit-semistable-model-probe
+          path: /tmp/rank17-explicit-model
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
