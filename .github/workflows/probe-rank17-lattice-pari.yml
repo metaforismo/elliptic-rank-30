@@ -29,9 +29,9 @@ jobs:
           from __future__ import annotations
 
           import hashlib
+          import itertools
           import json
           import math
-          from fractions import Fraction
           from pathlib import Path
 
           import sympy as sp
@@ -74,32 +74,58 @@ jobs:
           smith = smith_normal_form(G, domain=ZZ)
           smith_diagonal = [abs(int(smith[i,i])) for i in range(17)]
           assert smith_diagonal == [1] * 16 + [948]
+          smith_T = smith_normal_form(T, domain=ZZ)
+          smith_T_diagonal = [abs(int(smith_T[i,i])) for i in range(3)]
+          assert smith_T_diagonal == [1, 1, 948]
 
-          # Find generators of the two cyclic discriminant groups and compare
-          # their quadratic values modulo 2Z.  For an even Gram matrix M, a dual
-          # vector x has discriminant value x^T M x modulo 2Z.
+          def element_order(x):
+              return math.lcm(*(int(sp.denom(value)) for value in x))
+
+          # Find a generator of M^*/M.  A basis column often suffices; for the
+          # ternary period lattice it does not, so search all {-1,0,1}
+          # combinations.  This remains tiny in rank three and is exact.
           def cyclic_generator(M, order):
               inverse = M.inv()
-              candidates = []
               for column in range(M.cols):
-                  x = inverse[:,column]
-                  denominators = [sp.denom(value) for value in x]
-                  element_order = math.lcm(*map(int, denominators))
-                  if element_order == order:
+                  coeff = sp.zeros(M.cols, 1)
+                  coeff[column] = 1
+                  x = inverse * coeff
+                  if element_order(x) == order:
                       q = sp.factor((x.T * M * x)[0])
-                      candidates.append((column, x, q))
-              if not candidates:
-                  raise AssertionError('no cyclic discriminant generator found')
-              return candidates[0]
+                      return [int(v) for v in coeff], x, q
+              if M.cols <= 4:
+                  for coefficients in itertools.product((-1, 0, 1), repeat=M.cols):
+                      if not any(coefficients):
+                          continue
+                      coeff = sp.Matrix(coefficients)
+                      x = inverse * coeff
+                      if element_order(x) == order:
+                          q = sp.factor((x.T * M * x)[0])
+                          return list(coefficients), x, q
+              # Sparse fallback for larger matrices; not reached for the target
+              # because a single inverse column generates its cyclic group.
+              for support in (2, 3):
+                  for indices in itertools.combinations(range(M.cols), support):
+                      for signs in itertools.product((-1, 1), repeat=support):
+                          coeff = sp.zeros(M.cols, 1)
+                          for index, sign in zip(indices, signs):
+                              coeff[index] = sign
+                          x = inverse * coeff
+                          if element_order(x) == order:
+                              q = sp.factor((x.T * M * x)[0])
+                              return [int(v) for v in coeff], x, q
+              raise AssertionError('no cyclic discriminant generator found')
 
-          g_column, g, qg = cyclic_generator(G, 948)
-          t_column, t, qt = cyclic_generator(T, 948)
+          g_coefficients, g, qg = cyclic_generator(G, 948)
+          t_coefficients, t, qt = cyclic_generator(T, 948)
 
-          # Two cyclic even finite quadratic forms are isometric exactly when
-          # qg = u^2*qt modulo 2Z for a unit u modulo 948.
           modulus = 2 * 948
-          qg_scaled = int(sp.Integer(qg * 948)) % modulus
-          qt_scaled = int(sp.Integer(qt * 948)) % modulus
+          qg_times_order = sp.factor(qg * 948)
+          qt_times_order = sp.factor(qt * 948)
+          assert sp.denom(qg_times_order) == 1
+          assert sp.denom(qt_times_order) == 1
+          qg_scaled = int(qg_times_order) % modulus
+          qt_scaled = int(qt_times_order) % modulus
           units = [u for u in range(1,948) if math.gcd(u,948) == 1]
           isometries = [u for u in units if (u*u*qt_scaled - qg_scaled) % modulus == 0]
           assert isometries, (qg, qt, qg_scaled, qt_scaled)
@@ -115,21 +141,24 @@ jobs:
               'smith_invariants': smith_diagonal,
               'discriminant_group': 'Z/948Z',
               'period_lattice_gram': [[int(T[i,j]) for j in range(3)] for i in range(3)],
+              'period_smith_invariants': smith_T_diagonal,
               'rank17_discriminant_generator': {
-                  'source_column': g_column,
+                  'coefficient_vector': g_coefficients,
                   'coordinates': [str(value) for value in g],
+                  'order': element_order(g),
                   'quadratic_value_mod_2Z': str(qg),
                   'scaled_numerator_mod_1896': qg_scaled,
               },
               'period_discriminant_generator': {
-                  'source_column': t_column,
+                  'coefficient_vector': t_coefficients,
                   'coordinates': [str(value) for value in t],
+                  'order': element_order(t),
                   'quadratic_value_mod_2Z': str(qt),
                   'scaled_numerator_mod_1896': qt_scaled,
               },
               'discriminant_form_isometry_units_mod_948': isometries,
               'discriminant_form_isometric_to_X6_79_period_lattice': True,
-              'truth_note': 'This verifies the exact integral and discriminant-form invariants. Minimal-vector enumeration is performed independently by PARI/GP in the companion output.',
+              'truth_note': 'This verifies exact integral and discriminant-form invariants. Minimal-vector enumeration is independently performed by PARI/GP.',
           }
           raw = json.dumps(payload, sort_keys=True, separators=(',',':')).encode()
           payload['record_sha256'] = hashlib.sha256(raw).hexdigest()
@@ -137,6 +166,8 @@ jobs:
           print(json.dumps({
               'determinant': determinant,
               'smith_invariants': smith_diagonal,
+              'rank17_generator_coefficients': g_coefficients,
+              'period_generator_coefficients': t_coefficients,
               'discriminant_form_isometry_count': len(isometries),
               'record_sha256': payload['record_sha256'],
           }, indent=2, sort_keys=True))
@@ -174,8 +205,10 @@ jobs:
           m = qfminim(G,,0);
           if(m[1] != 2622 || m[2] != 4, error("minimal vector mismatch: ", m));
           r = qfrep(G,4);
-          if(r != Vecsmall([0,0,0,1311]), error("representation count mismatch: ", r));
-          filewrite("/tmp/rank17-lattice-pari/pari-verification.json", Strprintf("{\n  \\"status\\": \\"completed\\",\n  \\"pari_version\\": \\"%s\\",\n  \\"signature\\": [%d, %d],\n  \\"determinant\\": 948,\n  \\"minimal_vector_count\\": %d,\n  \\"minimum_norm\\": %d,\n  \\"qfrep_through_norm4_half_counts\\": [%d, %d, %d, %d]\n}\n", version(), s[1], s[2], m[1], m[2], r[1], r[2], r[3], r[4]));
+          if(#r < 4 || r[1] != 0 || r[2] != 0 || r[3] != 0 || r[4] != 1311,
+             error("representation count mismatch: ", r));
+          json = Strprintf("{\n  \\"status\\": \\"completed\\",\n  \\"pari_version\\": \\"%s\\",\n  \\"signature\\": [%d, %d],\n  \\"determinant\\": 948,\n  \\"minimal_vector_count\\": %d,\n  \\"minimum_norm\\": %d,\n  \\"qfrep_through_norm4_half_counts\\": [%d, %d, %d, %d]\n}\n", default(version), s[1], s[2], m[1], m[2], r[1], r[2], r[3], r[4]);
+          write("/tmp/rank17-lattice-pari/pari-verification.json", json);
           print("VERIFIED PARI rank17 lattice det=948 min=4 minimal_vectors=2622");
           GP
           gp -q /tmp/verify_rank17_lattice.gp | tee /tmp/rank17-lattice-pari/pari-run.log
