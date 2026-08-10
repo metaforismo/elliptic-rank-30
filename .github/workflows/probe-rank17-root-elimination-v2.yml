@@ -1,0 +1,54 @@
+name: probe-rank17-root-elimination-v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-root-elimination-v2.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract, patch, and execute the deterministic neighbor search
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-root-elimination
+          python3 - <<'PY'
+          from pathlib import Path
+          import textwrap
+
+          workflow = Path('.github/workflows/probe-rank29-height-lattice.yml').read_text()
+          start_marker = "cat > /tmp/rank17_root_elimination.py <<'PY'\n"
+          end_marker = "\n          PY\n          sage -python /tmp/rank17_root_elimination.py"
+          if start_marker not in workflow or end_marker not in workflow:
+              raise SystemExit('could not extract the embedded root-elimination script')
+          embedded = workflow.split(start_marker, 1)[1].split(end_marker, 1)[0]
+          script = textwrap.dedent(embedded)
+          script = script.replace(
+              'from sage.all import Genus, IntegralLattice, Matrix, QuadraticForm, ZZ, block_diagonal_matrix, matrix, pari, random_seed, version',
+              'from sage.all import Genus, IntegralLattice, Matrix, QuadraticForm, ZZ, block_diagonal_matrix, matrix, pari, version\nfrom sage.misc.randstate import set_random_seed',
+          )
+          script = script.replace('random_seed(RANDOM_SEED)', 'set_random_seed(RANDOM_SEED)')
+          if 'set_random_seed(RANDOM_SEED)' not in script or 'random_seed(RANDOM_SEED)' in script:
+              raise SystemExit('RNG patch did not apply cleanly')
+          Path('/tmp/rank17_root_elimination.py').write_text(script)
+          PY
+          sage -python /tmp/rank17_root_elimination.py | tee /tmp/rank17-root-elimination/run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-root-elimination-v2
+          path: /tmp/rank17-root-elimination
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
