@@ -1,4 +1,4 @@
-name: probe-rank17-lattice-catalogue
+name: probe-rank17-genus-api
 
 on:
   push:
@@ -14,158 +14,121 @@ jobs:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    container:
+      image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Download and search the Nebe-Sloane lattice catalogue
+      - name: Inspect discriminant-form and genus APIs
         shell: bash
         run: |
           set -euo pipefail
-          out=/tmp/rank17-lattice-catalogue
-          mkdir -p "$out"
-          curl --fail --location --retry 3 --user-agent 'elliptic-rank-30-reproducible-research/1.0' \
-            https://www.math.rwth-aachen.de/~Gabriele.Nebe/LATTICES/union.gz \
-            --output "$out/union.gz"
-          file "$out/union.gz" | tee "$out/file-type.txt"
-          sha256sum "$out/union.gz" | tee "$out/SHA256SUMS"
-          gzip -dc "$out/union.gz" > "$out/union.std"
-          wc -c -l "$out/union.std" | tee "$out/union-size.txt"
-          python3 - <<'PY'
+          mkdir -p /tmp/rank17-genus-api
+          cat > /tmp/probe_genus.py <<'PY'
           from __future__ import annotations
 
-          import hashlib
+          import inspect
           import json
-          import math
-          import re
+          import traceback
           from pathlib import Path
 
-          root = Path('/tmp/rank17-lattice-catalogue')
-          text = (root / 'union.std').read_text(errors='replace')
+          from sage.all import IntegralLattice, Matrix, ZZ, version
 
-          # Entries in union.std begin with NAME on its own line.  Keep every
-          # block intact so exact candidate records can be audited later.
-          starts = [match.start() for match in re.finditer(r'(?m)^NAME\s*$', text)]
-          entries = []
-          for index, start in enumerate(starts):
-              end = starts[index + 1] if index + 1 < len(starts) else len(text)
-              block = text[start:end].strip() + '\n'
-              lines = block.splitlines()
+          OUT = Path('/tmp/rank17-genus-api')
+          payload = {'status': 'started', 'sage_version': str(version())}
 
-              def field(label):
-                  for i, line in enumerate(lines):
-                      if line.strip() == label and i + 1 < len(lines):
-                          return lines[i + 1].strip()
+          def public_methods(obj):
+              return sorted(name for name in dir(obj) if not name.startswith('_'))
+
+          def method_info(obj, name):
+              if not hasattr(obj, name):
                   return None
-
-              name = field('NAME')
-              dimension = field('DIMENSION')
-              determinant = field('DET')
-              minimum = field('MINIMAL_NORM')
-              kissing = field('KISSING_NUMBER')
-              record = {
-                  'entry_index': index,
-                  'name': name,
-                  'dimension_raw': dimension,
-                  'determinant_raw': determinant,
-                  'minimal_norm_raw': minimum,
-                  'kissing_number_raw': kissing,
-                  'sha256': hashlib.sha256(block.encode()).hexdigest(),
-                  'block': block,
-              }
-              entries.append(record)
-
-          def rational_number(value):
-              if value is None:
-                  return None
-              value = value.strip().replace('D', 'E')
-              try:
-                  return float(value)
-              except Exception:
+              value = getattr(obj, name)
+              info = {'callable': callable(value), 'repr': repr(value)}
+              if callable(value):
                   try:
-                      return float(eval(value, {'__builtins__': {}}, {}))
-                  except Exception:
-                      return None
+                      info['signature'] = str(inspect.signature(value))
+                  except Exception as exc:
+                      info['signature_error'] = repr(exc)
+                  try:
+                      info['source'] = inspect.getsource(value)
+                  except Exception as exc:
+                      info['source_error'] = repr(exc)
+              return info
 
-          dim17 = []
-          exact = []
-          near = []
-          for record in entries:
-              dimension = rational_number(record['dimension_raw'])
-              determinant = rational_number(record['determinant_raw'])
-              minimum = rational_number(record['minimal_norm_raw'])
-              kissing = rational_number(record['kissing_number_raw'])
-              if dimension == 17:
-                  summary = {key: value for key, value in record.items() if key != 'block'}
-                  dim17.append(summary)
-                  if determinant is not None and abs(determinant - 948) < 1e-9:
-                      exact.append(record)
-                  score = 0
-                  if determinant is not None and determinant > 0:
-                      score += abs(math.log(determinant / 948.0))
-                  else:
-                      score += 100
-                  if minimum is not None:
-                      score += abs(minimum - 4)
-                  else:
-                      score += 10
-                  if kissing is not None:
-                      score += abs(kissing - 2622) / 2622.0
-                  else:
-                      score += 10
-                  near.append((score, record))
+          try:
+              T = Matrix(ZZ, [
+                  [-316,   0,  288],
+                  [   0, 474,  -15],
+                  [ 288, -15, -262],
+              ])
+              L = IntegralLattice(T)
+              D = L.discriminant_group()
+              DT = D.twist(-1)
+              genus = DT.genus((17, 0))
 
-          near.sort(key=lambda item: item[0])
-          exact_records = []
-          for record in exact:
-              path = root / f"exact-{record['entry_index']:06d}-{record['name'] or 'unnamed'}.std"
-              path.write_text(record['block'])
-              exact_records.append({key: value for key, value in record.items() if key != 'block'})
-          nearest_records = []
-          for rank, (score, record) in enumerate(near[:100], 1):
-              nearest_records.append({
-                  **{key: value for key, value in record.items() if key != 'block'},
-                  'distance_score': score,
-                  'rank': rank,
+              interesting = [
+                  'representative', 'representatives', 'gram_matrix', 'is_global',
+                  'global_symbol', 'local_symbols', 'mass', 'genus', 'is_represented_by',
+                  'rational_representative', 'standard_representative', 'is_even',
+                  'signature_pair', 'discriminant_form', 'discriminant_group',
+                  'neighbors', 'p_neighbors', 'neighbor', 'local_modification',
+                  'maximal_overlattice', 'overlattice', 'sublattices', 'short_vector_list_up_to_length',
+              ]
+              payload.update({
+                  'status': 'completed',
+                  'period_lattice_gram': [[int(T[i,j]) for j in range(3)] for i in range(3)],
+                  'period_lattice_genus': str(L.genus()),
+                  'period_discriminant_group': str(D),
+                  'period_discriminant_group_invariants': [int(v) for v in D.invariants()],
+                  'period_discriminant_form_gram': [[str(D.gram_matrix_quadratic()[i,j]) for j in range(D.gram_matrix_quadratic().ncols())] for i in range(D.gram_matrix_quadratic().nrows())],
+                  'twisted_discriminant_form': str(DT),
+                  'target_genus': str(genus),
+                  'lattice_methods': public_methods(L),
+                  'discriminant_module_methods': public_methods(D),
+                  'target_genus_methods': public_methods(genus),
+                  'interesting_methods': {},
               })
+              for name in interesting:
+                  for owner_name, owner in [('lattice', L), ('discriminant', D), ('twisted', DT), ('genus', genus)]:
+                      info = method_info(owner, name)
+                      if info is not None:
+                          payload['interesting_methods'][f'{owner_name}.{name}'] = info
 
-          payload = {
-              'status': 'completed',
-              'catalogue_entry_count': len(entries),
-              'dimension_17_entry_count': len(dim17),
-              'exact_dimension17_determinant948_count': len(exact_records),
-              'exact_records': exact_records,
-              'nearest_dimension17_records': nearest_records,
-              'target': {
-                  'dimension': 17,
-                  'determinant': 948,
-                  'minimal_norm': 4,
-                  'kissing_number': 2622,
-              },
-              'interpretation': 'An empty exact list means only that the target lattice is absent from this catalogue snapshot; it is not a nonexistence result.',
-          }
-          (root / 'catalogue-search.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
-          (root / 'dimension17-index.json').write_text(json.dumps(dim17, indent=2, sort_keys=True) + '\n')
+              # Try every plausible constructor in fail-closed mode.  A successful
+              # result is accepted only after exact signature, determinant, parity,
+              # and discriminant-form checks.
+              attempts = []
+              for name in ('representative', 'standard_representative', 'rational_representative', 'gram_matrix'):
+                  if not hasattr(genus, name):
+                      continue
+                  method = getattr(genus, name)
+                  if not callable(method):
+                      continue
+                  try:
+                      value = method()
+                      attempts.append({'method': name, 'status': 'returned', 'type': str(type(value)), 'repr': repr(value)[:5000]})
+                  except Exception as exc:
+                      attempts.append({'method': name, 'status': 'error', 'error': repr(exc)})
+              payload['constructor_attempts'] = attempts
+          except Exception as exc:
+              payload.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+
+          (OUT / 'genus-api.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
           print(json.dumps({
-              'catalogue_entry_count': len(entries),
-              'dimension_17_entry_count': len(dim17),
-              'exact_dimension17_determinant948_count': len(exact_records),
-              'nearest': [
-                  {
-                      'name': row['name'],
-                      'determinant': row['determinant_raw'],
-                      'minimum': row['minimal_norm_raw'],
-                      'kissing': row['kissing_number_raw'],
-                      'score': row['distance_score'],
-                  }
-                  for row in nearest_records[:10]
-              ],
+              'status': payload.get('status'),
+              'target_genus': payload.get('target_genus'),
+              'constructor_attempts': payload.get('constructor_attempts'),
+              'error': payload.get('error'),
           }, indent=2, sort_keys=True))
+          if payload.get('status') != 'completed':
+              raise SystemExit(1)
           PY
-          sha256sum "$out/union.std" "$out/catalogue-search.json" "$out/dimension17-index.json" >> "$out/SHA256SUMS"
+          sage -python /tmp/probe_genus.py | tee /tmp/rank17-genus-api/run.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: rank17-lattice-catalogue-search
-          path: /tmp/rank17-lattice-catalogue
+          name: rank17-genus-api
+          path: /tmp/rank17-genus-api
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
