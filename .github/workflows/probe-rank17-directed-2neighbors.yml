@@ -1,0 +1,225 @@
+name: probe-rank17-directed-2neighbors
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-directed-2neighbors.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enumerate every isotropic direction modulo 2 on the transparent seed
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-directed-2neighbors
+          cat > /tmp/directed_2neighbors.py <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import heapq
+          import json
+          import time
+          import traceback
+          from pathlib import Path
+
+          from sage.all import Genus, IntegralLattice, Matrix, QuadraticForm, ZZ, block_diagonal_matrix, vector, version
+
+          OUT = Path('/tmp/rank17-directed-2neighbors')
+          KEEP_DIRECTIONS = 1500
+          CONSTRUCT_LIMIT = 700
+          result = {
+              'status': 'started',
+              'sage_version': str(version()),
+              'keep_directions': KEEP_DIRECTIONS,
+              'construct_limit': CONSTRUCT_LIMIT,
+              'truth_status': 'complete isotropic-line scan for one seed, followed by exact construction of a bounded top subset',
+          }
+
+          def serial_matrix(M):
+              return [[int(M[i,j]) for j in range(M.ncols())] for i in range(M.nrows())]
+
+          def reduced_gram(G):
+              U = G.LLL_gram()
+              return Matrix(ZZ, U.transpose() * G * U)
+
+          def matrix_hash(G):
+              return hashlib.sha256(json.dumps(serial_matrix(G), separators=(',', ':')).encode()).hexdigest()
+
+          def a_chain(n):
+              G = Matrix(ZZ, n, n, 0)
+              for i in range(n):
+                  G[i,i] = 2
+                  if i + 1 < n:
+                      G[i,i+1] = G[i+1,i] = -1
+              return G
+
+          def k6_det79():
+              G = a_chain(6)
+              G[3,3] = 8
+              return G
+
+          try:
+              started = time.time()
+              period = Matrix(ZZ, [
+                  [-316, 0, 288],
+                  [0, 474, -15],
+                  [288, -15, -262],
+              ])
+              genus = IntegralLattice(period).discriminant_group().genus((17,0))
+              G = Matrix(ZZ, block_diagonal_matrix(a_chain(11), k6_det79()))
+              if G.det() != 948 or Genus(G) != genus:
+                  raise AssertionError(('transparent seed mismatch', G.det(), Genus(G), genus))
+              Q = QuadraticForm(ZZ, G)
+              root_vectors = [vector(ZZ, row) for row in IntegralLattice(G).short_vectors(3)[2]]
+              norm4_vectors = [vector(ZZ, row) for row in IntegralLattice(G).short_vectors(5)[4]]
+              initial_root_count = len(root_vectors)
+              initial_norm4_count = len(norm4_vectors)
+
+              # Precompute parity masks for all roots.  For v in F_2^17,
+              # a root r survives in L_v iff r^T G v = 0 mod 2.
+              root_masks = []
+              for root in root_vectors:
+                  row = root * G
+                  mask = 0
+                  for i in range(17):
+                      if int(row[i]) & 1:
+                          mask |= 1 << i
+                  root_masks.append(mask)
+
+              best = []
+              isotropic_count = 0
+              for mask in range(1, 1 << 17):
+                  bits = [(mask >> i) & 1 for i in range(17)]
+                  v = vector(ZZ, bits)
+                  qv = ZZ((v * G * v) / 2)
+                  if qv & 1:
+                      continue
+                  isotropic_count += 1
+                  survivors = sum(((root_mask & mask).bit_count() & 1) == 0 for root_mask in root_masks)
+                  # Prefer fewer surviving roots, then a shorter integral lift.
+                  key = (-survivors, -qv, -mask)
+                  record = (key, mask, survivors, int(qv))
+                  if len(best) < KEEP_DIRECTIONS:
+                      heapq.heappush(best, record)
+                  elif key > best[0][0]:
+                      heapq.heapreplace(best, record)
+
+              directions = sorted(
+                  [(mask, survivors, qv) for _, mask, survivors, qv in best],
+                  key=lambda row: (row[1], row[2], row[0]),
+              )
+              distribution = {}
+              for _, survivors, _ in directions:
+                  distribution[str(survivors)] = distribution.get(str(survivors), 0) + 1
+
+              constructed = []
+              seen = set()
+              targets = []
+              errors = []
+              for position, (mask, predicted_survivors, qv) in enumerate(directions[:CONSTRUCT_LIMIT]):
+                  bits = [(mask >> i) & 1 for i in range(17)]
+                  v = vector(ZZ, bits)
+                  try:
+                      neighbor = Q.find_p_neighbor_from_vec(ZZ(2), v)
+                      H = reduced_gram(Matrix(ZZ, neighbor.Hessian_matrix()))
+                      if H.det() != 948 or Genus(H) != genus:
+                          raise AssertionError(('neighbor left genus', H.det(), Genus(H)))
+                      digest = matrix_hash(H)
+                      if digest in seen:
+                          continue
+                      seen.add(digest)
+                      RQ = QuadraticForm(ZZ, H)
+                      theta = RQ.theta_series(3)
+                      roots = int(theta[1])
+                      norm4 = int(theta[2])
+                      rec = {
+                          'direction_rank': position + 1,
+                          'mask': mask,
+                          'bits': bits,
+                          'q_of_lift': qv,
+                          'predicted_surviving_old_roots': predicted_survivors,
+                          'actual_root_count': roots,
+                          'actual_norm4_count': norm4,
+                          'gram_sha256': digest,
+                          'gram': serial_matrix(H),
+                      }
+                      constructed.append(rec)
+                      if roots == 0 and norm4 == 2622:
+                          lattice = IntegralLattice(H)
+                          short = lattice.short_vectors(5)
+                          rec['independent_root_count'] = len(short[2])
+                          rec['independent_norm4_count'] = len(short[4])
+                          rec['target_verified'] = rec['independent_root_count'] == 0 and rec['independent_norm4_count'] == 2622
+                          if rec['target_verified']:
+                              targets.append(rec)
+                              (OUT / f'target-{digest}.json').write_text(json.dumps(rec, indent=2, sort_keys=True) + '\n')
+                  except Exception as exc:
+                      if len(errors) < 100:
+                          errors.append({'position': position + 1, 'mask': mask, 'error': repr(exc)})
+
+              constructed.sort(key=lambda row: (row['actual_root_count'], abs(row['actual_norm4_count'] - 2622), row['gram_sha256']))
+              best_record = constructed[0] if constructed else None
+              result.update({
+                  'status': 'target_found' if targets else 'completed',
+                  'target_genus': str(genus),
+                  'seed_gram': serial_matrix(G),
+                  'seed_root_count': initial_root_count,
+                  'seed_norm4_count': initial_norm4_count,
+                  'nonzero_isotropic_direction_count_mod_2': isotropic_count,
+                  'retained_direction_survivor_distribution': distribution,
+                  'best_direction_records': [
+                      {'mask': mask, 'surviving_old_roots': survivors, 'q_of_lift': qv}
+                      for mask, survivors, qv in directions[:100]
+                  ],
+                  'unique_constructed_neighbor_count': len(constructed),
+                  'constructed_neighbors': constructed,
+                  'best_neighbor': best_record,
+                  'verified_targets': targets,
+                  'target_found': bool(targets),
+                  'sample_errors': errors,
+                  'elapsed_seconds': time.time() - started,
+              })
+              if targets:
+                  result['truth_status'] = 'certified target lattice found by a complete mod-2 direction scan on the transparent seed and independently verified short-vector enumeration'
+          except Exception as exc:
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
+
+          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
+          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (OUT / 'directed-2neighbors.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          summary = {
+              'status': result.get('status'),
+              'record_sha256': result.get('record_sha256'),
+              'seed_root_count': result.get('seed_root_count'),
+              'isotropic_direction_count': result.get('nonzero_isotropic_direction_count_mod_2'),
+              'unique_constructed_neighbor_count': result.get('unique_constructed_neighbor_count'),
+              'best_neighbor': result.get('best_neighbor'),
+              'target_found': result.get('target_found'),
+              'elapsed_seconds': result.get('elapsed_seconds'),
+              'error': result.get('error'),
+          }
+          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True), flush=True)
+          if result.get('status') == 'error':
+              raise SystemExit(1)
+          PY
+          sage -python /tmp/directed_2neighbors.py | tee /tmp/rank17-directed-2neighbors/run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-directed-2neighbors
+          path: /tmp/rank17-directed-2neighbors
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
