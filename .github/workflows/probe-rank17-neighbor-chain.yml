@@ -4,7 +4,9 @@ on:
   push:
     branches: [main]
     paths:
+      - "research/replay_rank17_neighbor_chain.py"
       - ".github/workflows/probe-rank17-neighbor-chain.yml"
+      - ".github/workflows/probe-rank29-height-lattice.yml"
 
 permissions:
   contents: read
@@ -18,96 +20,12 @@ jobs:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Replay the deterministic search and serialize every neighbor step
+      - name: Replay and serialize the exact neighbor chain
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p /tmp/rank17-neighbor-chain
-          python3 - <<'PY'
-          from pathlib import Path
-          import textwrap
-
-          workflow = Path('.github/workflows/probe-rank29-height-lattice.yml').read_text()
-          start_marker = "cat > /tmp/rank17_root_elimination.py <<'PY'\n"
-          end_marker = "\n          PY\n          sage -python /tmp/rank17_root_elimination.py"
-          if start_marker not in workflow or end_marker not in workflow:
-              raise SystemExit('could not extract the embedded root-elimination script')
-          script = textwrap.dedent(workflow.split(start_marker, 1)[1].split(end_marker, 1)[0])
-          old_import = 'from sage.all import Genus, IntegralLattice, Matrix, QuadraticForm, ZZ, block_diagonal_matrix, matrix, pari, random_seed, version'
-          new_import = 'from sage.all import Genus, IntegralLattice, Matrix, QuadraticForm, ZZ, block_diagonal_matrix, matrix, pari, version\nfrom sage.misc.randstate import set_random_seed'
-          script = script.replace(old_import, new_import)
-          script = script.replace('random_seed(RANDOM_SEED)', 'set_random_seed(RANDOM_SEED)')
-
-          needle = """              result.update({
-                  'status': 'target_found' if verified_targets else 'bounded_search_completed',
-"""
-          insertion = """              state_by_hash = {state['hash']: state for state in archive}
-              target_neighbor_chains = []
-              for target_state in targets:
-                  chain = []
-                  cursor = target_state
-                  while cursor is not None:
-                      chain.append(public_record(cursor, index_by_hash))
-                      cursor = state_by_hash.get(cursor['parent']) if cursor['parent'] is not None else None
-                  chain.reverse()
-                  target_neighbor_chains.append(chain)
-
-              result.update({
-                  'status': 'target_found' if verified_targets else 'bounded_search_completed',
-"""
-          if needle not in script:
-              raise SystemExit('could not insert neighbor-chain serialization')
-          script = script.replace(needle, insertion, 1)
-          field_needle = """                  'verified_targets': verified_targets,
-                  'target_found': bool(verified_targets),
-"""
-          field_replacement = """                  'verified_targets': verified_targets,
-                  'target_neighbor_chains': target_neighbor_chains,
-                  'target_found': bool(verified_targets),
-"""
-          if field_needle not in script:
-              raise SystemExit('could not add chain field to result')
-          script = script.replace(field_needle, field_replacement, 1)
-
-          # Write the replay into the dedicated output directory and require the
-          # already independently observed target hash.
-          script = script.replace("OUT = Path('/tmp/rank17-root-elimination')", "OUT = Path('/tmp/rank17-neighbor-chain')")
-          expected = '620a5e06473684d3e8015c0172f63c09c901e742ec02e77ba0aa35a923aa0295'
-          assert_block = """
-          if result.get('status') == 'target_found':
-              hashes = [record['hash'] for record in result.get('verified_targets', [])]
-              if expected not in hashes:
-                  raise SystemExit(('deterministic replay found a different target', hashes))
-              chains = result.get('target_neighbor_chains', [])
-              if not chains or chains[0][-1]['hash'] != expected:
-                  raise SystemExit('serialized chain does not terminate at the expected target')
-              (OUT / 'exact-neighbor-chain.json').write_text(json.dumps(chains[0], indent=2, sort_keys=True) + '\\n')
-          """
-          marker = "          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()\n"
-          if marker not in script:
-              raise SystemExit('could not insert deterministic replay assertions')
-          script = script.replace(marker, textwrap.dedent(assert_block) + marker, 1)
-          Path('/tmp/rank17_neighbor_chain.py').write_text(script)
-          PY
-          sage -python /tmp/rank17_neighbor_chain.py | tee /tmp/rank17-neighbor-chain/run.log
-          python3 - <<'PY'
-          import hashlib, json
-          from pathlib import Path
-          root = Path('/tmp/rank17-neighbor-chain')
-          chain = json.loads((root / 'exact-neighbor-chain.json').read_text())
-          summary = {
-              'status': 'completed',
-              'chain_length_including_seed': len(chain),
-              'neighbor_step_count': len(chain) - 1,
-              'root_counts': [entry['root_count'] for entry in chain],
-              'norm4_counts': [entry['norm4_count'] for entry in chain],
-              'primes': [entry['move']['prime'] for entry in chain[1:]],
-              'target_hash': chain[-1]['hash'],
-              'target_gram_sha256': hashlib.sha256(json.dumps(chain[-1]['gram'], separators=(',', ':')).encode()).hexdigest(),
-          }
-          (root / 'chain-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
-          print(json.dumps(summary, indent=2, sort_keys=True))
-          PY
+          sage -python research/replay_rank17_neighbor_chain.py \
+            --output /tmp/rank17-neighbor-chain
           sha256sum /tmp/rank17-neighbor-chain/* > /tmp/rank17-neighbor-chain/SHA256SUMS
           sha256sum -c /tmp/rank17-neighbor-chain/SHA256SUMS
       - uses: actions/upload-artifact@v4
