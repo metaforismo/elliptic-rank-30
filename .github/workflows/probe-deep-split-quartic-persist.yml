@@ -1,0 +1,58 @@
+name: probe-deep-split-quartic-persist
+
+on:
+  push:
+    branches:
+      - research/deep-split-quartic-20260810-v2
+    paths:
+      - "research/sage_deep_split_quartic_search.py"
+      - ".github/workflows/probe-deep-split-quartic-persist.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  search:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Search rank-12 split fibres for additional generators
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p research/results
+          sage -python research/sage_deep_split_quartic_search.py \
+            --output research/results/deep_split_quartic_search.json \
+            --multiples 48 \
+            --curves 14 \
+            --timeout 120 \
+            --prime-bound 700 \
+            --stop-rank 14 \
+            | tee /tmp/deep-split-quartic-persist.log
+      - name: Commit the bounded-search result on the temporary branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/results/deep_split_quartic_search.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Record bounded deep split-quartic search"
+          git push
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deep-split-quartic-search-persist
+          path: |
+            research/results/deep_split_quartic_search.json
+            /tmp/deep-split-quartic-persist.log
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 7
