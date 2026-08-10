@@ -18,7 +18,7 @@ jobs:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Compute the canonical-height lattice and short combinations
+      - name: Compute the rank-29 canonical-height lattice
         shell: bash
         run: |
           set -euo pipefail
@@ -34,24 +34,19 @@ jobs:
           import traceback
           from pathlib import Path
 
-          from sage.all import EllipticCurve, Matrix, QQ, RDF, RealField, ZZ, matrix, vector, version
+          from sage.all import EllipticCurve, Matrix, QQ, RealField, ZZ, matrix, vector, version
 
-          ROOT = Path('.')
           OUT = Path('/tmp/rank29-height-lattice')
+          PRECISION = 160
           result = {
               'status': 'started',
               'sage_version': str(version()),
-              'precision_bits': 160,
-              'truth_status': 'experimental lattice reconstruction; not a rank-30 certificate',
+              'precision_bits': PRECISION,
+              'truth_status': 'experimental height-lattice reconstruction; not a rank-30 certificate',
           }
 
-          def serial_real(x, digits=45):
-              return str(x.n(digits=digits))
-
-          def point_coords(P):
-              if P.is_zero():
-                  return ['0']
-              return [str(P[0]), str(P[1]), str(P[2])]
+          def decimal(value, digits=45):
+              return str(value.n(digits=digits))
 
           def canonical_sign(values):
               values = tuple(int(v) for v in values)
@@ -62,27 +57,21 @@ jobs:
 
           try:
               started = time.time()
-              curve_record = json.loads((ROOT / 'curve.json').read_text())
-              point_record = json.loads((ROOT / 'points.json').read_text())
-              a = [QQ(value) for value in curve_record['model']['a_invariants']]
-              E = EllipticCurve(QQ, a)
-              labels = []
-              points = []
-              for row in point_record['points']:
-                  label, xn, xd, yn, yd = row
-                  P = E(QQ(xn) / QQ(xd), QQ(yn) / QQ(yd))
+              curve = json.loads(Path('curve.json').read_text())
+              point_data = json.loads(Path('points.json').read_text())
+              E = EllipticCurve(QQ, [QQ(v) for v in curve['model']['a_invariants']])
+              labels, points = [], []
+              for label, xn, xd, yn, yd in point_data['points']:
                   labels.append(label)
-                  points.append(P)
+                  points.append(E(QQ(xn) / QQ(xd), QQ(yn) / QQ(yd)))
               if len(points) != 29:
                   raise AssertionError(f'expected 29 points, got {len(points)}')
 
-              RR = RealField(result['precision_bits'])
-              H = E.height_pairing_matrix(points, precision=result['precision_bits'])
-              H = Matrix(RR, H)
-              regulator = H.det()
-              eigenvalues = sorted(RR(value) for value in H.eigenvalues())
-              if not eigenvalues or eigenvalues[0] <= 0:
-                  raise AssertionError(('height matrix is not positive definite', eigenvalues[:3]))
+              RR = RealField(PRECISION)
+              H = Matrix(RR, E.height_pairing_matrix(points, precision=PRECISION))
+              eigenvalues = sorted(RR(v) for v in H.eigenvalues())
+              if eigenvalues[0] <= 0:
+                  raise AssertionError(('height matrix not positive definite', eigenvalues[:3]))
 
               reduced_points, U = E.lll_reduce(points, height_matrix=H)
               U = Matrix(ZZ, U)
@@ -91,44 +80,34 @@ jobs:
                   for j in range(29)
               )
               if not transform_ok or abs(U.det()) != 1:
-                  raise AssertionError(('invalid LLL transformation', transform_ok, U.det()))
-              H_reduced = U.transpose() * H * U
-              H_recomputed = Matrix(
-                  RR,
-                  E.height_pairing_matrix(reduced_points, precision=result['precision_bits']),
-              )
-              max_pairing_error = max(
-                  abs(H_reduced[i, j] - H_recomputed[i, j])
-                  for i in range(29)
-                  for j in range(29)
-              )
+                  raise AssertionError(('bad LLL transformation', transform_ok, U.det()))
+              Hred = U.transpose() * H * U
+              Hred_check = Matrix(RR, E.height_pairing_matrix(reduced_points, precision=PRECISION))
+              pairing_error = max(abs(Hred[i, j] - Hred_check[i, j]) for i in range(29) for j in range(29))
 
-              original_heights = [H[i, i] for i in range(29)]
-              reduced_heights = [H_reduced[i, i] for i in range(29)]
-              sorted_reduced = sorted(range(29), key=lambda i: reduced_heights[i])
-              gap_records = []
-              for position in range(1, 29):
-                  left = reduced_heights[sorted_reduced[position - 1]]
-                  right = reduced_heights[sorted_reduced[position]]
-                  gap_records.append({
-                      'after_rank': position,
-                      'left_height': serial_real(left),
-                      'right_height': serial_real(right),
-                      'ratio': serial_real(right / left),
-                      'difference': serial_real(right - left),
+              reduced_heights = [Hred[i, i] for i in range(29)]
+              order = sorted(range(29), key=lambda i: reduced_heights[i])
+              gaps = []
+              for k in range(1, 29):
+                  left = reduced_heights[order[k - 1]]
+                  right = reduced_heights[order[k]]
+                  gaps.append({
+                      'after_rank': k,
+                      'ratio': decimal(right / left),
+                      'difference': decimal(right - left),
+                      'left_height': decimal(left),
+                      'right_height': decimal(right),
                   })
 
-              # Enumerate all signed combinations of support at most four in the
-              # LLL-reduced basis.  This is a deterministic, bounded lattice probe.
-              keep = 1200
+              # Deterministic bounded enumeration in the LLL basis.
+              keep = 1500
               heap = []
               seen = set()
-              enumeration_count = 0
-              diagonal = [H_reduced[i, i] for i in range(29)]
+              counter = [0]
+              diagonal = [Hred[i, i] for i in range(29)]
 
               def consider(indices, signs):
-                  nonlocal enumeration_count
-                  enumeration_count += 1
+                  counter[0] += 1
                   coeff = [0] * 29
                   for index, sign in zip(indices, signs):
                       coeff[index] = int(sign)
@@ -136,20 +115,14 @@ jobs:
                   if key in seen:
                       return
                   seen.add(key)
-                  value = RR(0)
-                  for i, sign_i in zip(indices, signs):
-                      value += diagonal[i]
-                  for pos_i in range(len(indices)):
-                      i = indices[pos_i]
-                      si = signs[pos_i]
-                      for pos_j in range(pos_i + 1, len(indices)):
-                          j = indices[pos_j]
-                          sj = signs[pos_j]
-                          value += 2 * si * sj * H_reduced[i, j]
-                  item = (-value, key)
+                  height = sum(diagonal[i] for i in indices)
+                  for a in range(len(indices)):
+                      for b in range(a + 1, len(indices)):
+                          height += 2 * signs[a] * signs[b] * Hred[indices[a], indices[b]]
+                  item = (-height, key)
                   if len(heap) < keep:
                       heapq.heappush(heap, item)
-                  elif value < -heap[0][0]:
+                  elif height < -heap[0][0]:
                       heapq.heapreplace(heap, item)
 
               for support in range(1, 5):
@@ -157,155 +130,120 @@ jobs:
                       for signs in itertools.product((-1, 1), repeat=support):
                           consider(indices, signs)
 
-              short = sorted(
-                  [(-neg_height, coeff) for neg_height, coeff in heap],
-                  key=lambda item: (item[0], item[1]),
-              )
-
+              short = sorted([(-neg, coeff) for neg, coeff in heap], key=lambda item: (item[0], item[1]))
               short_records = []
-              coefficient_rows = []
-              for height, reduced_coeff in short:
-                  reduced_vector = vector(ZZ, reduced_coeff)
-                  original_vector = U * reduced_vector
-                  record = {
-                      'height': serial_real(height),
-                      'reduced_coefficients': [int(v) for v in reduced_vector],
-                      'original_coefficients': [int(v) for v in original_vector],
-                      'support': int(sum(1 for v in reduced_vector if v)),
-                      'max_abs_original_coefficient': int(max(abs(v) for v in original_vector)),
-                  }
-                  short_records.append(record)
-                  coefficient_rows.append(original_vector)
+              original_vectors = []
+              for height, coeff in short:
+                  rv = vector(ZZ, coeff)
+                  ov = U * rv
+                  original_vectors.append(ov)
+                  short_records.append({
+                      'height': decimal(height),
+                      'reduced_coefficients': [int(v) for v in rv],
+                      'original_coefficients': [int(v) for v in ov],
+                      'support': int(sum(v != 0 for v in rv)),
+                  })
 
-              # Greedily select the shortest independent vectors.  The first 17
-              # form a data-driven candidate for the specialized generic lattice;
-              # this is explicitly not promoted to a proof of provenance.
-              selected = []
-              selected_matrix = Matrix(ZZ, 0, 29)
-              for position, row in enumerate(coefficient_rows):
-                  trial = selected_matrix.stack(matrix(ZZ, 1, 29, list(row)))
-                  if trial.rank() > selected_matrix.rank():
-                      selected.append(position)
-                      selected_matrix = trial
-                  if len(selected) == 29:
+              # Greedy successive-minima approximation from the bounded list.
+              selected_positions = []
+              rows = Matrix(ZZ, 0, 29)
+              for position, ov in enumerate(original_vectors):
+                  trial = rows.stack(matrix(ZZ, 1, 29, list(ov)))
+                  if trial.rank() > rows.rank():
+                      rows = trial
+                      selected_positions.append(position)
+                  if len(selected_positions) == 29:
                       break
-              if len(selected) != 29:
-                  raise AssertionError(('short-vector list failed to span rank 29', len(selected)))
+              if len(selected_positions) != 29:
+                  raise AssertionError(('retained vectors span only', len(selected_positions)))
 
-              candidate17_positions = selected[:17]
-              C17 = Matrix(ZZ, 29, 17, [
-                  coefficient_rows[position][row]
-                  for row in range(29)
-                  for position in candidate17_positions
+              C = Matrix(ZZ, 29, 29, [
+                  original_vectors[position][i]
+                  for i in range(29)
+                  for position in selected_positions
               ])
-              if C17.rank() != 17:
-                  raise AssertionError('candidate rank-17 matrix lost rank')
+              C17 = C[:, :17]
               H17 = C17.transpose() * H * C17
               candidate17_points = [
                   sum((C17[i, j] * points[i] for i in range(29)), E(0))
                   for j in range(17)
               ]
-              candidate17_recomputed = Matrix(
-                  RR,
-                  E.height_pairing_matrix(candidate17_points, precision=result['precision_bits']),
-              )
-              candidate17_error = max(
-                  abs(H17[i, j] - candidate17_recomputed[i, j])
-                  for i in range(17)
-                  for j in range(17)
-              )
+              H17_check = Matrix(RR, E.height_pairing_matrix(candidate17_points, precision=PRECISION))
+              H17_error = max(abs(H17[i, j] - H17_check[i, j]) for i in range(17) for j in range(17))
 
-              # Record the 12 complementary short vectors and their orthogonal
-              # residual lengths relative to the candidate rank-17 real span.
-              Cfull = Matrix(ZZ, 29, 29, [
-                  coefficient_rows[position][row]
-                  for row in range(29)
-                  for position in selected
-              ])
-              if abs(Cfull.det()) < 1:
-                  raise AssertionError('selected short vectors do not span a full-rank sublattice')
-              Hfull = Cfull.transpose() * H * Cfull
-              A = Hfull[:17, :17]
-              B = Hfull[:17, 17:]
-              D = Hfull[17:, 17:]
+              Hselected = C.transpose() * H * C
+              A = Hselected[:17, :17]
+              B = Hselected[:17, 17:]
+              D = Hselected[17:, 17:]
               schur = D - B.transpose() * A.inverse() * B
-              residual_eigenvalues = sorted(RR(value) for value in schur.eigenvalues())
+              schur_eigenvalues = sorted(RR(v) for v in schur.eigenvalues())
 
               result.update({
                   'status': 'completed',
-                  'curve_candidate_id': curve_record['candidate_id'],
+                  'curve_candidate_id': curve['candidate_id'],
+                  'point_count': 29,
                   'point_labels': labels,
-                  'point_count': len(points),
-                  'height_pairing_matrix': [[serial_real(H[i, j]) for j in range(29)] for i in range(29)],
-                  'original_point_heights': [
-                      {'label': labels[i], 'height': serial_real(original_heights[i])}
-                      for i in sorted(range(29), key=lambda i: original_heights[i])
-                  ],
-                  'regulator_numeric': serial_real(regulator),
-                  'minimum_eigenvalue_numeric': serial_real(eigenvalues[0]),
-                  'maximum_eigenvalue_numeric': serial_real(eigenvalues[-1]),
-                  'condition_number_numeric': serial_real(eigenvalues[-1] / eigenvalues[0]),
+                  'height_pairing_matrix': [[decimal(H[i, j]) for j in range(29)] for i in range(29)],
+                  'regulator_numeric': decimal(H.det()),
+                  'minimum_eigenvalue_numeric': decimal(eigenvalues[0]),
+                  'maximum_eigenvalue_numeric': decimal(eigenvalues[-1]),
+                  'condition_number_numeric': decimal(eigenvalues[-1] / eigenvalues[0]),
                   'lll_transform_columns': [[int(U[i, j]) for j in range(29)] for i in range(29)],
                   'lll_transform_determinant': int(U.det()),
                   'lll_transform_verified_exactly': transform_ok,
-                  'lll_pairing_recomputation_max_error': serial_real(max_pairing_error),
+                  'lll_pairing_recomputation_max_error': decimal(pairing_error),
                   'lll_reduced_basis': [
                       {
                           'basis_index': i,
-                          'height': serial_real(reduced_heights[i]),
+                          'height': decimal(reduced_heights[i]),
                           'original_coefficients': [int(U[row, i]) for row in range(29)],
-                          'point': point_coords(reduced_points[i]),
                       }
-                      for i in sorted_reduced
+                      for i in order
                   ],
-                  'successive_height_gaps': gap_records,
+                  'successive_height_gaps': gaps,
                   'bounded_short_vector_probe': {
                       'support_bound': 4,
                       'coefficient_alphabet': [-1, 0, 1],
-                      'enumerated_signed_vectors_before_sign_deduplication': enumeration_count,
+                      'enumerated_signed_vectors_before_sign_deduplication': counter[0],
                       'retained_vectors': len(short_records),
                       'short_vectors': short_records,
                   },
                   'greedy_short_basis': {
-                      'selected_short_vector_positions': selected,
-                      'full_coefficient_matrix_columns': [[int(Cfull[i, j]) for j in range(29)] for i in range(29)],
-                      'determinant_absolute_value': int(abs(Cfull.det())),
+                      'selected_short_vector_positions': selected_positions,
+                      'coefficient_matrix_columns': [[int(C[i, j]) for j in range(29)] for i in range(29)],
+                      'determinant_absolute_value': int(abs(C.det())),
                   },
                   'candidate_rank17_sublattice': {
-                      'truth_status': 'experimental candidate selected by shortest-vector geometry; generic provenance unproved',
-                      'short_vector_positions': candidate17_positions,
+                      'truth_status': 'experimental candidate selected by bounded short-vector geometry; generic provenance unproved',
+                      'short_vector_positions': selected_positions[:17],
                       'coefficient_matrix_columns': [[int(C17[i, j]) for j in range(17)] for i in range(29)],
-                      'height_pairing_matrix': [[serial_real(H17[i, j]) for j in range(17)] for i in range(17)],
-                      'regulator_numeric': serial_real(H17.det()),
-                      'recomputation_max_error': serial_real(candidate17_error),
-                      'points': [point_coords(P) for P in candidate17_points],
+                      'height_pairing_matrix': [[decimal(H17[i, j]) for j in range(17)] for i in range(17)],
+                      'regulator_numeric': decimal(H17.det()),
+                      'recomputation_max_error': decimal(H17_error),
                   },
                   'complement_relative_to_candidate17': {
-                      'schur_complement_eigenvalues': [serial_real(v) for v in residual_eigenvalues],
-                      'minimum_residual_eigenvalue': serial_real(residual_eigenvalues[0]),
-                      'determinant_numeric': serial_real(schur.det()),
+                      'schur_complement_eigenvalues': [decimal(v) for v in schur_eigenvalues],
+                      'minimum_residual_eigenvalue': decimal(schur_eigenvalues[0]),
+                      'determinant_numeric': decimal(schur.det()),
                   },
                   'elapsed_seconds': time.time() - started,
               })
           except Exception as exc:
-              result.update({
-                  'status': 'error',
-                  'error': repr(exc),
-                  'traceback': traceback.format_exc(),
-              })
+              result.update({'status': 'error', 'error': repr(exc), 'traceback': traceback.format_exc()})
 
           raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
           result['record_sha256'] = hashlib.sha256(raw).hexdigest()
           (OUT / 'rank29-height-lattice.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
-          (OUT / 'stdout-summary.json').write_text(json.dumps({
+          summary = {
               'status': result.get('status'),
               'record_sha256': result.get('record_sha256'),
               'elapsed_seconds': result.get('elapsed_seconds'),
               'minimum_eigenvalue_numeric': result.get('minimum_eigenvalue_numeric'),
               'candidate17_regulator_numeric': (result.get('candidate_rank17_sublattice') or {}).get('regulator_numeric'),
               'error': result.get('error'),
-          }, indent=2, sort_keys=True) + '\n')
-          print((OUT / 'stdout-summary.json').read_text())
+          }
+          (OUT / 'stdout-summary.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(summary, indent=2, sort_keys=True))
           if result.get('status') != 'completed':
               raise SystemExit(1)
           PY
