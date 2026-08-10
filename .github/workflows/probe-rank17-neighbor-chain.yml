@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "research/replay_rank17_neighbor_chain.py"
+      - "research/classify_rank17_neighbor_chain.py"
       - ".github/workflows/probe-rank17-neighbor-chain.yml"
       - ".github/workflows/probe-rank29-height-lattice.yml"
 
@@ -26,8 +27,41 @@ jobs:
           set -euo pipefail
           sage -python research/replay_rank17_neighbor_chain.py \
             --output /tmp/rank17-neighbor-chain
-          sha256sum /tmp/rank17-neighbor-chain/* > /tmp/rank17-neighbor-chain/SHA256SUMS
+
+      - name: Classify every root system without overpromoting Kodaira data
+        shell: bash
+        run: |
+          set -euo pipefail
+          sage -python research/classify_rank17_neighbor_chain.py \
+            /tmp/rank17-neighbor-chain/exact-neighbor-chain.json \
+            --output /tmp/rank17-neighbor-chain/ade-classification.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          record = json.loads(
+              Path("/tmp/rank17-neighbor-chain/ade-classification.json").read_text()
+          )
+          seed = record["seed_fibration_data"]
+          assert seed["essential_root_system"] == "A11 + A3 + A2"
+          assert seed["generator_height"] == "79/12"
+          assert seed["kodaira_configuration_possibilities"] == [
+              ["I12", "I4", "I3"],
+              ["I12", "I4", "IV"],
+          ]
+          assert record["terminal_data"]["root_system"] == "0"
+          assert record["terminal_data"]["mordell_weil_rank"] == 17
+          print("rank-17 chain classification preserves the I3-or-IV ambiguity")
+          PY
+
+      - name: Hash all replay and classification evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum /tmp/rank17-neighbor-chain/* \
+            > /tmp/rank17-neighbor-chain/SHA256SUMS
           sha256sum -c /tmp/rank17-neighbor-chain/SHA256SUMS
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
