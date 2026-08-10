@@ -1,10 +1,9 @@
 #!/usr/bin/env sage-python
 """Replay and serialize the deterministic neighbor chain to the X(6,79) lattice.
 
-This utility deliberately derives the discovery program from the exact workflow
-that produced the candidate, patches only reproducibility/output concerns, and
-requires the previously frozen target Gram-matrix hash.  It does not assume the
-mathematical conclusion merely because the discovery run succeeded.
+This utility derives the replay from the exact discovery workflow, patches only
+reproducibility and output concerns, and requires the frozen target Gram hash.
+It therefore fails closed if the discovery program changes structurally.
 """
 
 from __future__ import annotations
@@ -12,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import textwrap
@@ -51,37 +51,46 @@ def patch_script(script: str, output: Path) -> str:
         raise RuntimeError("the discovery output assignment changed unexpectedly")
     script = script.replace(old_output, new_output, 1)
 
-    result_needle = """              result.update({
-                  'status': 'target_found' if verified_targets else 'bounded_search_completed',
-"""
-    result_replacement = """              state_by_hash = {state['hash']: state for state in archive}
-              target_neighbor_chains = []
-              for target_state in targets:
-                  chain = []
-                  cursor = target_state
-                  while cursor is not None:
-                      chain.append(public_record(cursor, index_by_hash))
-                      cursor = state_by_hash.get(cursor['parent']) if cursor['parent'] is not None else None
-                  chain.reverse()
-                  target_neighbor_chains.append(chain)
-
-              result.update({
-                  'status': 'target_found' if verified_targets else 'bounded_search_completed',
-"""
-    if result_needle not in script:
+    result_pattern = re.compile(
+        r"(?m)^(?P<indent>[ \t]*)result\.update\(\{\n"
+        r"(?P=indent)    'status': 'target_found' if verified_targets else 'bounded_search_completed',\n"
+    )
+    match = result_pattern.search(script)
+    if match is None:
         raise RuntimeError("could not locate the final result construction")
-    script = script.replace(result_needle, result_replacement, 1)
+    indent = match.group("indent")
+    insertion_lines = [
+        "state_by_hash = {state['hash']: state for state in archive}",
+        "target_neighbor_chains = []",
+        "for target_state in targets:",
+        "    chain = []",
+        "    cursor = target_state",
+        "    while cursor is not None:",
+        "        chain.append(public_record(cursor, index_by_hash))",
+        "        cursor = state_by_hash.get(cursor['parent']) if cursor['parent'] is not None else None",
+        "    chain.reverse()",
+        "    target_neighbor_chains.append(chain)",
+        "",
+        "result.update({",
+        "    'status': 'target_found' if verified_targets else 'bounded_search_completed',",
+    ]
+    replacement = "\n".join(indent + line if line else "" for line in insertion_lines) + "\n"
+    script = result_pattern.sub(lambda _: replacement, script, count=1)
 
-    field_needle = """                  'verified_targets': verified_targets,
-                  'target_found': bool(verified_targets),
-"""
-    field_replacement = """                  'verified_targets': verified_targets,
-                  'target_neighbor_chains': target_neighbor_chains,
-                  'target_found': bool(verified_targets),
-"""
-    if field_needle not in script:
+    field_pattern = re.compile(
+        r"(?m)^(?P<indent>[ \t]*)'verified_targets': verified_targets,\n"
+        r"(?P=indent)'target_found': bool\(verified_targets\),\n"
+    )
+    field_match = field_pattern.search(script)
+    if field_match is None:
         raise RuntimeError("could not add neighbor chains to the discovery record")
-    script = script.replace(field_needle, field_replacement, 1)
+    field_indent = field_match.group("indent")
+    field_replacement = (
+        f"{field_indent}'verified_targets': verified_targets,\n"
+        f"{field_indent}'target_neighbor_chains': target_neighbor_chains,\n"
+        f"{field_indent}'target_found': bool(verified_targets),\n"
+    )
+    script = field_pattern.sub(lambda _: field_replacement, script, count=1)
     return script
 
 
