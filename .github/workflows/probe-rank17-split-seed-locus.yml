@@ -1,0 +1,64 @@
+name: probe-rank17-split-seed-locus
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-split-seed-locus.yml"
+      - "research/rank17_semistable_split_surface_search.c"
+      - "research/rank17_semistable_fiber_search.c"
+
+permissions:
+  contents: read
+
+jobs:
+  filter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [5, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile the exact split-fibre enumerator
+        run: |
+          set -euo pipefail
+          cc -O3 -std=c11 -Wall -Wextra -pedantic \
+            research/rank17_semistable_split_surface_search.c \
+            -o /tmp/rank17_split_search
+      - name: Enumerate and validate the split seed locus
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-split-seed-${{ matrix.prime }}
+          /tmp/rank17_split_search ${{ matrix.prime }} \
+            > /tmp/rank17-split-seed-${{ matrix.prime }}/result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p = ${{ matrix.prime }}
+          path = Path(f"/tmp/rank17-split-seed-{p}/result.json")
+          data = json.loads(path.read_text())
+          assert data["prime"] == p
+          assert data["truth_status"] == "VERIFIED COMPUTATION"
+          assert data["split_smooth_squarefree_sign_parameter_tuples"] >= data["unique_split_curves"]
+          for surface in data["surfaces"]:
+              assert surface["formal_jacobian_rank"] == 6
+              assert surface["split_tangent_square_root_at_0"] not in (0, None)
+              assert surface["split_tangent_square_root_at_1"] not in (0, None)
+          print(json.dumps({
+              "prime": p,
+              "split_tuples": data["split_smooth_squarefree_sign_parameter_tuples"],
+              "unique_split_curves": data["unique_split_curves"],
+          }, sort_keys=True))
+          PY
+          sha256sum /tmp/rank17-split-seed-${{ matrix.prime }}/result.json \
+            > /tmp/rank17-split-seed-${{ matrix.prime }}/SHA256SUMS
+          sha256sum -c /tmp/rank17-split-seed-${{ matrix.prime }}/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-split-seed-${{ matrix.prime }}
+          path: /tmp/rank17-split-seed-${{ matrix.prime }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
