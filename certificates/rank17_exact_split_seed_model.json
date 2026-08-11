@@ -1,0 +1,40 @@
+{
+  "certificate_id": "rank17_exact_split_semistable_seed_model",
+  "certificate_sha256": "88133a113c8cdd04109c94f606323151610bb5f35bd07bbc303d4650e146a0c6",
+  "cross_prime_reconstruction": {
+    "common_exact_reconstruction": [32, 66, 768, -12, 0, 0],
+    "fixed_parameters": {"e0": 1, "e1": 1, "p0": -3, "q0": -12},
+    "fixed_variable_jacobian_determinants": {"5": 2, "7": 6},
+    "mod_5_seed": [2, 1, 3, 3, 0, 0],
+    "mod_7_seed": [4, 3, 5, 2, 0, 0],
+    "variables": ["p1", "p2", "p3", "q1", "q2", "s"]
+  },
+  "discriminant_numerator": {
+    "coprime_to_c4": true,
+    "definition": "c4(t)^3-c6(t)^2",
+    "factorization": "139968*t^4*(t-1)^3*(t+3)*(t^4-6*t^2+56*t-3)",
+    "residual_quintic_coefficients_ascending": [-1259712, 23094720, 5318784, -839808, 419904, 139968],
+    "residual_squarefree": true
+  },
+  "fiber_data": {
+    "additional_fibers": "five simple I1 fibers over the roots of (t+3)*(t^4-6*t^2+56*t-3)",
+    "t=0": {"c4_value": 9, "order": 4, "tangent_roots": [-3, 3], "tangent_square_coefficient": 9, "type": "split I4"},
+    "t=1": {"c4_value": 144, "order": 3, "tangent_roots": [-6, 6], "tangent_square_coefficient": 36, "type": "split I3"},
+    "t=infinity": {"leading_c4": 1, "order": 12, "type": "I12 over algebraic closure; splitness not asserted"}
+  },
+  "implementation": {"language": "Python standard library", "script": "research/rank17_exact_split_seed_model.py"},
+  "limitations": [
+    "The model satisfies the required split I4/I3 local geometry but no rational section of height 79/12 is certified here.",
+    "It is not yet identified with the X(6,79) rank-one seed or transported through the frozen neighbor chain.",
+    "This certificate does not improve the global rank-29 lower bound."
+  ],
+  "normalized_invariants": {
+    "c4_coefficients_ascending": [9, -192, 628, -384, 30, 64, -12, 0, 1],
+    "c6_coefficients_ascending": [-27, 864, -7434, 15488, -14841, 2880, 2316, -1152, 99, 96, -18, 0, 1]
+  },
+  "parameters": {"e0": 1, "e1": 1, "p0": -3, "p1": 32, "p2": 66, "p3": 768, "q0": -12, "q1": -12, "q2": 0, "s": 0},
+  "schema_version": 1,
+  "short_weierstrass_equation": "y^2=x^3-3*c4(t)*x-2*c6(t)",
+  "six_hermite_pade_equations": ["0", "0", "0", "0", "0", "0"],
+  "truth_status": "CERTIFIED exact algebraic model; Mordell-Weil rank-one section not yet constructed"
+}
