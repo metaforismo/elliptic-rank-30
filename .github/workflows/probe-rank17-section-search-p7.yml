@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/probe-rank17-section-search-p7.yml"
       - "research/rank17_split_section_search_p5.c"
+      - "research/rank17_split_section_search_all_charts.c"
 
 permissions:
   contents: read
@@ -20,15 +21,16 @@ jobs:
         surface: [0, 1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v4
-      - name: Generate and compile the F7 surface shard
+      - name: Generate and compile the all-chart F7 surface shard
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          source = Path('research/rank17_split_section_search_p5.c').read_text()
-          start = source.index('static const Surface surfaces[5] = {')
-          end = source.index('\n};', start) + len('\n};')
+
+          base = Path('research/rank17_split_section_search_p5.c').read_text()
+          start = base.index('static const Surface surfaces[5] = {')
+          end = base.index('\n};', start) + len('\n};')
           surfaces = '''static const Surface surfaces[9] = {
               {{1,0,1,1,1,5,2,3,1},{1,0,5,5,0,5,4,1,2,2,2,1,1},{1,0,4,4,1,6,6,3},1,1},
               {{1,5,5,3,0,4,3,1,1},{1,4,2,1,0,3,4,6,6,6,4,5,1},{1,6,2,0,3,0,6,1},1,-1},
@@ -40,21 +42,26 @@ jobs:
               {{2,6,6,5,2,5,2,0,1},{1,1,0,4,6,1,6,1,1,4,3,0,1},{3,1,2,6,1,1,0,0},-1,1},
               {{2,4,5,1,2,1,2,0,1},{1,3,0,4,6,3,6,3,1,5,3,0,1},{3,3,4,2,2,2,0,0},-1,1}
           };'''
-          source = source[:start] + surfaces + source[end:]
-          source = source.replace('#define P 5', '#define P 7', 1)
-          source = source.replace('int main(void){', 'int main(int argc, char **argv){ int only_surface = argc == 2 ? atoi(argv[1]) : -1; if (only_surface < 0 || only_surface >= 9) return 2;', 1)
-          source = source.replace('for(int si=0;si<5;++si)', 'for(int si=only_surface;si<=only_surface;++si)', 1)
-          source = source.replace('\\"prime\\": 5', '\\"prime\\": 7', 1)
-          Path('/tmp/rank17_section_search_p7.c').write_text(source)
+          base = base[:start] + surfaces + base[end:]
+          base = base.replace('#define P 5', '#define P 7', 1)
+          Path('/tmp/rank17_split_section_search_p7_base.c').write_text(base)
+
+          all_charts = Path('research/rank17_split_section_search_all_charts.c').read_text()
+          all_charts = all_charts.replace(
+              '#include "rank17_split_section_search_p5.c"',
+              '#include "/tmp/rank17_split_section_search_p7_base.c"',
+              1,
+          )
+          Path('/tmp/rank17_section_search_p7_all_charts.c').write_text(all_charts)
           PY
           cc -O3 -std=c11 -Wall -Wextra -pedantic \
-            /tmp/rank17_section_search_p7.c \
+            /tmp/rank17_section_search_p7_all_charts.c \
             -o /tmp/rank17_section_search_p7
-      - name: Exhaustively search one split surface
+      - name: Exhaustively search one split surface in all denominator charts
         shell: bash
         run: |
           set -euo pipefail
-          root=/tmp/rank17-section-search-p7-${{ matrix.surface }}
+          root=/tmp/rank17-section-search-p7-all-charts-${{ matrix.surface }}
           mkdir -p "$root"
           /tmp/rank17_section_search_p7 ${{ matrix.surface }} \
             > "$root/result.json"
@@ -62,17 +69,19 @@ jobs:
           import json
           from pathlib import Path
           surface = ${{ matrix.surface }}
-          path = Path(f'/tmp/rank17-section-search-p7-{surface}/result.json')
+          path = Path(f'/tmp/rank17-section-search-p7-all-charts-{surface}/result.json')
           data = json.loads(path.read_text())
           assert data['prime'] == 7
           assert data['truth_status'] == 'VERIFIED COMPUTATION'
+          assert data['surface_range'] == [surface, surface]
+          assert [item['affine_degree_D'] for item in data['denominator_charts']] == [0, 1, 2]
+          assert [item['zero_intersection_multiplicity_at_infinity'] for item in data['denominator_charts']] == [2, 1, 0]
           assert len(data['sections']) % 2 == 0
           assert data['section_count_up_to_y_sign'] == len(data['sections']) // 2
           assert all(item['surface_index'] == surface for item in data['sections'])
           print(json.dumps({
               'surface': surface,
-              'tested': data['tested_reduced_ansatzes'],
-              'square_rhs': data['square_rhs_ansatzes'],
+              'charts': data['denominator_charts'],
               'sections_up_to_sign': data['section_count_up_to_y_sign'],
           }, sort_keys=True))
           PY
@@ -80,8 +89,8 @@ jobs:
           cd "$root" && sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
-          name: rank17-section-search-p7-${{ matrix.surface }}
-          path: /tmp/rank17-section-search-p7-${{ matrix.surface }}
+          name: rank17-section-search-p7-all-charts-${{ matrix.surface }}
+          path: /tmp/rank17-section-search-p7-all-charts-${{ matrix.surface }}
           if-no-files-found: error
           compression-level: 0
           retention-days: 7
