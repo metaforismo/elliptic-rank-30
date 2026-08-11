@@ -1,0 +1,54 @@
+name: probe-rank17-square-section-candidates-p5
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-square-section-candidates-p5.yml"
+      - "research/rank17_square_section_candidates_p5.c"
+      - "research/rank17_split_section_search_p5.c"
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile and extract every square RHS candidate
+        run: |
+          set -euo pipefail
+          cc -O3 -std=c11 -Wall -Wextra -pedantic \
+            research/rank17_square_section_candidates_p5.c \
+            -o /tmp/rank17_square_candidates_p5
+          mkdir -p /tmp/rank17-square-candidates-p5
+          /tmp/rank17_square_candidates_p5 \
+            > /tmp/rank17-square-candidates-p5/result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('/tmp/rank17-square-candidates-p5/result.json')
+          data = json.loads(path.read_text())
+          assert data['prime'] == 5
+          assert data['truth_status'] == 'VERIFIED COMPUTATION'
+          assert data['square_candidate_count_including_y_sign'] == len(data['candidates'])
+          assert all(not item['required_component_match'] for item in data['candidates'])
+          print(json.dumps({
+              'candidate_count_including_sign': len(data['candidates']),
+              'surface_indices': sorted({item['surface_index'] for item in data['candidates']}),
+              'denominator_degrees': sorted({item['affine_degree_D'] for item in data['candidates']}),
+          }, sort_keys=True))
+          PY
+          sha256sum /tmp/rank17-square-candidates-p5/result.json \
+            > /tmp/rank17-square-candidates-p5/SHA256SUMS
+          cd /tmp/rank17-square-candidates-p5
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-square-section-candidates-p5
+          path: /tmp/rank17-square-candidates-p5
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
