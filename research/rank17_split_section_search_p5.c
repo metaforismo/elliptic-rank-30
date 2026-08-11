@@ -104,19 +104,36 @@ static void curve_rhs(const Surface *S,const int D[3],const int X[9],int R[25]){
 
 static int section_local_checks(const Surface *S,const int D[3],const int X[9],const int Y[13],int *sign0,int *sign1){
     int D2[5]={0};conv(D,2,D,2,D2);
-    int xs0=modp(-S->e0*S->source_parameters[0]);
-    int xs1=modp(-S->e1*S->source_parameters[4]);
+    int p0=S->source_parameters[0],p1=S->source_parameters[1];
+    int q0=S->source_parameters[4],q1=S->source_parameters[5];
+    int xs0=modp(-S->e0*p0);
+    int xs1=modp(-S->e1*q0);
     if(X[0]!=mulp(xs0,D2[0]))return 0;
     if(eval1(X,8)!=mulp(xs1,eval1(D2,4)))return 0;
     if(Y[0]!=0 || eval1(Y,12)!=0)return 0;
-    int u0=subp(X[1],mulp(xs0,D2[1]));
-    int u1=subp(deriv1(X,8),mulp(xs1,deriv1(D2,4)));
+
+    /* The ADE coordinates are centered at the moving repeated-root jets
+     * x=-e0*(p0+p1*t+...) and x=-e1*(q0+q1*(t-1)+...), not at the
+     * constant special-fibre nodes. */
+    int u0=addp(
+        X[1],
+        mulp(S->e0,addp(mulp(p0,D2[1]),mulp(p1,D2[0])))
+    );
+    int D2_at_1=eval1(D2,4);
+    int D2_derivative_at_1=deriv1(D2,4);
+    int u1=addp(
+        deriv1(X,8),
+        mulp(
+            S->e1,
+            addp(mulp(q0,D2_derivative_at_1),mulp(q1,D2_at_1))
+        )
+    );
     if(!u0 || !u1)return 0;
     int d0=D[0],d1=eval1(D,2);if(!d0||!d1)return 0;
     int ratio0=mulp(Y[1],invp(mulp(d0,u0)));
     int ratio1=mulp(deriv1(Y,12),invp(mulp(d1,u1)));
-    int tangent0=modp(-3*S->e0*S->source_parameters[0]);
-    int tangent1=modp(-3*S->e1*S->source_parameters[4]);
+    int tangent0=modp(-3*S->e0*p0);
+    int tangent1=modp(-3*S->e1*q0);
     if(mulp(ratio0,ratio0)!=tangent0 || mulp(ratio1,ratio1)!=tangent1)return 0;
     *sign0=ratio0;*sign1=ratio1;return 1;
 }
