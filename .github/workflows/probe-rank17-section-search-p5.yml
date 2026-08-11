@@ -1,0 +1,62 @@
+name: probe-rank17-section-search-p5
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-section-search-p5.yml"
+      - "research/rank17_split_section_search_p5.c"
+
+permissions:
+  contents: read
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile the exact finite-field section search
+        run: |
+          set -euo pipefail
+          cc -O3 -std=c11 -Wall -Wextra -pedantic \
+            research/rank17_split_section_search_p5.c \
+            -o /tmp/rank17_section_search_p5
+      - name: Search and validate all reported sections
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-section-search-p5
+          /tmp/rank17_section_search_p5 \
+            > /tmp/rank17-section-search-p5/result.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('/tmp/rank17-section-search-p5/result.json')
+          data = json.loads(path.read_text())
+          assert data['prime'] == 5
+          assert data['truth_status'] == 'VERIFIED COMPUTATION'
+          assert len(data['sections']) % 2 == 0
+          assert data['section_count_up_to_y_sign'] == len(data['sections']) // 2
+          for item in data['sections']:
+              assert len(item['D']) == 3 and item['D'][-1] == 1
+              assert len(item['X']) == 9
+              assert len(item['Y']) == 13
+              assert item['tangent_ratio_0'] not in (0, None)
+              assert item['tangent_ratio_1'] not in (0, None)
+          print(json.dumps({
+              'tested': data['tested_reduced_ansatzes'],
+              'square_rhs': data['square_rhs_ansatzes'],
+              'sections_up_to_sign': data['section_count_up_to_y_sign'],
+          }, sort_keys=True))
+          PY
+          sha256sum /tmp/rank17-section-search-p5/result.json \
+            > /tmp/rank17-section-search-p5/SHA256SUMS
+          cd /tmp/rank17-section-search-p5
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-section-search-p5
+          path: /tmp/rank17-section-search-p5
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
