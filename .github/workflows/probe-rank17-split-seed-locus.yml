@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/probe-rank17-split-seed-locus.yml"
       - "research/rank17_semistable_split_surface_search.c"
+      - "research/rank17_split_p0q0_support.c"
       - "research/rank17_semistable_fiber_search.c"
 
 permissions:
@@ -21,26 +22,35 @@ jobs:
         prime: [5, 7]
     steps:
       - uses: actions/checkout@v4
-      - name: Compile the exact split-fibre enumerator
+      - name: Compile exact split-fibre enumerators
         run: |
           set -euo pipefail
           cc -O3 -std=c11 -Wall -Wextra -pedantic \
             research/rank17_semistable_split_surface_search.c \
             -o /tmp/rank17_split_search
+          cc -O3 -std=c11 -Wall -Wextra -pedantic \
+            research/rank17_split_p0q0_support.c \
+            -o /tmp/rank17_split_support
       - name: Enumerate and validate the split seed locus
         run: |
           set -euo pipefail
           mkdir -p /tmp/rank17-split-seed-${{ matrix.prime }}
           /tmp/rank17_split_search ${{ matrix.prime }} \
             > /tmp/rank17-split-seed-${{ matrix.prime }}/result.json
+          /tmp/rank17_split_support ${{ matrix.prime }} \
+            > /tmp/rank17-split-seed-${{ matrix.prime }}/p0q0-support.json
           python3 - <<'PY'
           import json
           from pathlib import Path
           p = ${{ matrix.prime }}
-          path = Path(f"/tmp/rank17-split-seed-{p}/result.json")
-          data = json.loads(path.read_text())
-          assert data["prime"] == p
+          root = Path(f"/tmp/rank17-split-seed-{p}")
+          data = json.loads((root / "result.json").read_text())
+          support = json.loads((root / "p0q0-support.json").read_text())
+          assert data["prime"] == p == support["prime"]
           assert data["truth_status"] == "VERIFIED COMPUTATION"
+          assert support["truth_status"] == "VERIFIED COMPUTATION"
+          assert data["split_smooth_squarefree_sign_parameter_tuples"] == support["total_split_smooth_squarefree_tuples"]
+          assert sum(entry["count"] for entry in support["support"]) == support["total_split_smooth_squarefree_tuples"]
           assert data["split_smooth_squarefree_sign_parameter_tuples"] >= data["unique_split_curves"]
           for surface in data["surfaces"]:
               assert surface["formal_jacobian_rank"] == 6
@@ -50,11 +60,15 @@ jobs:
               "prime": p,
               "split_tuples": data["split_smooth_squarefree_sign_parameter_tuples"],
               "unique_split_curves": data["unique_split_curves"],
+              "support_cells": len(support["support"]),
           }, sort_keys=True))
           PY
-          sha256sum /tmp/rank17-split-seed-${{ matrix.prime }}/result.json \
+          find /tmp/rank17-split-seed-${{ matrix.prime }} -type f \
+            ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum \
             > /tmp/rank17-split-seed-${{ matrix.prime }}/SHA256SUMS
-          sha256sum -c /tmp/rank17-split-seed-${{ matrix.prime }}/SHA256SUMS
+          cd /tmp/rank17-split-seed-${{ matrix.prime }}
+          sha256sum -c SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: rank17-split-seed-${{ matrix.prime }}
