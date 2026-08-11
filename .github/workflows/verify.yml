@@ -74,5 +74,10 @@ jobs:
           python3 research/rank17_seed_glue_certificate.py \
             --compare certificates/rank17_seed_glue.json
 
+      - name: Recompute the exact split semistable seed-model certificate
+        run: |
+          python3 research/rank17_exact_split_seed_model.py \
+            --compare certificates/rank17_exact_split_seed_model.json
+
       - name: Run exact unit tests
         run: python3 -m unittest discover -s tests -v
