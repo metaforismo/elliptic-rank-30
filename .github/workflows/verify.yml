@@ -79,5 +79,10 @@ jobs:
           python3 research/rank17_exact_split_seed_model.py \
             --compare certificates/rank17_exact_split_seed_model.json
 
+      - name: Recompute the local F7 rank-17 section-incidence certificate
+        run: |
+          python3 research/rank17_section_local_branch_f7.py \
+            --compare certificates/rank17_section_local_branch_f7.json
+
       - name: Run exact unit tests
         run: python3 -m unittest discover -s tests -v
