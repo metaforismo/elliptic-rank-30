@@ -1,0 +1,733 @@
+{
+  "certificate_id": "rank17_section_local_branch_f7",
+  "certificate_sha256": "7680e67eb3fc9255a1ec17fdc229e59df706ff691add452bf3be14a1a7579520",
+  "formal_elimination": {
+    "factored_tangent_equations": {
+      "row_15_degree_3": "a^3+a^2*(u+v)-2*a*(u+v)^2-(u+v)^3",
+      "row_15_restricted_to_v=-u": "a^3",
+      "row_6_degree_4": "4*(u+v)^4"
+    },
+    "leading_terms": {
+      "15": {
+        "coefficients": [
+          {
+            "coefficient": 6,
+            "monomial_a_u_v": [
+              0,
+              0,
+              3
+            ]
+          },
+          {
+            "coefficient": 4,
+            "monomial_a_u_v": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "coefficient": 4,
+            "monomial_a_u_v": [
+              0,
+              2,
+              1
+            ]
+          },
+          {
+            "coefficient": 6,
+            "monomial_a_u_v": [
+              0,
+              3,
+              0
+            ]
+          },
+          {
+            "coefficient": 5,
+            "monomial_a_u_v": [
+              1,
+              0,
+              2
+            ]
+          },
+          {
+            "coefficient": 3,
+            "monomial_a_u_v": [
+              1,
+              1,
+              1
+            ]
+          },
+          {
+            "coefficient": 5,
+            "monomial_a_u_v": [
+              1,
+              2,
+              0
+            ]
+          },
+          {
+            "coefficient": 1,
+            "monomial_a_u_v": [
+              2,
+              0,
+              1
+            ]
+          },
+          {
+            "coefficient": 1,
+            "monomial_a_u_v": [
+              2,
+              1,
+              0
+            ]
+          },
+          {
+            "coefficient": 1,
+            "monomial_a_u_v": [
+              3,
+              0,
+              0
+            ]
+          }
+        ],
+        "degree": 3
+      },
+      "16": {
+        "coefficients": [],
+        "degree": null
+      },
+      "17": {
+        "coefficients": [],
+        "degree": null
+      },
+      "18": {
+        "coefficients": [],
+        "degree": null
+      },
+      "6": {
+        "coefficients": [
+          {
+            "coefficient": 4,
+            "monomial_a_u_v": [
+              0,
+              0,
+              4
+            ]
+          },
+          {
+            "coefficient": 2,
+            "monomial_a_u_v": [
+              0,
+              1,
+              3
+            ]
+          },
+          {
+            "coefficient": 3,
+            "monomial_a_u_v": [
+              0,
+              2,
+              2
+            ]
+          },
+          {
+            "coefficient": 2,
+            "monomial_a_u_v": [
+              0,
+              3,
+              1
+            ]
+          },
+          {
+            "coefficient": 4,
+            "monomial_a_u_v": [
+              0,
+              4,
+              0
+            ]
+          }
+        ],
+        "degree": 4
+      }
+    },
+    "pivot_equations_solved": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "reduced_tangent_direction": {
+      "a": 0,
+      "interpretation": "The reduced tangent cone is the line a=0, u+v=0.",
+      "u": 1,
+      "v": -1
+    },
+    "residual_equations": [
+      6,
+      15,
+      16,
+      17,
+      18
+    ],
+    "truncation_total_degree": 4
+  },
+  "implementation": {
+    "language": "Python standard library",
+    "script": "research/rank17_section_local_branch_f7.py"
+  },
+  "jacobian": {
+    "free_columns": [
+      14,
+      15,
+      16
+    ],
+    "free_coordinates": [
+      "a=y1-1",
+      "u=y2-4",
+      "v=y3-2"
+    ],
+    "independent_pivot_rows": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "matrix": [
+      [
+        0,
+        3,
+        6,
+        6,
+        5,
+        3,
+        3,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        5,
+        0,
+        2,
+        3,
+        1,
+        4,
+        2,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        5,
+        3,
+        4,
+        4,
+        4,
+        5,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        1,
+        4,
+        0,
+        4,
+        5,
+        1,
+        1,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        2,
+        6,
+        5,
+        6,
+        6,
+        6,
+        5,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        3,
+        5,
+        6,
+        3,
+        3,
+        6,
+        0,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        5,
+        6,
+        5,
+        5,
+        3,
+        6,
+        6,
+        4,
+        5,
+        0,
+        0,
+        0,
+        0,
+        2,
+        0,
+        0,
+        0
+      ],
+      [
+        2,
+        5,
+        4,
+        6,
+        2,
+        1,
+        4,
+        4,
+        3,
+        5,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        4,
+        1,
+        1,
+        1,
+        3,
+        2,
+        3,
+        3,
+        5,
+        0,
+        0,
+        4,
+        1,
+        2,
+        0
+      ],
+      [
+        3,
+        0,
+        3,
+        0,
+        0,
+        1,
+        4,
+        5,
+        2,
+        3,
+        3,
+        5,
+        0,
+        0,
+        4,
+        1,
+        2
+      ],
+      [
+        4,
+        3,
+        0,
+        3,
+        3,
+        4,
+        4,
+        0,
+        1,
+        2,
+        3,
+        3,
+        5,
+        0,
+        0,
+        4,
+        1
+      ],
+      [
+        2,
+        4,
+        6,
+        2,
+        1,
+        2,
+        0,
+        1,
+        0,
+        1,
+        2,
+        3,
+        3,
+        0,
+        0,
+        0,
+        4
+      ],
+      [
+        0,
+        2,
+        6,
+        5,
+        0,
+        1,
+        2,
+        3,
+        0,
+        0,
+        1,
+        2,
+        3,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        1,
+        2,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    ],
+    "pivot_columns": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "pivot_variables": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "q0",
+      "q1",
+      "q2",
+      "s",
+      "x0",
+      "x1",
+      "x2",
+      "x3",
+      "x4",
+      "y0"
+    ],
+    "rank_over_F7": 14,
+    "shape": [
+      19,
+      17
+    ]
+  },
+  "limitations": [
+    "A reduced tangent line and a unique quadratic correction do not by themselves prove an infinite formal branch.",
+    "The order-12 obstruction shows that higher corrections or a deflated local system are required.",
+    "No p-adic point, rational section, rank-17 fibration, or rank-30 curve is certified by this artifact."
+  ],
+  "modular_incidence_point": {
+    "all_19_equations_vanish": true,
+    "prime": 7,
+    "section": {
+      "D": [
+        1,
+        0,
+        0
+      ],
+      "X_coefficients_ascending": [
+        5,
+        6,
+        2,
+        0,
+        6,
+        0,
+        0,
+        0,
+        0
+      ],
+      "Y_coefficients_ascending": [
+        0,
+        1,
+        4,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "required_component_tangent_ratios": [
+        1,
+        1
+      ]
+    },
+    "surface_parameters": {
+      "p0": 2,
+      "p1": 2,
+      "p2": 1,
+      "p3": 0,
+      "q0": 2,
+      "q1": 2,
+      "q2": 2,
+      "s": 0
+    },
+    "values": [
+      2,
+      2,
+      1,
+      0,
+      2,
+      2,
+      2,
+      0,
+      5,
+      6,
+      2,
+      0,
+      6,
+      0,
+      1,
+      4,
+      2
+    ],
+    "variables": [
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "q0",
+      "q1",
+      "q2",
+      "s",
+      "x0",
+      "x1",
+      "x2",
+      "x3",
+      "x4",
+      "y0",
+      "y1",
+      "y2",
+      "y3"
+    ]
+  },
+  "quadratic_arc": {
+    "all_residuals_zero_through_order": 10,
+    "first_obstruction_without_higher_corrections": {
+      "coefficient_mod_7": 6,
+      "residual_row": 15,
+      "tau_degree": 12
+    },
+    "free_coordinate_expansions": {
+      "y1": "1+2*tau^2",
+      "y2": "4+tau",
+      "y3": "2-tau-2*tau^2 (mod 7)"
+    },
+    "parameter": "tau",
+    "quadratic_correction_candidates_tested": 49,
+    "true_univariate_reelimination_order": 12,
+    "unique_solution_A2_V2": [
+      2,
+      5
+    ]
+  },
+  "schema_version": 1,
+  "truth_status": "CERTIFIED local F7 tangent-cone and second-order arc; full p-adic and characteristic-zero lift unresolved"
+}
