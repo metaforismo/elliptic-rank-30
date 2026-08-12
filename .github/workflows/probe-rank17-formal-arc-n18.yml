@@ -1,0 +1,188 @@
+name: probe-rank17-formal-arc-n18
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-formal-arc-n18.yml"
+      - "research/rank17_formal_arc_probe.py"
+      - "research/rank17_section_local_branch_f7.py"
+      - "research/data/rank17_formal_arc_state_n17.json"
+
+permissions:
+  contents: read
+
+jobs:
+  row15:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        w: [0, 1, 2, 3, 4, 5, 6]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evaluate the row-15 coefficient with a18=0
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-formal-arc-n18-row15-w${{ matrix.w }}
+          mkdir -p "$root"
+          python3 research/rank17_formal_arc_probe.py \
+            --state research/data/rank17_formal_arc_state_n17.json \
+            --degree 18 --a 0 --w ${{ matrix.w }} --order 54 \
+            --output "$root/result-w${{ matrix.w }}.json"
+          sha256sum "$root"/*.json > "$root/SHA256SUMS"
+          cd "$root" && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-formal-arc-n18-row15-w${{ matrix.w }}
+          path: /tmp/rank17-formal-arc-n18-row15-w${{ matrix.w }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  select-row15:
+    needs: row15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      c: ${{ steps.select.outputs.c }}
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank17-formal-arc-n18-row15-*
+          path: /tmp/rank17-formal-arc-n18-row15
+          merge-multiple: true
+      - id: select
+        name: Determine the affine row-15 line
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-formal-arc-n18-row15')
+          records = [json.loads(path.read_text()) for path in sorted(root.glob('result-*.json'))]
+          assert len(records) == 7
+
+          def nz(record, row, order):
+              return [item for item in record['residuals'][str(row)] if item[0] <= order]
+
+          for record in records:
+              assert not nz(record, 15, 53)
+              assert not record['residuals']['16']
+              assert not record['residuals']['17']
+              assert not record['residuals']['18']
+          roots = [record['candidate']['w'] for record in records if not nz(record, 15, 54)]
+          assert len(roots) == 1, [(record['candidate'], nz(record, 15, 54)) for record in records]
+          c = roots[0]
+          candidates = [
+              {'a': a, 'w': (4 * a + c) % 7}
+              for a in range(7)
+          ]
+          matrix = json.dumps({'include': candidates}, separators=(',', ':'))
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'c={c}\n')
+              output.write(f'matrix={matrix}\n')
+          print(json.dumps({'c': c, 'candidates': candidates}, indent=2, sort_keys=True))
+          PY
+
+  row6:
+    needs: select-row15
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select-row15.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evaluate one affine row-15 survivor through order 72
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-formal-arc-n18-a${{ matrix.a }}-w${{ matrix.w }}
+          mkdir -p "$root"
+          python3 research/rank17_formal_arc_probe.py \
+            --state research/data/rank17_formal_arc_state_n17.json \
+            --degree 18 --a ${{ matrix.a }} --w ${{ matrix.w }} --order 72 \
+            --output "$root/result-a${{ matrix.a }}-w${{ matrix.w }}.json"
+          sha256sum "$root"/*.json > "$root/SHA256SUMS"
+          cd "$root" && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-formal-arc-n18-a${{ matrix.a }}-w${{ matrix.w }}
+          path: /tmp/rank17-formal-arc-n18-a${{ matrix.a }}-w${{ matrix.w }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  aggregate:
+    needs: [select-row15, row6]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank17-formal-arc-n18-a*
+          path: /tmp/rank17-formal-arc-n18
+          merge-multiple: true
+      - name: Select the unique degree-18 extension
+        shell: bash
+        env:
+          ROW15_CONSTANT: ${{ needs.select-row15.outputs.c }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-formal-arc-n18')
+          records = [json.loads(path.read_text()) for path in sorted(root.glob('result-*.json'))]
+          assert len(records) == 7
+
+          def nz(record, row, order):
+              return [item for item in record['residuals'][str(row)] if item[0] <= order]
+
+          for record in records:
+              assert not nz(record, 15, 54)
+              assert not record['residuals']['16']
+              assert not record['residuals']['17']
+              assert not record['residuals']['18']
+          survivors = [record for record in records if not nz(record, 6, 72)]
+          assert len(survivors) == 1, [(record['candidate'], nz(record, 6, 72)) for record in records]
+          payload = {
+              'schema_version': 1,
+              'truth_status': 'VERIFIED COMPUTATION over F_7; finite jet only, no characteristic-zero claim',
+              'input_state': 'research/data/rank17_formal_arc_state_n17.json',
+              'degree': 18,
+              'row15_condition_order': 54,
+              'row6_condition_order': 72,
+              'row15_affine_constant': int(os.environ['ROW15_CONSTANT']),
+              'candidate_count': 7,
+              'selected_candidate': survivors[0]['candidate'],
+              'records': [
+                  {'candidate': record['candidate'], 'first_nonzero': record['first_nonzero']}
+                  for record in records
+              ],
+          }
+          raw = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
+          payload['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (root / 'summary.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+          find /tmp/rank17-formal-arc-n18 -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > /tmp/rank17-formal-arc-n18/SHA256SUMS
+          cd /tmp/rank17-formal-arc-n18 && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-formal-arc-n18-summary
+          path: /tmp/rank17-formal-arc-n18
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
