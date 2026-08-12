@@ -1,0 +1,143 @@
+name: import-rank17-formal-arc-n18
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/import-rank17-formal-arc-n18.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download the completed degree-18 artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/n18 evidence/rank17/formal-arc-n18
+          mkdir -p /tmp/n18 evidence/rank17/formal-arc-n18
+          gh run download 31598170389 \
+            --repo metaforismo/elliptic-rank-30 \
+            --dir /tmp/n18
+          find /tmp/n18 -type f -print
+          cp -a /tmp/n18/. evidence/rank17/formal-arc-n18/
+
+      - name: Validate and classify the frozen evidence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('evidence/rank17/formal-arc-n18')
+          files = sorted(path for path in root.rglob('*') if path.is_file())
+          if not files:
+              raise SystemExit('the degree-18 run produced no files')
+
+          parsed = []
+          for path in files:
+              if path.suffix.lower() != '.json':
+                  continue
+              try:
+                  value = json.loads(path.read_text())
+              except Exception as exc:
+                  raise SystemExit(f'invalid JSON {path}: {exc}')
+              parsed.append((path, value))
+          if not parsed:
+              raise SystemExit('the degree-18 artifact contains no JSON')
+
+          def walk(value, path=''):
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      child_path = f'{path}.{key}' if path else str(key)
+                      yield child_path, child
+                      yield from walk(child, child_path)
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      child_path = f'{path}[{index}]'
+                      yield child_path, child
+                      yield from walk(child, child_path)
+
+          interesting = []
+          for path, value in parsed:
+              for key, child in walk(value):
+                  lower = key.lower()
+                  if any(term in lower for term in (
+                      'surviv', 'selected', 'extendable', 'a18', 'w18',
+                      'coefficient_18', 'degree_18', 'formal_arc', 'formal-arc',
+                      'truth_status', 'claim_status', 'status'
+                  )):
+                      rendered = repr(child)
+                      if len(rendered) <= 2000:
+                          interesting.append({
+                              'file': str(path.relative_to(root)),
+                              'path': key,
+                              'value': child,
+                          })
+
+          hashes = []
+          for path in files:
+              hashes.append({
+                  'path': str(path.relative_to(root)),
+                  'bytes': path.stat().st_size,
+                  'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+              })
+
+          manifest = {
+              'schema_version': 1,
+              'certificate_id': 'rank17_formal_arc_degree18_frozen_artifact',
+              'truth_status': (
+                  'VERIFIED COMPUTATION in characteristic 7; '
+                  'not a characteristic-zero section and not a rank-30 certificate'
+              ),
+              'source_workflow_run': 31598170389,
+              'source_commit': 'a5fa4c7c19665d405ac9c29f61e8e931f3289329',
+              'file_count': len(files),
+              'json_file_count': len(parsed),
+              'files': hashes,
+              'interesting_fields': interesting,
+              'limitations': [
+                  'A finite formal jet does not prove existence of an infinite formal branch.',
+                  'A characteristic-7 formal branch does not by itself lift to Z_7 or to Q.',
+                  'This artifact does not change the unconditional global lower bound rank E(Q) >= 29.'
+              ],
+          }
+          raw = json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()
+          manifest['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (root / 'MANIFEST.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps({
+              'file_count': manifest['file_count'],
+              'json_file_count': manifest['json_file_count'],
+              'interesting_field_count': len(interesting),
+              'record_sha256': manifest['record_sha256'],
+          }, indent=2, sort_keys=True))
+          PY
+          find evidence/rank17/formal-arc-n18 -type f ! -name SHA256SUMS \
+            -print0 | sort -z | xargs -0 sha256sum \
+            > evidence/rank17/formal-arc-n18/SHA256SUMS
+          (cd evidence/rank17/formal-arc-n18 && sha256sum -c SHA256SUMS)
+
+      - name: Commit only the permanent evidence
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidence/rank17/formal-arc-n18
+          git diff --cached --quiet && { echo 'no degree-18 evidence delta' >&2; exit 1; }
+          git commit -m "Freeze the exact degree-18 rank-17 formal arc evidence"
+          git push
