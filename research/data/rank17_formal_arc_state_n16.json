@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "truth_status": "VERIFIED COMPUTATION over F_7; coefficients were selected by exact residual tests",
+  "parameterization": {
+    "a": "y1-1",
+    "u": "tau",
+    "v": "-tau+w",
+    "w": "u+v"
+  },
+  "a": {
+    "2": 2,
+    "3": 0,
+    "4": 5,
+    "5": 6,
+    "6": 0,
+    "7": 6,
+    "8": 1,
+    "9": 2,
+    "10": 0,
+    "11": 5,
+    "12": 3,
+    "13": 0,
+    "14": 4,
+    "15": 4,
+    "16": 2
+  },
+  "w": {
+    "2": 5,
+    "3": 0,
+    "4": 2,
+    "5": 1,
+    "6": 0,
+    "7": 1,
+    "8": 6,
+    "9": 5,
+    "10": 0,
+    "11": 2,
+    "12": 4,
+    "13": 0,
+    "14": 3,
+    "15": 3,
+    "16": 5
+  },
+  "verified_residual_order": 64,
+  "limitations": [
+    "The state is a finite jet, not a proof that an infinite formal branch exists.",
+    "It is a characteristic-7 computation and does not provide a characteristic-zero section."
+  ]
+}
