@@ -1,0 +1,24 @@
+{
+  "candidate_count": 7,
+  "degree": 17,
+  "input_state": "research/data/rank17_formal_arc_state_n16.json",
+  "record_sha256": "47d4244adf70d76acffe3b8fb5028479e6631f7fe63cb113921fecc5f44250bd",
+  "records": [
+    {"candidate":{"a":0,"w":4},"first_nonzero":{"15":[54,6],"16":null,"17":null,"18":null,"6":[68,4]}},
+    {"candidate":{"a":1,"w":1},"first_nonzero":{"15":[54,1],"16":null,"17":null,"18":null,"6":[68,2]}},
+    {"candidate":{"a":2,"w":5},"first_nonzero":{"15":[54,1],"16":null,"17":null,"18":null,"6":null}},
+    {"candidate":{"a":3,"w":2},"first_nonzero":{"15":[57,1],"16":null,"17":null,"18":null,"6":[68,2]}},
+    {"candidate":{"a":4,"w":6},"first_nonzero":{"15":[54,6],"16":null,"17":null,"18":null,"6":[68,4]}},
+    {"candidate":{"a":5,"w":3},"first_nonzero":{"15":[54,6],"16":null,"17":null,"18":null,"6":[68,1]}},
+    {"candidate":{"a":6,"w":0},"first_nonzero":{"15":[54,1],"16":null,"17":null,"18":null,"6":[68,1]}}
+  ],
+  "row15_condition_order": 51,
+  "row6_condition_order": 68,
+  "schema_version": 1,
+  "selected_candidate": {"a":2,"w":5},
+  "truth_status": "VERIFIED COMPUTATION over F_7; finite jet only, no characteristic-zero claim",
+  "limitations": [
+    "This certificate proves only the unique extension of the displayed finite jet through the recorded orders.",
+    "It does not prove convergence, an infinite formal branch, a 7-adic point, or a characteristic-zero section."
+  ]
+}
