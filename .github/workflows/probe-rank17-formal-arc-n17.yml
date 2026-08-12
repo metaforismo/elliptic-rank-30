@@ -1,0 +1,141 @@
+name: probe-rank17-formal-arc-n17
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-formal-arc-n17.yml"
+      - "research/rank17_formal_arc_probe.py"
+      - "research/rank17_section_local_branch_f7.py"
+      - "research/data/rank17_formal_arc_state_n16.json"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {a: 0, w: 4}
+          - {a: 1, w: 1}
+          - {a: 2, w: 5}
+          - {a: 3, w: 2}
+          - {a: 4, w: 6}
+          - {a: 5, w: 3}
+          - {a: 6, w: 0}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Evaluate one exact degree-17 jet
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-formal-arc-n17-a${{ matrix.a }}-w${{ matrix.w }}
+          mkdir -p "$root"
+          python3 research/rank17_formal_arc_probe.py \
+            --state research/data/rank17_formal_arc_state_n16.json \
+            --degree 17 \
+            --a ${{ matrix.a }} \
+            --w ${{ matrix.w }} \
+            --order 68 \
+            --output "$root/result-a${{ matrix.a }}-w${{ matrix.w }}.json"
+          sha256sum "$root"/*.json > "$root/SHA256SUMS"
+          cd "$root" && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-formal-arc-n17-a${{ matrix.a }}-w${{ matrix.w }}
+          path: /tmp/rank17-formal-arc-n17-a${{ matrix.a }}-w${{ matrix.w }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  aggregate:
+    needs: probe
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank17-formal-arc-n17-*
+          path: /tmp/rank17-formal-arc-n17
+          merge-multiple: true
+      - name: Select the unique extendable degree-17 coefficient
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-formal-arc-n17')
+          records = [
+              json.loads(path.read_text())
+              for path in sorted(root.glob('result-*.json'))
+          ]
+          assert len(records) == 7
+
+          def nonzero_through(record, row, order):
+              return [
+                  item for item in record['residuals'][str(row)]
+                  if item[0] <= order
+              ]
+
+          for record in records:
+              assert not nonzero_through(record, 15, 51)
+              assert not record['residuals']['16']
+              assert not record['residuals']['17']
+              assert not record['residuals']['18']
+
+          survivors = [
+              record for record in records
+              if not nonzero_through(record, 6, 68)
+          ]
+          assert len(survivors) == 1, [
+              (record['candidate'], nonzero_through(record, 6, 68))
+              for record in records
+          ]
+          selected = survivors[0]['candidate']
+          payload = {
+              'schema_version': 1,
+              'truth_status': (
+                  'VERIFIED COMPUTATION over F_7; finite jet only, '
+                  'no characteristic-zero claim'
+              ),
+              'input_state': 'research/data/rank17_formal_arc_state_n16.json',
+              'degree': 17,
+              'row15_condition_order': 51,
+              'row6_condition_order': 68,
+              'candidate_count': 7,
+              'selected_candidate': selected,
+              'records': [
+                  {
+                      'candidate': record['candidate'],
+                      'first_nonzero': record['first_nonzero'],
+                  }
+                  for record in records
+              ],
+          }
+          raw = json.dumps(
+              payload, sort_keys=True, separators=(',', ':')
+          ).encode()
+          payload['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          output = root / 'summary.json'
+          output.write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(payload, indent=2, sort_keys=True))
+          PY
+          find /tmp/rank17-formal-arc-n17 -type f ! -name SHA256SUMS \
+            -print0 | sort -z | xargs -0 sha256sum \
+            > /tmp/rank17-formal-arc-n17/SHA256SUMS
+          cd /tmp/rank17-formal-arc-n17
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-formal-arc-n17-summary
+          path: /tmp/rank17-formal-arc-n17
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
