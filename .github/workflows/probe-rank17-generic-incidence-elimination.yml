@@ -1,0 +1,115 @@
+name: probe-rank17-generic-incidence-elimination
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/probe-rank17-generic-incidence-elimination.yml"
+      - "research/rank17_section_local_branch_f7.py"
+
+permissions:
+  contents: read
+
+jobs:
+  eliminate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [101, 103]
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute the generic pivot ideal and residual normal forms
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-generic-incidence-${{ matrix.prime }}
+          mkdir -p "$root"
+          cat > /tmp/eliminate.py <<'PY'
+          from __future__ import annotations
+          import importlib.util
+          import json
+          import time
+          import traceback
+          from pathlib import Path
+          from sage.all import GF, PolynomialRing, version
+
+          prime = ${{ matrix.prime }}
+          out = Path('/tmp/rank17-generic-incidence-${{ matrix.prime }}')
+          result = {
+              'status': 'started',
+              'truth_status': 'EXACT modular elimination over a finite rational-function field; characteristic-zero reconstruction unresolved',
+              'prime': prime,
+              'sage_version': str(version()),
+          }
+          try:
+              spec = importlib.util.spec_from_file_location(
+                  'incidence', 'research/rank17_section_local_branch_f7.py'
+              )
+              module = importlib.util.module_from_spec(spec)
+              assert spec.loader is not None
+              spec.loader.exec_module(module)
+
+              parameter_ring = PolynomialRing(GF(prime), names=('Y1','Y2','Y3'))
+              Y1, Y2, Y3 = parameter_ring.gens()
+              coefficient_field = parameter_ring.fraction_field()
+              ring = PolynomialRing(
+                  coefficient_field,
+                  names=tuple(module.VARIABLES[:14]),
+                  order='degrevlex',
+              )
+              pivots = list(ring.gens())
+              values = pivots + [
+                  coefficient_field(Y1),
+                  coefficient_field(Y2),
+                  coefficient_field(Y3),
+              ]
+              equations = [ring(eq) for eq in module.equations(values)]
+              selected = [equations[row] for row in module.PIVOT_ROWS]
+              started = time.time()
+              ideal = ring.ideal(selected)
+              basis = ideal.groebner_basis()
+              elapsed = time.time() - started
+              residuals = [ideal.reduce(equations[row]) for row in module.RESIDUAL_ROWS]
+              basis_text = '\n'.join(str(poly) for poly in basis) + '\n'
+              residual_text = '\n'.join(
+                  f'row {row}: {residual}'
+                  for row, residual in zip(module.RESIDUAL_ROWS, residuals, strict=True)
+              ) + '\n'
+              (out / 'groebner-basis.txt').write_text(basis_text)
+              (out / 'residual-normal-forms.txt').write_text(residual_text)
+              result.update({
+                  'status': 'completed',
+                  'elapsed_seconds': elapsed,
+                  'basis_count': len(basis),
+                  'basis_degrees': [int(poly.total_degree()) for poly in basis],
+                  'ideal_dimension': int(ideal.dimension()),
+                  'linear_basis_count': sum(int(poly.total_degree()) == 1 for poly in basis),
+                  'residual_zero_flags': [residual == 0 for residual in residuals],
+                  'residual_degrees': [None if residual == 0 else int(residual.total_degree()) for residual in residuals],
+              })
+          except Exception as exc:
+              result.update({
+                  'status': 'error',
+                  'error': repr(exc),
+                  'traceback': traceback.format_exc(),
+              })
+          (out / 'result.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True), flush=True)
+          if result['status'] == 'error':
+              raise SystemExit(1)
+          PY
+          sage -python /tmp/eliminate.py | tee "$root/run.log"
+          find "$root" -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          cd "$root" && sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-generic-incidence-${{ matrix.prime }}
+          path: /tmp/rank17-generic-incidence-${{ matrix.prime }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
