@@ -1,0 +1,221 @@
+name: import-rank17-hensel-evidence
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/import-rank17-hensel-evidence.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Discover completed Hensel and 7-adic runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/hensel-runs /tmp/hensel-evidence evidence/rank17/hensel
+          mkdir -p /tmp/hensel-runs /tmp/hensel-evidence evidence/rank17/hensel
+          gh api --paginate \
+            'repos/metaforismo/elliptic-rank-30/actions/runs?per_page=100' \
+            > /tmp/hensel-runs/pages.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          raw = Path('/tmp/hensel-runs/pages.json').read_text()
+          decoder = json.JSONDecoder()
+          pages = []
+          offset = 0
+          while offset < len(raw):
+              while offset < len(raw) and raw[offset].isspace():
+                  offset += 1
+              if offset >= len(raw):
+                  break
+              value, offset = decoder.raw_decode(raw, offset)
+              pages.append(value)
+
+          runs = []
+          for page in pages:
+              runs.extend(page.get('workflow_runs', []))
+          selected = []
+          for run in runs:
+              hay = ' '.join(str(run.get(key, '')) for key in (
+                  'name', 'display_title', 'path'
+              )).lower()
+              if not any(token in hay for token in (
+                  'hensel', '7-adic', '7adic', 'p-adic', 'padic'
+              )):
+                  continue
+              if run.get('status') != 'completed':
+                  continue
+              selected.append({
+                  key: run.get(key)
+                  for key in (
+                      'id', 'name', 'display_title', 'path', 'status',
+                      'conclusion', 'head_sha', 'created_at', 'updated_at'
+                  )
+              })
+          selected.sort(key=lambda item: item.get('created_at') or '')
+          Path('/tmp/hensel-runs/selected.json').write_text(
+              json.dumps(selected, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps(selected, indent=2, sort_keys=True))
+          PY
+
+      - name: Download every selected run artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/hensel-runs/ids.txt
+          import json
+          from pathlib import Path
+          for run in json.loads(Path('/tmp/hensel-runs/selected.json').read_text()):
+              print(run['id'])
+          PY
+          while read -r run_id; do
+            [ -n "$run_id" ] || continue
+            mkdir -p "/tmp/hensel-evidence/run-$run_id"
+            gh run download "$run_id" \
+              --repo metaforismo/elliptic-rank-30 \
+              --dir "/tmp/hensel-evidence/run-$run_id" || true
+            gh api "repos/metaforismo/elliptic-rank-30/actions/runs/$run_id/jobs?per_page=100" \
+              > "/tmp/hensel-evidence/run-$run_id/jobs.json"
+          done < /tmp/hensel-runs/ids.txt
+          cp /tmp/hensel-runs/selected.json /tmp/hensel-evidence/selected-runs.json
+          cp -a /tmp/hensel-evidence/. evidence/rank17/hensel/
+
+      - name: Build a fail-closed Hensel manifest
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          import re
+          from pathlib import Path
+
+          root = Path('evidence/rank17/hensel')
+          files = sorted(path for path in root.rglob('*') if path.is_file())
+          parsed = []
+          for path in files:
+              if path.suffix.lower() != '.json':
+                  continue
+              try:
+                  parsed.append((path, json.loads(path.read_text())))
+              except Exception:
+                  pass
+
+          def walk(value, path=''):
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      child_path = f'{path}.{key}' if path else str(key)
+                      yield child_path, child
+                      yield from walk(child, child_path)
+              elif isinstance(value, list):
+                  for index, child in enumerate(value):
+                      yield from walk(child, f'{path}[{index}]')
+
+          fields = []
+          for path, value in parsed:
+              for key, child in walk(value):
+                  lower = key.lower()
+                  if any(token in lower for token in (
+                      'surviv', 'lift', 'extend', 'obstruct', 'modulus',
+                      'level', 'solution_count', 'candidate_count',
+                      'truth_status', 'claim_status', 'status'
+                  )):
+                      rendered = repr(child)
+                      if len(rendered) <= 3000:
+                          fields.append({
+                              'file': str(path.relative_to(root)),
+                              'path': key,
+                              'value': child,
+                          })
+
+          explicit_counts = []
+          for field in fields:
+              key = field['path'].lower()
+              value = field['value']
+              if isinstance(value, bool) or not isinstance(value, int):
+                  continue
+              if any(token in key for token in (
+                  'survivor_count', 'survivors', 'lift_count',
+                  'extendable_count', 'lifting_solution_count'
+              )):
+                  explicit_counts.append(field)
+
+          classification = 'NO_COMPLETED_HENSEL_RUN_DISCOVERED'
+          selected_runs = json.loads((root / 'selected-runs.json').read_text())
+          if selected_runs:
+              classification = 'EVIDENCE_FROZEN_BUT_NO_EXPLICIT_FINAL_COUNT_FOUND'
+          positive = [field for field in explicit_counts if field['value'] > 0]
+          zero = [field for field in explicit_counts if field['value'] == 0]
+          if positive:
+              classification = 'AT_LEAST_ONE_EXPLICIT_POSITIVE_LIFT_COUNT_REPORTED'
+          elif zero:
+              classification = 'EXPLICIT_ZERO_LIFT_COUNT_REPORTED'
+
+          hashes = [{
+              'path': str(path.relative_to(root)),
+              'bytes': path.stat().st_size,
+              'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+          } for path in files]
+          manifest = {
+              'schema_version': 1,
+              'certificate_id': 'rank17_hensel_evidence_frozen',
+              'truth_status': (
+                  'VERIFIED COMPUTATIONAL EVIDENCE; no characteristic-zero '
+                  'or rank-30 conclusion is inferred automatically'
+              ),
+              'classification': classification,
+              'selected_runs': selected_runs,
+              'file_count': len(files),
+              'json_file_count': len(parsed),
+              'interesting_fields': fields,
+              'explicit_lift_counts': explicit_counts,
+              'limitations': [
+                  'A lift modulo 7^n is not a rational point over Q.',
+                  'An empty bounded branch search is an obstruction only for the exact recorded lifting domain.',
+                  'This evidence does not change the unconditional rank lower bound 29.'
+              ],
+              'files': hashes,
+          }
+          raw = json.dumps(manifest, sort_keys=True, separators=(',', ':')).encode()
+          manifest['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (root / 'MANIFEST.json').write_text(
+              json.dumps(manifest, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps({
+              'classification': classification,
+              'selected_run_count': len(selected_runs),
+              'explicit_lift_counts': explicit_counts,
+              'record_sha256': manifest['record_sha256'],
+          }, indent=2, sort_keys=True))
+          PY
+          find evidence/rank17/hensel -type f ! -name SHA256SUMS \
+            -print0 | sort -z | xargs -0 sha256sum \
+            > evidence/rank17/hensel/SHA256SUMS
+          (cd evidence/rank17/hensel && sha256sum -c SHA256SUMS)
+
+      - name: Commit only permanent Hensel evidence
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add evidence/rank17/hensel
+          git diff --cached --quiet && { echo 'no Hensel evidence delta' >&2; exit 1; }
+          git commit -m "Freeze the exact rank-17 Hensel lifting evidence"
+          git push
