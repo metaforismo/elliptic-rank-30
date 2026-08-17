@@ -1,0 +1,81 @@
+name: Certify rank-17 IV surface quotient over F13
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surfaces_f13_v2.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify every exact jet-sign orbit
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f13_v2.json \
+            --output /tmp/rank17_iv_surface_geometric_quotient_f13.json
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f13_v2.json \
+            --compare /tmp/rank17_iv_surface_geometric_quotient_f13.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              "/tmp/rank17_iv_surface_geometric_quotient_f13.json"
+          ).read_text())
+          assert data["prime"] == 13
+          assert 2 * data["geometric_surface_count"] == data["raw_candidate_count"]
+          assert all(
+              candidate["parameters"]["e0"] == 1
+              for candidate in data["representatives"]
+          )
+          print({
+              "raw": data["raw_candidate_count"],
+              "geometric": data["geometric_surface_count"],
+              "record_sha256": data["record_sha256"],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-surface-geometric-quotient-f13
+          path: /tmp/rank17_iv_surface_geometric_quotient_f13.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/rank17_iv_surface_geometric_quotient_f13.json \
+            research/data/rank17_iv_surface_geometric_quotient_f13.json
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f13_v2.json \
+            --compare research/data/rank17_iv_surface_geometric_quotient_f13.json
+          git add research/data/rank17_iv_surface_geometric_quotient_f13.json
+          if git diff --cached --quiet; then
+            echo "F13 quotient already present"
+            exit 0
+          fi
+          git commit -m "Quotient the F13 IV surfaces by jet sign"
+          git push origin "HEAD:$branch"
