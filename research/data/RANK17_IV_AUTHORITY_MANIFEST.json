@@ -1,29 +1,60 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "manifest_id": "rank17_iv_authority_manifest",
-  "truth_status": "Repository hygiene boundary only; this manifest makes no mathematical claim and does not change the rank-29 lower bound.",
+  "truth_status": "Repository hygiene and evidence-boundary record only; this manifest makes no rank-30 claim and does not change the unconditional rank-29 lower bound.",
+  "base_main_correction": {
+    "commit": "9cf16a445ec5bf3c99dd97c47681729293eaef56",
+    "meaning": "The unsupported local-Artinian claim was withdrawn. The exact mod-49 obstruction on the declared semistable (+1,+1) target-component seed is the authoritative local result on main."
+  },
   "authoritative_sources": [
     "research/rank17_iv_surface_locus_finite_field.c",
     "research/rank17_iv_surface_locus_finite_field_v2.py",
     "research/rank17_iv_surface_locus_certificate_v2.py",
     "research/rank17_iv_surface_geometric_quotient.py",
+    "research/rank17_iv_surface_residual_geometry.py",
     "research/rank17_iv_section_endpoint_ideal.py",
     "research/rank17_iv_section_endpoint_ideal_v2.py",
     "research/collect_rank17_iv_endpoint_artifacts.py",
     "research/rank17_iv_surface_curve_elimination.py",
-    "research/rank17_iv_surface_crt_reconstruction.py",
     "research/finalize_rank17_iv_pipeline_checkpoint.py"
+  ],
+  "authoritative_data": [
+    "research/data/rank17_iv_surfaces_f11_v2.json",
+    "research/data/rank17_iv_surfaces_f13_v2.json",
+    "research/data/rank17_iv_surfaces_f17_v2.json",
+    "research/data/rank17_iv_surface_residual_geometry_f11.json",
+    "research/data/rank17_iv_surface_residual_geometry_f13.json",
+    "research/data/rank17_iv_surface_residual_geometry_f17.json"
   ],
   "authoritative_workflows": [
     ".github/workflows/certify-rank17-iv-surfaces-f11-v3.yml",
     ".github/workflows/certify-rank17-iv-surfaces-f13-v1.yml",
-    ".github/workflows/certify-rank17-iv-surface-quotient-f11-v2.yml",
-    ".github/workflows/certify-rank17-iv-surface-quotient-f13.yml",
+    ".github/workflows/certify-rank17-iv-surfaces-f17-v1.yml",
+    ".github/workflows/certify-rank17-iv-residual-geometry-three-primes.yml",
     ".github/workflows/probe-rank17-iv-all-geometric-surfaces-f11-v2.yml",
     ".github/workflows/eliminate-rank17-iv-surface-curve-f11-v2.yml",
-    ".github/workflows/reconstruct-rank17-iv-surfaces-f11-f13.yml",
     ".github/workflows/finalize-rank17-iv-pipeline-checkpoint.yml"
   ],
+  "exact_target_correction": {
+    "target_configuration": "I12 + I4 + IV + 4 I1",
+    "f11": {
+      "split_geometric_surfaces": 4,
+      "accepted_exact_configuration": 4,
+      "rejected_residual_degenerations": 0
+    },
+    "f13": {
+      "split_geometric_surfaces": 1,
+      "accepted_exact_configuration": 0,
+      "rejected_residual_degenerations": 1,
+      "reason": "The residual quartic is not squarefree; it factors as -3*(t+5)^2*(t^2+2*t+6) over F13."
+    },
+    "f17": {
+      "split_geometric_surfaces": 5,
+      "accepted_exact_configuration": 5,
+      "rejected_residual_degenerations": 0
+    },
+    "consequence": "Any CRT gate for the exact open target must not use the unique F13 split point. This is not a global obstruction: a Q-model may have bad or nonintegral reduction at 13."
+  },
   "superseded_files": [
     {
       "path": "research/rank17_iv_surface_locus_finite_field.py",
@@ -36,6 +67,14 @@
     {
       "path": "research/rank17_iv_section_endpoint_ideal.py",
       "reason": "Its mathematics and helper functions remain the implementation body, but it must be launched only through rank17_iv_section_endpoint_ideal_v2.py, which forces a genuine univariate time ring."
+    },
+    {
+      "path": "research/data/rank17_iv_surface_crt_f11_f13_bounded.json",
+      "reason": "The only F13 split surface is outside the exact residual-squarefree target locus."
+    },
+    {
+      "path": "research/data/rank17_iv_surface_crt_f11_f13_f17_unique_bounded.json",
+      "reason": "If generated, this unfiltered CRT includes the residual-degenerate F13 point and is not evidence for I12+I4+IV+4I1."
     }
   ],
   "superseded_workflows": [
@@ -46,12 +85,24 @@
     ".github/workflows/probe-rank17-iv-first-surface-endpoint-v2.yml",
     ".github/workflows/probe-rank17-iv-first-surface-endpoint-v3.yml",
     ".github/workflows/probe-rank17-iv-all-geometric-surfaces-f11.yml",
-    ".github/workflows/eliminate-rank17-iv-surface-curve-f11.yml"
+    ".github/workflows/eliminate-rank17-iv-surface-curve-f11.yml",
+    ".github/workflows/reconstruct-rank17-iv-surfaces-f11-f13.yml",
+    ".github/workflows/certify-rank17-iv-quotients-and-crt-three-primes.yml"
+  ],
+  "experimental_not_yet_authoritative": [
+    "research/rank17_iv_section_sparse_system.py",
+    ".github/workflows/probe-rank17-iv-sparse-msolve-p11-s0-q1.yml",
+    "research/rank17_iv_surface_locus_all_finite_field.c",
+    "research/rank17_iv_surface_locus_all_certificate.py",
+    "research/rank17_iv_surface_open_split_from_full.py",
+    ".github/workflows/certify-rank17-iv-full-surface-loci.yml",
+    ".github/workflows/certify-rank17-iv-full-and-open-f19.yml"
   ],
   "promotion_policy": [
     "Do not merge the experimental branch wholesale.",
     "Promote only authoritative files whose generated certificates are available and independently replayed.",
+    "Residual squarefreeness and coprimality with c4 are mandatory for the exact I12+I4+IV+4I1 target.",
     "Delete one-shot and superseded workflows before any pull request to main.",
-    "No modular or bounded-reconstruction result may set SOLVED-A or SOLVED-B."
+    "No modular, bounded-reconstruction, timeout, or solver-error result may set SOLVED-A or SOLVED-B."
   ]
 }
