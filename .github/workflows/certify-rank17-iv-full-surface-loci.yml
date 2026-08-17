@@ -1,0 +1,126 @@
+name: Certify full rank-17 IV surface loci
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-full-surface-loci.yml"
+      - "research/rank17_iv_surface_locus_all_finite_field.c"
+      - "research/rank17_iv_surface_locus_all_certificate.py"
+      - "research/rank17_iv_surface_locus_finite_field_v2.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile the full-locus enumerator
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_all_finite_field.c \
+            -o /tmp/rank17-iv-full-enumerator
+
+      - name: Exhaust F7 independently as the implementation cross-check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-full-loci
+          /tmp/rank17-iv-full-enumerator 7 \
+            > /tmp/rank17-iv-full-loci/f7.json
+
+      - name: Exhaust F11 F13 and F17 twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          for prime in 11 13 17; do
+            /tmp/rank17-iv-full-enumerator "$prime" \
+              > "/tmp/rank17-iv-full-loci/f${prime}-a.json"
+            /tmp/rank17-iv-full-enumerator "$prime" \
+              > "/tmp/rank17-iv-full-loci/f${prime}-b.json"
+            cmp "/tmp/rank17-iv-full-loci/f${prime}-a.json" \
+                "/tmp/rank17-iv-full-loci/f${prime}-b.json"
+            python3 research/rank17_iv_surface_locus_all_certificate.py \
+              --production "/tmp/rank17-iv-full-loci/f${prime}-a.json" \
+              --small-prime /tmp/rank17-iv-full-loci/f7.json \
+              --output "/tmp/rank17-iv-full-loci/certificate-f${prime}.json"
+            python3 research/rank17_iv_surface_locus_all_certificate.py \
+              --production "/tmp/rank17-iv-full-loci/f${prime}-b.json" \
+              --small-prime /tmp/rank17-iv-full-loci/f7.json \
+              --compare "/tmp/rank17-iv-full-loci/certificate-f${prime}.json"
+          done
+
+      - name: Validate the exact census boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-full-loci')
+          summary = {}
+          for prime in (11, 13, 17):
+              data = json.loads((root / f'certificate-f{prime}.json').read_text())
+              assert data['prime'] == prime
+              assert data['visited_parameter_tuples'] == (prime-1) * prime**5
+              assert data['candidate_count'] == len(data['records'])
+              assert sum(data['split_category_counts'].values()) == data['candidate_count']
+              assert data['split_category_counts']['both'] in (4, 1, 5)
+              assert data['independent_small_prime_cross_check']['tuple_sets_identical'] is True
+              summary[prime] = {
+                  'candidate_count': data['candidate_count'],
+                  'split_categories': data['split_category_counts'],
+                  'projection_points': data['projection_point_counts'],
+                  'record_sha256': data['record_sha256'],
+              }
+          assert [summary[p]['split_categories']['both'] for p in (11,13,17)] == [4,1,5]
+          print(summary)
+          PY
+          sha256sum /tmp/rank17-iv-full-loci/*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-full-surface-loci-f11-f13-f17
+          path: /tmp/rank17-iv-full-loci
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          for prime in 11 13 17; do
+            cp "/tmp/rank17-iv-full-loci/certificate-f${prime}.json" \
+              "/tmp/publish-full-f${prime}.json"
+          done
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          for prime in 11 13 17; do
+            cp "/tmp/publish-full-f${prime}.json" \
+              "research/data/rank17_iv_full_surface_locus_f${prime}.json"
+          done
+          git add research/data/rank17_iv_full_surface_locus_f*.json
+          if git diff --cached --quiet; then
+            echo "full surface-locus certificates already current"
+            exit 0
+          fi
+          git commit -m "Certify the full additive-IV surface loci over three primes"
+          git push origin "HEAD:$branch"
