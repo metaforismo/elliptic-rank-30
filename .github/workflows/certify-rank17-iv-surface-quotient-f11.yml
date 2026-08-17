@@ -1,0 +1,70 @@
+name: Certify rank-17 IV surface quotient over F11
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surfaces_f11_v2.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute every order-two orbit
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f11_v2.json \
+            --output research/data/rank17_iv_surface_geometric_quotient_f11.json
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f11_v2.json \
+            --compare research/data/rank17_iv_surface_geometric_quotient_f11.json
+
+      - name: Enforce the exact quotient boundary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+          ).read_text())
+          assert data["prime"] == 11
+          assert 2 * data["geometric_surface_count"] == data["raw_candidate_count"]
+          assert len(data["orbits"]) == data["geometric_surface_count"]
+          assert len(data["representatives"]) == data["geometric_surface_count"]
+          assert data["group_action"]["every_orbit_has_size_two"] is True
+          for representative in data["representatives"]:
+              assert representative["parameters"]["e0"] == 1
+          assert "no characteristic-zero" in data["truth_status"]
+          print({
+              "raw": data["raw_candidate_count"],
+              "geometric": data["geometric_surface_count"],
+              "record_sha256": data["record_sha256"],
+          })
+          PY
+
+      - name: Commit only the geometric quotient certificate
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/rank17_iv_surface_geometric_quotient_f11.json
+          git diff --cached --quiet && {
+            echo "geometric quotient delta missing" >&2
+            exit 1
+          }
+          git commit -m "Quotient the F11 IV surfaces by jet sign"
+          git push
