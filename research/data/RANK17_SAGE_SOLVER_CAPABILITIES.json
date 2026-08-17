@@ -1,0 +1,27 @@
+{
+  "binaries": {
+    "Singular": "/home/sage/sage/local/bin/Singular",
+    "msolve": null,
+    "sage": "/home/sage/sage/src/bin/sage"
+  },
+  "groebner_algorithms": {
+    "libsingular:slimgb": {
+      "available": true,
+      "basis": [
+        "y^2 + 5",
+        "x - y"
+      ]
+    },
+    "msolve": {
+      "available": false,
+      "error": "FeatureNotPresentError(Feature('msolve'))"
+    },
+    "slimgb": {
+      "available": false,
+      "error": "NameError(\"Algorithm 'slimgb' unknown.\")"
+    }
+  },
+  "sage_version": "10.9",
+  "schema_version": 1,
+  "truth_status": "Environment capability probe only; no mathematical claim."
+}
