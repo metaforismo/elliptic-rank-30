@@ -1,0 +1,28 @@
+name: Export research checkout
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Create tracked-source archive
+        run: git archive --format=zip --output=elliptic-rank-30-source.zip HEAD
+
+      - name: Upload tracked-source archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: elliptic-rank-30-research-checkout
+          path: elliptic-rank-30-source.zip
+          if-no-files-found: error
+          retention-days: 1
