@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "record_id": "rank17_iv_continuation_2026_08_18",
+  "truth_status": "Research coordination record only; no mathematical claim and no change to the unconditional rank-29 lower bound.",
+  "base_main_correction": "9cf16a445ec5bf3c99dd97c47681729293eaef56",
+  "required_boundary": [
+    "The withdrawn local-Artinian/nilpotence claim must not be used.",
+    "The exact mod-49 target-component obstruction on main is the authoritative local semistable result.",
+    "The additive-IV pipeline remains independent and unresolved."
+  ],
+  "next_objective": "Replace global Groebner timeouts by an exact fibrewise elimination or finite-field lifting certificate on every geometric IV surface."
+}
