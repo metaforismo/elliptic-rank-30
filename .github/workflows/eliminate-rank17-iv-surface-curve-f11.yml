@@ -1,0 +1,190 @@
+name: Eliminate rank-17 IV surface curve over F11
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_surface_curve_elimination.py"
+      - ".github/workflows/eliminate-rank17-iv-surface-curve-f11.yml"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  eliminate:
+    strategy:
+      fail-fast: false
+      matrix:
+        projection: [r-s, p0-r, p0-s]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute one saturated plane projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-surface-curve-f11-${{ matrix.projection }}
+          mkdir -p "$root"
+          set +e
+          timeout --signal=TERM 1740s \
+            sage -python research/rank17_iv_surface_curve_elimination.py \
+              --prime 11 \
+              --projection ${{ matrix.projection }} \
+              --output "$root/result.json" \
+            2>&1 | tee "$root/run.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > "$root/exit-status.txt"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          (cd "$root" && sha256sum -c SHA256SUMS)
+          exit "$status"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-surface-curve-f11-${{ matrix.projection }}
+          path: /tmp/rank17-iv-surface-curve-f11-${{ matrix.projection }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  collect:
+    needs: eliminate
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: rank17-iv-surface-curve-f11-*
+          path: /tmp/rank17-iv-surface-curve-f11
+
+      - name: Preserve a fail-closed projection comparison
+        env:
+          ELIMINATE_RESULT: ${{ needs.eliminate.result }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          root = Path("/tmp/rank17-iv-surface-curve-f11")
+          projections = []
+          if root.exists():
+              for result_path in sorted(root.rglob("result.json")):
+                  result = json.loads(result_path.read_text())
+                  exit_path = result_path.parent / "exit-status.txt"
+                  exit_status = (
+                      int(exit_path.read_text().strip())
+                      if exit_path.exists() and exit_path.read_text().strip()
+                      else None
+                  )
+                  projections.append({
+                      "projection": result.get("projection"),
+                      "status": result.get("status"),
+                      "exit_status": exit_status,
+                      "surface_krull_dimension": result.get(
+                          "surface_krull_dimension"
+                      ),
+                      "elapsed_seconds": result.get("elapsed_seconds"),
+                      "plane_basis": result.get("plane_basis", []),
+                      "result_sha256": hashlib.sha256(
+                          result_path.read_bytes()
+                      ).hexdigest(),
+                      "error": result.get("error"),
+                  })
+          projections.sort(key=lambda item: item["projection"] or "")
+          completed = [
+              item for item in projections
+              if item["status"] == "completed" and item["exit_status"] in (0, None)
+          ]
+          plane_equations = [
+              (item, equation)
+              for item in completed
+              for equation in item["plane_basis"]
+              if equation.get("polynomial") not in (None, "0")
+          ]
+          if plane_equations:
+              best_item, best_equation = min(
+                  plane_equations,
+                  key=lambda pair: (
+                      pair[1]["total_degree"],
+                      pair[1]["degree_first"] + pair[1]["degree_second"],
+                      pair[0]["projection"],
+                  ),
+              )
+              classification = "AT_LEAST_ONE_PLANE_ELIMINANT_COMPUTED"
+              best = {
+                  "projection": best_item["projection"],
+                  **best_equation,
+              }
+          elif len(completed) == 3:
+              classification = "ALL_PROJECTIONS_COMPLETED_WITHOUT_PLANE_POLYNOMIAL"
+              best = None
+          else:
+              classification = "SURFACE_CURVE_ELIMINATION_INCOMPLETE"
+              best = None
+
+          payload = {
+              "schema_version": 1,
+              "certificate_id": "rank17_iv_surface_curve_elimination_f11",
+              "truth_status": (
+                  "EXACT modular elimination where completed; timeout or failure is "
+                  "not an obstruction; no characteristic-zero, section, or rank-30 conclusion"
+              ),
+              "prime": 11,
+              "workflow_result": os.environ.get("ELIMINATE_RESULT"),
+              "classification": classification,
+              "completed_projection_count": len(completed),
+              "best_plane_equation": best,
+              "projections": projections,
+              "limitations": [
+                  "A single-prime eliminant is not yet a polynomial over Q.",
+                  "The three projections need not be birational.",
+                  "Split square conditions and section equations are not included.",
+              ],
+          }
+          raw = json.dumps(
+              payload, sort_keys=True, separators=(",", ":")
+          ).encode()
+          payload["record_sha256"] = hashlib.sha256(raw).hexdigest()
+          output = Path(
+              "research/data/rank17_iv_surface_curve_elimination_f11.json"
+          )
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+          print(json.dumps({
+              "classification": classification,
+              "completed": len(completed),
+              "best": best,
+              "record_sha256": payload["record_sha256"],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Commit only the modular elimination summary
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/rank17_iv_surface_curve_elimination_f11.json
+          git diff --cached --quiet && {
+            echo "surface curve elimination delta missing" >&2
+            exit 1
+          }
+          git commit -m "Classify the F11 IV surface curve projections"
+          git push
