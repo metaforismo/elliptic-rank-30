@@ -1,0 +1,106 @@
+name: Certify rank-17 IV surfaces over F11 v2
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_surface_locus_finite_field.c"
+      - "research/rank17_iv_surface_locus_finite_field_v2.py"
+      - "research/rank17_iv_surface_locus_certificate_v2.py"
+      - ".github/workflows/certify-rank17-iv-surfaces-f11-v2.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile the exhaustive enumerator
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_finite_field.c \
+            -o /tmp/rank17-iv-surface-enumerator
+
+      - name: Run the complete F11 chart twice
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-surface-enumerator 11 > /tmp/f11-a.json
+          /tmp/rank17-iv-surface-enumerator 11 > /tmp/f11-b.json
+          cmp /tmp/f11-a.json /tmp/f11-b.json
+          sha256sum /tmp/f11-a.json /tmp/f11-b.json
+
+      - name: Cross-check the complete F5 accepted set independently
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-surface-enumerator 5 > /tmp/f5.json
+          python3 research/rank17_iv_surface_locus_certificate_v2.py \
+            --production /tmp/f11-a.json \
+            --small-prime /tmp/f5.json \
+            --output research/data/rank17_iv_surfaces_f11_v2.json
+          python3 research/rank17_iv_surface_locus_certificate_v2.py \
+            --production /tmp/f11-b.json \
+            --small-prime /tmp/f5.json \
+            --compare research/data/rank17_iv_surfaces_f11_v2.json
+
+      - name: Verify certificate boundary and exact counts
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("research/data/rank17_iv_surfaces_f11_v2.json")
+          data = json.loads(path.read_text())
+          assert data["schema_version"] == 2
+          assert data["prime"] == 11
+          assert data["visited_parameter_tuples"] == 2 * 10 * 11**5
+          assert data["candidate_count"] == len(data["candidates"])
+          assert data["independent_small_prime_cross_check"][
+              "accepted_tuple_sets_identical"
+          ] is True
+          assert "no characteristic-zero" in data["truth_status"]
+          assert "rank-30" in data["truth_status"]
+          for candidate in data["candidates"]:
+              assert candidate["surface_equations"]["i4_cube_jet"] == [0, 0, 0]
+              assert candidate["surface_equations"]["c4_at_one"] == 0
+              assert candidate["surface_equations"]["c4_derivative_at_one"] == 0
+              assert candidate["surface_equations"]["c6_at_one"] == 0
+              assert candidate["surface_equations"]["c6_derivative_at_one"] == 0
+              exact = candidate["exact_fibre_checks"]
+              assert exact["delta_t4"] != 0
+              assert exact["delta_t12"] != 0
+              assert exact["c6_quadratic_coefficient_at_one"] != 0
+              split = candidate["split_tangent_checks"]
+              assert split["i4_square_roots"]
+              assert split["iv_square_roots"]
+          print({
+              "candidate_count": data["candidate_count"],
+              "certificate_sha256": data["certificate_sha256"],
+          })
+          PY
+          sha256sum research/data/rank17_iv_surfaces_f11_v2.json
+
+      - name: Commit only the canonical v2 certificate
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/rank17_iv_surfaces_f11_v2.json
+          git diff --cached --quiet && {
+            echo "surface certificate delta missing" >&2
+            exit 1
+          }
+          git commit -m "Certify the normalized split IV surface locus over F11"
+          git push
