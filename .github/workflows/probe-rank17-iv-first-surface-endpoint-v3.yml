@@ -1,0 +1,318 @@
+name: Certify first rank-17 IV surface section branches
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surfaces_f11_v2.json"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      has_candidates: ${{ steps.matrix.outputs.has_candidates }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      candidate_count: ${{ steps.matrix.outputs.candidate_count }}
+      surface_sha256: ${{ steps.matrix.outputs.surface_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        name: Select the four split branches of the first surface
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          data = json.loads(
+              Path("research/data/rank17_iv_surfaces_f11_v2.json").read_text()
+          )
+          candidates = data["candidates"]
+          print(f"candidate_count={len(candidates)}")
+          print(f"surface_sha256={data['certificate_sha256']}")
+          if not candidates:
+              print("has_candidates=false")
+              include = [{
+                  "candidate_index": -1,
+                  "i4_root": 0,
+                  "iv_root": 0,
+              }]
+          else:
+              print("has_candidates=true")
+              first = candidates[0]
+              include = [
+                  {
+                      "candidate_index": 0,
+                      "i4_root": int(i4_root),
+                      "iv_root": int(iv_root),
+                  }
+                  for i4_root in first["split_tangent_checks"]["i4_square_roots"]
+                  for iv_root in first["split_tangent_checks"]["iv_square_roots"]
+              ]
+          print("matrix=" + json.dumps(
+              {"include": include}, separators=(",", ":")
+          ))
+          PY
+
+  solve:
+    needs: prepare
+    if: needs.prepare.outputs.has_candidates == 'true'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute one exact endpoint-reduced branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-endpoint-v3-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          mkdir -p "$root"
+          set +e
+          timeout --signal=TERM 1740s \
+            sage -python research/rank17_iv_section_endpoint_ideal_v2.py \
+              --certificate research/data/rank17_iv_surfaces_f11_v2.json \
+              --candidate-index ${{ matrix.candidate_index }} \
+              --i4-root ${{ matrix.i4_root }} \
+              --iv-root ${{ matrix.iv_root }} \
+              --multiplication-cap 384 \
+              --output "$root/result.json" \
+            2>&1 | tee "$root/run.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > "$root/exit-status.txt"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          (cd "$root" && sha256sum -c SHA256SUMS)
+          exit "$status"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-endpoint-v3-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          path: /tmp/rank17-iv-endpoint-v3-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  collect:
+    needs: [prepare, solve]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: rank17-iv-endpoint-v3-*
+          path: /tmp/rank17-iv-endpoint-v3
+
+      - name: Build a fail-closed permanent classification
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          SOLVE_RESULT: ${{ needs.solve.result }}
+          EXPECTED_CANDIDATE_COUNT: ${{ needs.prepare.outputs.candidate_count }}
+          EXPECTED_SURFACE_SHA256: ${{ needs.prepare.outputs.surface_sha256 }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          certificate_path = Path(
+              "research/data/rank17_iv_surfaces_f11_v2.json"
+          )
+          certificate = json.loads(certificate_path.read_text())
+          root = Path("/tmp/rank17-iv-endpoint-v3")
+          records = []
+          if root.exists():
+              for result_path in sorted(root.rglob("result.json")):
+                  artifact_dir = result_path.parent
+                  result = json.loads(result_path.read_text())
+                  parts = artifact_dir.name.rsplit("-", 3)
+                  parsed = {
+                      "candidate_index": None,
+                      "i4_root": None,
+                      "iv_root": None,
+                  }
+                  if len(parts) == 4:
+                      try:
+                          parsed = {
+                              "candidate_index": int(parts[1]),
+                              "i4_root": int(parts[2]),
+                              "iv_root": int(parts[3]),
+                          }
+                      except ValueError:
+                          pass
+                  for key in parsed:
+                      if result.get(key) is not None:
+                          parsed[key] = result[key]
+                  basis_path = artifact_dir / "groebner-basis.txt"
+                  basis_text = basis_path.read_text() if basis_path.exists() else None
+                  exit_path = artifact_dir / "exit-status.txt"
+                  exit_status = (
+                      int(exit_path.read_text().strip())
+                      if exit_path.exists() and exit_path.read_text().strip()
+                      else None
+                  )
+                  record = {
+                      **parsed,
+                      "artifact_directory": artifact_dir.name,
+                      "status": result.get("status", "missing_status"),
+                      "truth_status": result.get("truth_status"),
+                      "exit_status": exit_status,
+                      "krull_dimension": result.get("krull_dimension"),
+                      "quotient_dimension": result.get("quotient_dimension"),
+                      "primitive_etale_coordinate": result.get(
+                          "primitive_etale_coordinate"
+                      ),
+                      "multiplication_coordinates": result.get(
+                          "multiplication_coordinates", []
+                      ),
+                      "groebner_basis_is_unit": (
+                          basis_text.strip() == "1" if basis_text is not None else None
+                      ),
+                      "result_sha256": hashlib.sha256(
+                          result_path.read_bytes()
+                      ).hexdigest(),
+                      "basis_sha256": (
+                          hashlib.sha256(basis_path.read_bytes()).hexdigest()
+                          if basis_path.exists() else None
+                      ),
+                      "error": result.get("error"),
+                  }
+                  records.append(record)
+
+          records.sort(key=lambda item: (
+              item["candidate_index"] if item["candidate_index"] is not None else -1,
+              item["i4_root"] if item["i4_root"] is not None else -1,
+              item["iv_root"] if item["iv_root"] is not None else -1,
+          ))
+          candidate_count = certificate["candidate_count"]
+          expected_branches = 0 if candidate_count == 0 else 4
+          empty = [
+              item for item in records
+              if item["groebner_basis_is_unit"] is True
+              or (
+                  item["krull_dimension"] is not None
+                  and item["krull_dimension"] < 0
+              )
+              or item["quotient_dimension"] == 0
+          ]
+          finite_nonempty = [
+              item for item in records
+              if item["krull_dimension"] == 0
+              and isinstance(item["quotient_dimension"], int)
+              and item["quotient_dimension"] > 0
+          ]
+          positive_dimensional = [
+              item for item in records
+              if isinstance(item["krull_dimension"], int)
+              and item["krull_dimension"] > 0
+          ]
+          incomplete = [
+              item for item in records
+              if item["status"] != "completed"
+              or item["exit_status"] not in (0, None)
+          ]
+
+          if candidate_count == 0:
+              classification = "NO_NORMALIZED_SPLIT_IV_SURFACE_OVER_F11"
+          elif finite_nonempty:
+              classification = "FINITE_SECTION_ALGEBRA_FOUND_ON_FIRST_SURFACE"
+          elif positive_dimensional:
+              classification = "POSITIVE_DIMENSIONAL_SECTION_LOCUS_FOUND"
+          elif (
+              len(records) == expected_branches
+              and len(empty) == expected_branches
+              and not incomplete
+          ):
+              classification = "ALL_FOUR_FIRST_SURFACE_BRANCHES_EMPTY"
+          else:
+              classification = "FIRST_SURFACE_BRANCH_CLASSIFICATION_INCOMPLETE"
+
+          payload = {
+              "schema_version": 1,
+              "certificate_id": "rank17_iv_first_surface_endpoint_f11_v3",
+              "truth_status": (
+                  "EXACT finite-field branch classification where completed; "
+                  "timeouts and failures remain unresolved; no characteristic-zero "
+                  "or rank-30 conclusion"
+              ),
+              "surface_certificate_sha256": certificate["certificate_sha256"],
+              "surface_candidate_count": candidate_count,
+              "first_surface_record_sha256": (
+                  certificate["candidates"][0]["record_sha256"]
+                  if certificate["candidates"] else None
+              ),
+              "expected_branch_count": expected_branches,
+              "observed_branch_count": len(records),
+              "workflow_needs": {
+                  "prepare": os.environ.get("PREPARE_RESULT"),
+                  "solve": os.environ.get("SOLVE_RESULT"),
+              },
+              "classification": classification,
+              "empty_branch_count": len(empty),
+              "finite_nonempty_branch_count": len(finite_nonempty),
+              "positive_dimensional_branch_count": len(positive_dimensional),
+              "incomplete_branch_count": len(incomplete),
+              "branches": records,
+              "limitations": [
+                  "Only candidate index zero is tested.",
+                  "Only the normalized D leading-coefficient-one chart is tested.",
+                  "A finite F11 quotient is not a Q-rational section.",
+                  "An incomplete branch is not an obstruction.",
+                  "The unconditional global rank lower bound remains 29.",
+              ],
+          }
+          raw = json.dumps(
+              payload, sort_keys=True, separators=(",", ":")
+          ).encode()
+          payload["record_sha256"] = hashlib.sha256(raw).hexdigest()
+          output = Path(
+              "research/data/rank17_iv_first_surface_endpoint_f11_v3.json"
+          )
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+          print(json.dumps({
+              "classification": classification,
+              "surface_candidate_count": candidate_count,
+              "observed_branch_count": len(records),
+              "empty": len(empty),
+              "finite_nonempty": len(finite_nonempty),
+              "positive_dimensional": len(positive_dimensional),
+              "incomplete": len(incomplete),
+              "record_sha256": payload["record_sha256"],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Commit only the permanent fail-closed classification
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/rank17_iv_first_surface_endpoint_f11_v3.json
+          git diff --cached --quiet && {
+            echo "endpoint classification delta missing" >&2
+            exit 1
+          }
+          git commit -m "Classify the first F11 IV surface section branches"
+          git push
