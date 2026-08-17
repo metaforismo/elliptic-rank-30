@@ -84,5 +84,10 @@ jobs:
           python3 research/rank17_section_local_branch_f7.py \
             --compare certificates/rank17_section_local_branch_f7.json
 
+      - name: Recompute the target-component mod-49 obstruction
+        run: |
+          python3 research/rank17_component_lift_obstruction_f7.py \
+            --compare certificates/rank17_component_lift_obstruction_f7.json
+
       - name: Run exact unit tests
         run: python3 -m unittest discover -s tests -v
