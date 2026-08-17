@@ -1,0 +1,111 @@
+name: Certify rank-17 IV surfaces over F13
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_surface_locus_finite_field.c"
+      - "research/rank17_iv_surface_locus_finite_field_v2.py"
+      - "research/rank17_iv_surface_locus_certificate_v2.py"
+      - ".github/workflows/certify-rank17-iv-surfaces-f13-v1.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile the exhaustive enumerator
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_finite_field.c \
+            -o /tmp/rank17-iv-surface-enumerator
+
+      - name: Exhaust F13 twice and cross-check F5 independently
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-surface-enumerator 13 > /tmp/f13-a.json
+          /tmp/rank17-iv-surface-enumerator 13 > /tmp/f13-b.json
+          cmp /tmp/f13-a.json /tmp/f13-b.json
+          /tmp/rank17-iv-surface-enumerator 5 > /tmp/f5.json
+          python3 research/rank17_iv_surface_locus_certificate_v2.py \
+            --production /tmp/f13-a.json \
+            --small-prime /tmp/f5.json \
+            --output /tmp/rank17_iv_surfaces_f13_v2.json
+          python3 research/rank17_iv_surface_locus_certificate_v2.py \
+            --production /tmp/f13-b.json \
+            --small-prime /tmp/f5.json \
+            --compare /tmp/rank17_iv_surfaces_f13_v2.json
+
+      - name: Validate the exact boundary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              "/tmp/rank17_iv_surfaces_f13_v2.json"
+          ).read_text())
+          assert data["prime"] == 13
+          assert data["visited_parameter_tuples"] == 2 * 12 * 13**5
+          assert data["candidate_count"] == len(data["candidates"])
+          assert data["independent_small_prime_cross_check"][
+              "accepted_tuple_sets_identical"
+          ] is True
+          assert "no characteristic-zero" in data["truth_status"]
+          assert "rank-30" in data["truth_status"]
+          print({
+              "candidate_count": data["candidate_count"],
+              "certificate_sha256": data["certificate_sha256"],
+          })
+          PY
+          sha256sum /tmp/f13-a.json /tmp/f13-b.json /tmp/f5.json \
+            /tmp/rank17_iv_surfaces_f13_v2.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-surfaces-f13-v1
+          path: |
+            /tmp/f13-a.json
+            /tmp/f13-b.json
+            /tmp/f5.json
+            /tmp/rank17_iv_surfaces_f13_v2.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/rank17_iv_surfaces_f13_v2.json \
+            research/data/rank17_iv_surfaces_f13_v2.json
+          python3 research/rank17_iv_surface_locus_certificate_v2.py \
+            --production /tmp/f13-a.json \
+            --small-prime /tmp/f5.json \
+            --compare research/data/rank17_iv_surfaces_f13_v2.json
+          git add research/data/rank17_iv_surfaces_f13_v2.json
+          if git diff --cached --quiet; then
+            echo "F13 certificate already present"
+            exit 0
+          fi
+          git commit -m "Certify the normalized split IV surface locus over F13"
+          git push origin "HEAD:$branch"
