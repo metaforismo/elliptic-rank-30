@@ -1,0 +1,155 @@
+name: Eliminate rank-17 IV surface curve through the Wronskian system
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/eliminate-rank17-iv-surface-wronskian-f11.yml"
+      - "research/rank17_iv_surface_wronskian_elimination.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  eliminate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 42
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute the exact sparse Wronskian elimination over F11
+        shell: bash
+        run: |
+          set -uo pipefail
+          root=/tmp/rank17-iv-wronskian-elimination-f11
+          mkdir -p "$root"
+          start="$(date +%s)"
+          timeout --signal=TERM --kill-after=30s 2100s \
+            sage -python research/rank17_iv_surface_wronskian_elimination.py \
+              --prime 11 \
+              --output "$root/result.json" \
+              > "$root/stdout.log" \
+              2> "$root/stderr.log"
+          rc=$?
+          end="$(date +%s)"
+          printf '%s\n' "$rc" > "$root/exit-code.txt"
+          printf '%s\n' "$((end-start))" > "$root/wall-seconds.txt"
+          exit 0
+
+      - name: Classify without inferring from timeout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-wronskian-elimination-f11')
+          rc = int((root / 'exit-code.txt').read_text().strip())
+          wall = int((root / 'wall-seconds.txt').read_text().strip())
+          result_path = root / 'result.json'
+          result = (
+              json.loads(result_path.read_text())
+              if result_path.exists() and result_path.stat().st_size
+              else None
+          )
+          if rc == 124:
+              classification = 'TIMEOUT_INCOMPLETE'
+          elif rc != 0:
+              classification = 'COMPUTATION_ERROR_INCOMPLETE'
+          elif result is None:
+              classification = 'MISSING_RESULT_INCOMPLETE'
+          elif result.get('status') != 'completed':
+              classification = 'UNFINISHED_RESULT_INCOMPLETE'
+          elif result.get('plane_basis_a4_a5'):
+              classification = 'PLANE_ELIMINATION_COMPUTED'
+          else:
+              classification = 'GROEBNER_COMPLETED_WITHOUT_PLANE_GENERATOR'
+
+          files = {}
+          for path in sorted(root.iterdir()):
+              if path.is_file():
+                  files[path.name] = {
+                      'bytes': path.stat().st_size,
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  }
+          record = {
+              'schema_version': 1,
+              'truth_status': (
+                  'Exact Wronskian modular elimination where completed; '
+                  'timeout, missing output, or solver error has no '
+                  'mathematical meaning; no characteristic-zero, section, '
+                  'or rank-30 conclusion.'
+              ),
+              'prime': 11,
+              'classification': classification,
+              'exit_code': rc,
+              'wall_seconds': wall,
+              'calculation': result,
+              'files': files,
+              'limitations': [
+                  'Only p0 is saturated in the elimination ideal.',
+                  'Any factor contained in C3*C4*B(1)=0 is a boundary factor and must be removed separately.',
+                  'A single modular plane equation is not a polynomial over Q.',
+                  'No height-79/12 section is imposed.',
+                  'The unconditional rank lower bound remains 29.'
+              ],
+          }
+          raw = json.dumps(record, sort_keys=True, separators=(',', ':')).encode()
+          record['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (root / 'classified.json').write_text(
+              json.dumps(record, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps({
+              'classification': classification,
+              'exit_code': rc,
+              'wall_seconds': wall,
+              'record_sha256': record['record_sha256'],
+          }, indent=2, sort_keys=True))
+          PY
+          find /tmp/rank17-iv-wronskian-elimination-f11 \
+            -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum \
+            > /tmp/rank17-iv-wronskian-elimination-f11/SHA256SUMS
+          (cd /tmp/rank17-iv-wronskian-elimination-f11 && sha256sum -c SHA256SUMS)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-surface-wronskian-elimination-f11
+          path: /tmp/rank17-iv-wronskian-elimination-f11
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Publish only the fail-closed classified record
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-wronskian-elimination-f11/classified.json \
+            /tmp/publish-wronskian-elimination-f11.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-wronskian-elimination-f11.json \
+            research/data/rank17_iv_surface_wronskian_elimination_f11.json
+          git add research/data/rank17_iv_surface_wronskian_elimination_f11.json
+          if git diff --cached --quiet; then
+            echo "classified Wronskian elimination record already current"
+            exit 0
+          fi
+          git commit -m "Record the F11 Wronskian surface-curve elimination"
+          git push origin "HEAD:$branch"
