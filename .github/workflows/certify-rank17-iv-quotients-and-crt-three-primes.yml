@@ -1,0 +1,134 @@
+name: Certify rank-17 IV quotients and three-prime CRT
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-quotients-and-crt-three-primes.yml"
+      - "research/rank17_iv_surface_geometric_quotient.py"
+      - "research/rank17_iv_surface_crt_reconstruction.py"
+      - "research/rank17_iv_surface_crt_three_primes.py"
+      - "research/data/rank17_iv_surfaces_f11_v2.json"
+      - "research/data/rank17_iv_surfaces_f13_v2.json"
+      - "research/data/rank17_iv_surfaces_f17_v2.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute all three geometric quotients
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-three-prime
+          for prime in 11 13 17; do
+            python3 research/rank17_iv_surface_geometric_quotient.py \
+              --input "research/data/rank17_iv_surfaces_f${prime}_v2.json" \
+              --output "/tmp/rank17-iv-three-prime/quotient-f${prime}.json"
+            python3 research/rank17_iv_surface_geometric_quotient.py \
+              --input "research/data/rank17_iv_surfaces_f${prime}_v2.json" \
+              --compare "/tmp/rank17-iv-three-prime/quotient-f${prime}.json"
+          done
+
+      - name: Run unique bounded CRT reconstruction over modulus 2431
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_crt_three_primes.py \
+            --f11 /tmp/rank17-iv-three-prime/quotient-f11.json \
+            --f13 /tmp/rank17-iv-three-prime/quotient-f13.json \
+            --f17 /tmp/rank17-iv-three-prime/quotient-f17.json \
+            --bound 34 \
+            --output /tmp/rank17-iv-three-prime/crt-f11-f13-f17.json
+          python3 research/rank17_iv_surface_crt_three_primes.py \
+            --f11 /tmp/rank17-iv-three-prime/quotient-f11.json \
+            --f13 /tmp/rank17-iv-three-prime/quotient-f13.json \
+            --f17 /tmp/rank17-iv-three-prime/quotient-f17.json \
+            --bound 34 \
+            --compare /tmp/rank17-iv-three-prime/crt-f11-f13-f17.json
+
+      - name: Validate the exact reconstruction boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-three-prime')
+          quotients = {
+              p: json.loads((root / f'quotient-f{p}.json').read_text())
+              for p in (11, 13, 17)
+          }
+          assert [quotients[p]['geometric_surface_count'] for p in (11,13,17)] == [4,1,5]
+          assert [quotients[p]['raw_candidate_count'] for p in (11,13,17)] == [8,2,10]
+          crt = json.loads((root / 'crt-f11-f13-f17.json').read_text())
+          assert crt['modulus'] == 2431
+          assert crt['rational_numerator_denominator_bound'] == 34
+          assert crt['uniqueness_criterion']['left_hand_side'] == 2312
+          assert crt['uniqueness_criterion']['right_hand_side'] == 2431
+          assert crt['uniqueness_criterion']['satisfied'] is True
+          assert crt['surface_triple_count'] == 20
+          assert crt['exact_q_surface_count'] == len(crt['exact_q_surfaces'])
+          print({
+              'full_coordinate_candidate_count': crt['full_coordinate_candidate_count'],
+              'exact_q_surface_count': crt['exact_q_surface_count'],
+              'record_sha256': crt['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-three-prime/*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-three-prime-quotients-and-crt
+          path: /tmp/rank17-iv-three-prime
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data /tmp/rank17-iv-three-prime-publish
+          for prime in 11 13 17; do
+            python3 research/rank17_iv_surface_geometric_quotient.py \
+              --input "research/data/rank17_iv_surfaces_f${prime}_v2.json" \
+              --output "/tmp/rank17-iv-three-prime-publish/quotient-f${prime}.json"
+            cp "/tmp/rank17-iv-three-prime-publish/quotient-f${prime}.json" \
+              "research/data/rank17_iv_surface_geometric_quotient_f${prime}.json"
+          done
+          python3 research/rank17_iv_surface_crt_three_primes.py \
+            --f11 /tmp/rank17-iv-three-prime-publish/quotient-f11.json \
+            --f13 /tmp/rank17-iv-three-prime-publish/quotient-f13.json \
+            --f17 /tmp/rank17-iv-three-prime-publish/quotient-f17.json \
+            --bound 34 \
+            --output research/data/rank17_iv_surface_crt_f11_f13_f17_unique_bounded.json
+          git add \
+            research/data/rank17_iv_surface_geometric_quotient_f11.json \
+            research/data/rank17_iv_surface_geometric_quotient_f13.json \
+            research/data/rank17_iv_surface_geometric_quotient_f17.json \
+            research/data/rank17_iv_surface_crt_f11_f13_f17_unique_bounded.json
+          if git diff --cached --quiet; then
+            echo "three-prime quotient and CRT records already current"
+            exit 0
+          fi
+          git commit -m "Certify the three-prime additive-IV surface reconstruction gate"
+          git push origin "HEAD:$branch"
