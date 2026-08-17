@@ -1,0 +1,46 @@
+name: Probe reduced rank-17 IV section incidence
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_section_reduced_probe.py"
+      - ".github/workflows/probe-rank17-iv-section-reduced.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compute one exact reduced incidence ideal over F11
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-section-reduced
+          mkdir -p "$root"
+          sage -python research/rank17_iv_section_reduced_probe.py \
+            --surface 0 \
+            --q 1 \
+            --i4-sign 1 \
+            --iv-sign 1 \
+            --output "$root/result.json" \
+            | tee "$root/run.log"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          cd "$root"
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-section-reduced-p11-s0-q1-plus-plus
+          path: /tmp/rank17-iv-section-reduced
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
