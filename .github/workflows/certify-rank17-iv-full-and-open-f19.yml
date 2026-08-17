@@ -1,0 +1,138 @@
+name: Certify full and open rank-17 IV locus over F19
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-full-and-open-f19.yml"
+      - "research/rank17_iv_surface_locus_all_finite_field.c"
+      - "research/rank17_iv_surface_locus_all_certificate.py"
+      - "research/rank17_iv_surface_open_split_from_full.py"
+      - "research/rank17_iv_surface_residual_geometry.py"
+      - "research/rank17_iv_surface_locus_finite_field_v2.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile the geometric full-locus enumerator
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_all_finite_field.c \
+            -o /tmp/rank17-iv-full-enumerator
+
+      - name: Exhaust F7 for the independent implementation check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-f19
+          /tmp/rank17-iv-full-enumerator 7 > /tmp/rank17-iv-f19/f7.json
+
+      - name: Exhaust F19 twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-full-enumerator 19 > /tmp/rank17-iv-f19/f19-a.json
+          /tmp/rank17-iv-full-enumerator 19 > /tmp/rank17-iv-f19/f19-b.json
+          cmp /tmp/rank17-iv-f19/f19-a.json /tmp/rank17-iv-f19/f19-b.json
+
+      - name: Certify the full locus and exact split open subset
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_locus_all_certificate.py \
+            --production /tmp/rank17-iv-f19/f19-a.json \
+            --small-prime /tmp/rank17-iv-f19/f7.json \
+            --output /tmp/rank17-iv-f19/full-f19.json
+          python3 research/rank17_iv_surface_locus_all_certificate.py \
+            --production /tmp/rank17-iv-f19/f19-b.json \
+            --small-prime /tmp/rank17-iv-f19/f7.json \
+            --compare /tmp/rank17-iv-f19/full-f19.json
+          python3 research/rank17_iv_surface_open_split_from_full.py \
+            --full /tmp/rank17-iv-f19/full-f19.json \
+            --output /tmp/rank17-iv-f19/open-f19.json
+          python3 research/rank17_iv_surface_open_split_from_full.py \
+            --full /tmp/rank17-iv-f19/full-f19.json \
+            --compare /tmp/rank17-iv-f19/open-f19.json
+
+      - name: Validate the exact finite-field boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-f19')
+          full = json.loads((root / 'full-f19.json').read_text())
+          opened = json.loads((root / 'open-f19.json').read_text())
+          assert full['prime'] == 19
+          assert full['visited_parameter_tuples'] == 18 * 19**5
+          assert full['candidate_count'] == len(full['records'])
+          assert sum(full['split_category_counts'].values()) == full['candidate_count']
+          assert opened['prime'] == 19
+          assert opened['full_surface_count'] == full['candidate_count']
+          assert (
+              opened['accepted_exact_configuration_count']
+              + opened['rejected_residual_degeneration_count']
+              == opened['both_tangents_split_count']
+          )
+          assert len(opened['representatives']) == opened['accepted_exact_configuration_count']
+          print({
+              'full_surface_count': full['candidate_count'],
+              'split_categories': full['split_category_counts'],
+              'open_split_count': opened['accepted_exact_configuration_count'],
+              'degenerate_split_count': opened['rejected_residual_degeneration_count'],
+              'full_sha256': full['record_sha256'],
+              'open_sha256': opened['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-f19/*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-full-and-open-f19
+          path: /tmp/rank17-iv-f19
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-f19/full-f19.json /tmp/publish-full-f19.json
+          cp /tmp/rank17-iv-f19/open-f19.json /tmp/publish-open-f19.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-full-f19.json \
+            research/data/rank17_iv_full_surface_locus_f19.json
+          cp /tmp/publish-open-f19.json \
+            research/data/rank17_iv_open_split_surface_locus_f19.json
+          git add \
+            research/data/rank17_iv_full_surface_locus_f19.json \
+            research/data/rank17_iv_open_split_surface_locus_f19.json
+          if git diff --cached --quiet; then
+            echo "F19 full and open certificates already current"
+            exit 0
+          fi
+          git commit -m "Certify the full and open additive-IV loci over F19"
+          git push origin "HEAD:$branch"
