@@ -1,0 +1,793 @@
+{
+  "candidate_count": 8,
+  "candidates": [
+    {
+      "c4_coefficients_ascending": [
+        4,
+        1,
+        4,
+        3,
+        7,
+        1,
+        0,
+        1,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        8,
+        3,
+        6,
+        8,
+        1,
+        6,
+        1,
+        1,
+        5,
+        9,
+        10,
+        7,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        6,
+        0,
+        8,
+        0,
+        9,
+        7,
+        0,
+        1,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 1,
+        "delta_t12": 2,
+        "delta_t4": 6
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 2,
+        "p1": 3,
+        "p2": 7,
+        "p3": 4,
+        "r": 0,
+        "s": 1
+      },
+      "record_sha256": "820f43f25fadb90d372f20dc18e4fc0c012a0e4bb89590be5d807c7a5f4b6e87",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          4,
+          7
+        ],
+        "i4_square_target": 5,
+        "iv_square_roots": [
+          3,
+          8
+        ],
+        "iv_square_target": 9
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        3,
+        2,
+        3,
+        10,
+        1,
+        2,
+        5,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        7,
+        7,
+        8,
+        7,
+        8,
+        4,
+        3,
+        1,
+        0,
+        1,
+        10,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        10,
+        7,
+        9,
+        8,
+        9,
+        10,
+        0,
+        8,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 9,
+        "delta_t12": 5,
+        "delta_t4": 10
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 6,
+        "p1": 2,
+        "p2": 10,
+        "p3": 3,
+        "r": 5,
+        "s": 6
+      },
+      "record_sha256": "a6a17479d4f260bce850d1f5b0c13ba43cacfc6614bcc56e64c7fe6689bf540e",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          2,
+          9
+        ],
+        "i4_square_target": 4,
+        "iv_square_roots": [
+          2,
+          9
+        ],
+        "iv_square_target": 4
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        3,
+        5,
+        3,
+        6,
+        2,
+        4,
+        7,
+        2,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        7,
+        1,
+        10,
+        3,
+        9,
+        4,
+        5,
+        0,
+        6,
+        5,
+        1,
+        3,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        8,
+        7,
+        1,
+        9,
+        0,
+        0,
+        8,
+        7,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 9,
+        "delta_t12": 4,
+        "delta_t4": 8
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 6,
+        "p1": 5,
+        "p2": 0,
+        "p3": 6,
+        "r": 7,
+        "s": 2
+      },
+      "record_sha256": "56832322392c8f3391bffb9cab80368e57da44bf71e963594ee6446ad092a893",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          2,
+          9
+        ],
+        "i4_square_target": 4,
+        "iv_square_roots": [
+          2,
+          9
+        ],
+        "iv_square_target": 4
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        1,
+        6,
+        0,
+        3,
+        9,
+        10,
+        9,
+        5,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        10,
+        2,
+        3,
+        9,
+        5,
+        2,
+        2,
+        8,
+        7,
+        10,
+        5,
+        2,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        3,
+        6,
+        10,
+        6,
+        2,
+        7,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 3,
+        "delta_t12": 3,
+        "delta_t4": 1
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 10,
+        "p1": 8,
+        "p2": 10,
+        "p3": 7,
+        "r": 9,
+        "s": 5
+      },
+      "record_sha256": "ece2f7d7b6e8a0ef65c9a34aececc27f04a1f5f00cdbcf6f66c45937eb8e8240",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          5,
+          6
+        ],
+        "i4_square_target": 3,
+        "iv_square_roots": [
+          4,
+          7
+        ],
+        "iv_square_target": 5
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        1,
+        6,
+        0,
+        3,
+        9,
+        10,
+        9,
+        5,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        10,
+        2,
+        3,
+        9,
+        5,
+        2,
+        2,
+        8,
+        7,
+        10,
+        5,
+        2,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        3,
+        6,
+        10,
+        6,
+        2,
+        7,
+        6,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 3,
+        "delta_t12": 3,
+        "delta_t4": 1
+      },
+      "parameters": {
+        "e0": 10,
+        "p0": 1,
+        "p1": 3,
+        "p2": 1,
+        "p3": 4,
+        "r": 9,
+        "s": 5
+      },
+      "record_sha256": "29fb4a454ccfc44b6597f5a24b316d1eb7dc1a83eeb8851bf4a9d2ca9668d479",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          5,
+          6
+        ],
+        "i4_square_target": 3,
+        "iv_square_roots": [
+          4,
+          7
+        ],
+        "iv_square_target": 5
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        3,
+        5,
+        3,
+        6,
+        2,
+        4,
+        7,
+        2,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        7,
+        1,
+        10,
+        3,
+        9,
+        4,
+        5,
+        0,
+        6,
+        5,
+        1,
+        3,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        8,
+        7,
+        1,
+        9,
+        0,
+        0,
+        8,
+        7,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 9,
+        "delta_t12": 4,
+        "delta_t4": 8
+      },
+      "parameters": {
+        "e0": 10,
+        "p0": 5,
+        "p1": 6,
+        "p2": 0,
+        "p3": 5,
+        "r": 7,
+        "s": 2
+      },
+      "record_sha256": "61ab2c1b1ce2449b4f172fbd4da0911885aea9b8e2a2d1266590b7f6ff2509d9",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          2,
+          9
+        ],
+        "i4_square_target": 4,
+        "iv_square_roots": [
+          2,
+          9
+        ],
+        "iv_square_target": 4
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        3,
+        2,
+        3,
+        10,
+        1,
+        2,
+        5,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        7,
+        7,
+        8,
+        7,
+        8,
+        4,
+        3,
+        1,
+        0,
+        1,
+        10,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        10,
+        7,
+        9,
+        8,
+        9,
+        10,
+        0,
+        8,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 9,
+        "delta_t12": 5,
+        "delta_t4": 10
+      },
+      "parameters": {
+        "e0": 10,
+        "p0": 5,
+        "p1": 9,
+        "p2": 1,
+        "p3": 8,
+        "r": 5,
+        "s": 6
+      },
+      "record_sha256": "f584b8ca147753256c7b0eb4ab20635aa34ac252e358d5514dd2e8bbd8efa3b9",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          2,
+          9
+        ],
+        "i4_square_target": 4,
+        "iv_square_roots": [
+          2,
+          9
+        ],
+        "iv_square_target": 4
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        4,
+        1,
+        4,
+        3,
+        7,
+        1,
+        0,
+        1,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        8,
+        3,
+        6,
+        8,
+        1,
+        6,
+        1,
+        1,
+        5,
+        9,
+        10,
+        7,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        6,
+        0,
+        8,
+        0,
+        9,
+        7,
+        0,
+        1,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 1,
+        "delta_t12": 2,
+        "delta_t4": 6
+      },
+      "parameters": {
+        "e0": 10,
+        "p0": 9,
+        "p1": 8,
+        "p2": 4,
+        "p3": 7,
+        "r": 0,
+        "s": 1
+      },
+      "record_sha256": "6dd42cb6bd6b4aca3aa68b726bcac06bbb018fa5b42bb7655eb10e96b7b5f2e2",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          4,
+          7
+        ],
+        "i4_square_target": 5,
+        "iv_square_roots": [
+          3,
+          8
+        ],
+        "iv_square_target": 9
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "certificate_id": "rank17_iv_surface_locus_f11",
+  "certificate_sha256": "6b9286862656012902a2c5de5c6169c9265d1a7778e5afe068094d6577ab02ca",
+  "implementation": {
+    "certificate_builder": "research/rank17_iv_surface_locus_certificate_v2.py",
+    "enumerator": "research/rank17_iv_surface_locus_finite_field.c",
+    "independent_verifier": "research/rank17_iv_surface_locus_finite_field_v2.py"
+  },
+  "independent_small_prime_cross_check": {
+    "accepted_tuple_sets_identical": true,
+    "candidate_count": 0,
+    "prime": 5,
+    "python_certificate_sha256": "682aecdcb85d6d3daf448bb178733c44f15858bd884f69ba6494d10ba3d254cf",
+    "visited_parameter_tuples": 25000
+  },
+  "limitations": [
+    "Only the declared affine normalization and both e0 signs are covered.",
+    "No section variables are imposed by this certificate.",
+    "Finite-field points may fail to lift, or may lift only over number fields.",
+    "The global unconditional rank lower bound remains 29."
+  ],
+  "normalization": {
+    "c4_degree": 8,
+    "c6_degree": 12,
+    "fixed_fibres": {
+      "I12": "t=infinity",
+      "I4": "t=0",
+      "IV": "t=1"
+    },
+    "leading_c4": 1,
+    "leading_c6": 1,
+    "surface_parameters": [
+      "e0",
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "r",
+      "s"
+    ]
+  },
+  "prime": 11,
+  "schema_version": 2,
+  "truth_status": "EXHAUSTIVE normalized split I12+I4+IV surface enumeration over F_11; no characteristic-zero, rational-section, or rank-30 conclusion",
+  "visited_parameter_tuples": 3221020
+}
