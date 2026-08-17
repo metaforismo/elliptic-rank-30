@@ -1,0 +1,100 @@
+name: Probe rank-17 Sage solver capabilities
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/probe-rank17-sage-solver-capabilities.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Inspect the Sage 10.9 polynomial-system toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-solver-probe
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            sagemath/sagemath:10.9 \
+            bash -lc '
+              set -euo pipefail
+              python3 - <<"PY" > /tmp/capabilities.json
+          import json
+          import shutil
+          import subprocess
+          from sage.all import GF, PolynomialRing
+          from sage.version import version
+
+          R = PolynomialRing(GF(11), names=("x", "y"), order="degrevlex")
+          x, y = R.gens()
+          I = R.ideal([x**2 + y**2 - 1, x-y])
+          algorithms = {}
+          for name in ("msolve", "slimgb", "libsingular:slimgb"):
+              try:
+                  basis = I.groebner_basis(algorithm=name)
+                  algorithms[name] = {
+                      "available": True,
+                      "basis": [str(value) for value in basis],
+                  }
+              except Exception as exc:
+                  algorithms[name] = {
+                      "available": False,
+                      "error": repr(exc),
+                  }
+          binaries = {
+              name: shutil.which(name)
+              for name in ("msolve", "Singular", "sage")
+          }
+          print(json.dumps({
+              "schema_version": 1,
+              "truth_status": "Environment capability probe only; no mathematical claim.",
+              "sage_version": str(version),
+              "binaries": binaries,
+              "groebner_algorithms": algorithms,
+          }, indent=2, sort_keys=True))
+          PY
+              cat /tmp/capabilities.json
+            '
+          docker cp "$(docker ps -alq):/tmp/capabilities.json" /tmp/rank17-solver-probe/capabilities.json 2>/dev/null || true
+          if [ ! -s /tmp/rank17-solver-probe/capabilities.json ]; then
+            docker run --rm sagemath/sagemath:10.9 bash -lc '
+              python3 - <<"PY"
+          import json, shutil
+          from sage.all import GF, PolynomialRing
+          from sage.version import version
+          R=PolynomialRing(GF(11), names=("x","y"), order="degrevlex")
+          x,y=R.gens(); I=R.ideal([x**2+y**2-1,x-y])
+          algorithms={}
+          for name in ("msolve","slimgb","libsingular:slimgb"):
+              try:
+                  algorithms[name]={"available":True,"basis":[str(v) for v in I.groebner_basis(algorithm=name)]}
+              except Exception as exc:
+                  algorithms[name]={"available":False,"error":repr(exc)}
+          print(json.dumps({"schema_version":1,"truth_status":"Environment capability probe only; no mathematical claim.","sage_version":str(version),"binaries":{n:shutil.which(n) for n in ("msolve","Singular","sage")},"groebner_algorithms":algorithms},indent=2,sort_keys=True))
+          PY
+            ' > /tmp/rank17-solver-probe/capabilities.json
+          fi
+      - name: Commit the capability record
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp /tmp/rank17-solver-probe/capabilities.json \
+            research/data/RANK17_SAGE_SOLVER_CAPABILITIES.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/RANK17_SAGE_SOLVER_CAPABILITIES.json
+          git commit -m "Record the Sage polynomial solver capabilities"
+          git push
