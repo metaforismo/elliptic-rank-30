@@ -1,0 +1,79 @@
+name: Correct rank-17 IV Wronskian characteristic boundary
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/correct-rank17-iv-wronskian-characteristic-boundary.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  correct:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restrict the abstract converse to characteristic zero
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          script = Path('research/rank17_iv_wronskian_certificate.py')
+          text = script.read_text()
+          old = '"characteristic does not divide 12",'
+          new = '"characteristic zero",'
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected script replacement count: {text.count(old)}')
+          script.write_text(text.replace(old, new))
+
+          note = Path('research/rank17_iv_wronskian_reduction.md')
+          text = note.read_text()
+          old = 'Assume the characteristic does not divide `12`, and'
+          new = 'Assume characteristic zero, and'
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected note replacement count: {text.count(old)}')
+          text = text.replace(old, new)
+          marker = (
+              'The finite-field replays below verify `H=t^4R_4` directly; '
+              'they do not invoke this characteristic-zero degree argument.\n\n'
+          )
+          anchor = 'Assume characteristic zero, and\n\n'
+          if marker not in text:
+              text = text.replace(anchor, anchor + marker, 1)
+          note.write_text(text)
+          PY
+          git diff --check
+          grep -n 'characteristic zero' \
+            research/rank17_iv_wronskian_certificate.py \
+            research/rank17_iv_wronskian_reduction.md
+
+      - name: Rebase-safe publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp research/rank17_iv_wronskian_certificate.py /tmp/wronskian-certificate.py
+          cp research/rank17_iv_wronskian_reduction.md /tmp/wronskian-reduction.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/wronskian-certificate.py research/rank17_iv_wronskian_certificate.py
+          cp /tmp/wronskian-reduction.md research/rank17_iv_wronskian_reduction.md
+          git add \
+            research/rank17_iv_wronskian_certificate.py \
+            research/rank17_iv_wronskian_reduction.md
+          git diff --cached --check
+          git commit -m "Restrict the Wronskian converse to characteristic zero"
+          git push origin "HEAD:$branch"
