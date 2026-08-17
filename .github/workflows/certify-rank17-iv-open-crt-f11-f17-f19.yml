@@ -1,0 +1,109 @@
+name: Certify rank-17 IV open-locus CRT over F11 F17 F19
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-open-crt-f11-f17-f19.yml"
+      - "research/rank17_iv_surface_crt_open_f11_f17_f19.py"
+      - "research/rank17_iv_surface_crt_reconstruction.py"
+      - "research/data/rank17_iv_surface_residual_geometry_f11.json"
+      - "research/data/rank17_iv_surface_residual_geometry_f17.json"
+      - "research/data/rank17_iv_open_split_surface_locus_f19.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run the unique bounded good-prime CRT gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-open-crt
+          python3 research/rank17_iv_surface_crt_open_f11_f17_f19.py \
+            --f11 research/data/rank17_iv_surface_residual_geometry_f11.json \
+            --f17 research/data/rank17_iv_surface_residual_geometry_f17.json \
+            --f19 research/data/rank17_iv_open_split_surface_locus_f19.json \
+            --bound 42 \
+            --output /tmp/rank17-iv-open-crt/result.json
+          python3 research/rank17_iv_surface_crt_open_f11_f17_f19.py \
+            --f11 research/data/rank17_iv_surface_residual_geometry_f11.json \
+            --f17 research/data/rank17_iv_surface_residual_geometry_f17.json \
+            --f19 research/data/rank17_iv_open_split_surface_locus_f19.json \
+            --bound 42 \
+            --compare /tmp/rank17-iv-open-crt/result.json
+
+      - name: Verify the exact truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/rank17-iv-open-crt/result.json').read_text())
+          assert data['primes'] == [11, 17, 19]
+          assert data['modulus'] == 3553
+          assert data['open_surface_counts'] == {'11': 4, '17': 5, '19': 4}
+          assert data['surface_triple_count'] == 80
+          assert data['rational_numerator_denominator_bound'] == 42
+          assert data['uniqueness_criterion'] == {
+              'formula': '2*B^2 < M',
+              'left_hand_side': 3528,
+              'right_hand_side': 3553,
+              'satisfied': True,
+          }
+          assert data['exact_q_open_surface_count'] == len(data['exact_q_open_surfaces'])
+          for record in data['exact_q_open_surfaces']:
+              assert record['exact_fibre_checks']['residual_squarefree'] is True
+              assert record['exact_fibre_checks']['residual_coprime_to_c4'] is True
+          assert 'no section' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'full_coordinate_candidate_count': data['full_coordinate_candidate_count'],
+              'exact_q_open_surface_count': data['exact_q_open_surface_count'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-open-crt/result.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-open-crt-f11-f17-f19
+          path: /tmp/rank17-iv-open-crt/result.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-open-crt/result.json /tmp/publish-open-crt.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-open-crt.json \
+            research/data/rank17_iv_open_surface_crt_f11_f17_f19_unique_bounded.json
+          git add research/data/rank17_iv_open_surface_crt_f11_f17_f19_unique_bounded.json
+          if git diff --cached --quiet; then
+            echo "open-locus good-prime CRT record already current"
+            exit 0
+          fi
+          git commit -m "Certify the good-prime CRT gate for the open IV locus"
+          git push origin "HEAD:$branch"
