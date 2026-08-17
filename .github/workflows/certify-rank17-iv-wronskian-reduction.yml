@@ -1,0 +1,124 @@
+name: Certify rank-17 IV Wronskian reduction
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-wronskian-reduction.yml"
+      - "research/rank17_iv_wronskian_certificate.py"
+      - "research/rank17_iv_f13_collision_certificate.py"
+      - "research/rank17_iv_wronskian_reduction.md"
+      - "research/data/rank17_iv_surface_residual_geometry_f11.json"
+      - "research/data/rank17_iv_surface_residual_geometry_f17.json"
+      - "research/data/rank17_iv_surfaces_f13_v2.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove the generic identity and replay all open points
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-wronskian
+          sage -python research/rank17_iv_wronskian_certificate.py \
+            --surface research/data/rank17_iv_surface_residual_geometry_f11.json \
+            --surface research/data/rank17_iv_surface_residual_geometry_f17.json \
+            --output /tmp/rank17-iv-wronskian/wronskian.json
+          sage -python research/rank17_iv_wronskian_certificate.py \
+            --surface research/data/rank17_iv_surface_residual_geometry_f11.json \
+            --surface research/data/rank17_iv_surface_residual_geometry_f17.json \
+            --compare /tmp/rank17-iv-wronskian/wronskian.json
+
+      - name: Certify the F13 pole collision
+        shell: bash
+        run: |
+          set -euo pipefail
+          sage -python research/rank17_iv_f13_collision_certificate.py \
+            --input research/data/rank17_iv_surfaces_f13_v2.json \
+            --output /tmp/rank17-iv-wronskian/f13-collision.json
+          sage -python research/rank17_iv_f13_collision_certificate.py \
+            --input research/data/rank17_iv_surfaces_f13_v2.json \
+            --compare /tmp/rank17-iv-wronskian/f13-collision.json
+
+      - name: Validate the exact theorem boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          sage -python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-wronskian')
+          theorem = json.loads((root / 'wronskian.json').read_text())
+          assert theorem['symbolic']['generic_wronskian_identity_verified'] is True
+          assert theorem['symbolic']['free_wronskian_coefficients'] == [3, 4]
+          assert theorem['symbolic']['zero_coefficient_indices_for_surface_curve'] == [
+              0, 1, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+          ]
+          assert [item['prime'] for item in theorem['finite_field_replays']] == [11, 17]
+          assert [item['record_count'] for item in theorem['finite_field_replays']] == [4, 5]
+          for replay in theorem['finite_field_replays']:
+              for record in replay['records']:
+                  assert record['C_support'] == [3, 4]
+                  assert record['wronskian_leading_relation_verified'] is True
+                  assert record['extra_point_collides_with_residual_pole'] is False
+          collision = json.loads((root / 'f13-collision.json').read_text())
+          assert collision['extra_ramification_point'] == 8
+          assert collision['extra_point_is_repeated_residual_pole'] is True
+          assert collision['gcd_residual_derivative'] == [5, 1]
+          print({
+              'theorem_sha256': theorem['record_sha256'],
+              'collision_sha256': collision['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-wronskian/*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-wronskian-reduction
+          path: /tmp/rank17-iv-wronskian
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-wronskian/wronskian.json /tmp/publish-wronskian.json
+          cp /tmp/rank17-iv-wronskian/f13-collision.json /tmp/publish-f13-collision.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-wronskian.json \
+            research/data/rank17_iv_wronskian_reduction.json
+          cp /tmp/publish-f13-collision.json \
+            research/data/rank17_iv_f13_collision.json
+          git add \
+            research/data/rank17_iv_wronskian_reduction.json \
+            research/data/rank17_iv_f13_collision.json \
+            research/rank17_iv_wronskian_reduction.md
+          if git diff --cached --quiet; then
+            echo "Wronskian certificates already current"
+            exit 0
+          fi
+          git commit -m "Certify the Wronskian model of the additive-IV surface curve"
+          git push origin "HEAD:$branch"
