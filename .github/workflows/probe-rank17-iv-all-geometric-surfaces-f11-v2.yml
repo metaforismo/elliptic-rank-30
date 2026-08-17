@@ -1,0 +1,193 @@
+name: Probe all geometric rank-17 IV surfaces over F11 v2
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      can_run: ${{ steps.matrix.outputs.can_run }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      geometric_surface_count: ${{ steps.matrix.outputs.geometric_surface_count }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          source = json.loads(Path(
+              "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+          ).read_text())
+          representatives = source["representatives"]
+          count = len(representatives)
+          print(f"geometric_surface_count={count}")
+          include = []
+          if 0 < count <= 128:
+              print("can_run=true")
+              for index, candidate in enumerate(representatives):
+                  i4_roots = candidate[
+                      "split_tangent_checks"
+                  ]["i4_square_roots"]
+                  iv_roots = candidate[
+                      "split_tangent_checks"
+                  ]["iv_square_roots"]
+                  assert len(i4_roots) == 2
+                  assert len(iv_roots) == 2
+                  for eta in iv_roots:
+                      include.append({
+                          "candidate_index": index,
+                          "i4_root": int(i4_roots[0]),
+                          "iv_root": int(eta),
+                      })
+          else:
+              print("can_run=false")
+              include = [{
+                  "candidate_index": -1,
+                  "i4_root": 0,
+                  "iv_root": 0,
+              }]
+          print("matrix=" + json.dumps(
+              {"include": include}, separators=(",", ":")
+          ))
+
+          compatible = {
+              "schema_version": source["schema_version"],
+              "certificate_sha256": source["record_sha256"],
+              "prime": source["prime"],
+              "candidate_count": source["geometric_surface_count"],
+              "candidates": source["representatives"],
+          }
+          Path("/tmp/rank17_iv_geometric_candidates_f11.json").write_text(
+              json.dumps(compatible, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-geometric-candidates-f11-v2
+          path: /tmp/rank17_iv_geometric_candidates_f11.json
+          if-no-files-found: error
+          retention-days: 1
+
+  solve:
+    needs: prepare
+    if: needs.prepare.outputs.can_run == 'true'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank17-iv-geometric-candidates-f11-v2
+          path: /tmp
+
+      - name: Compute one exact section branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-all-f11-v2-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          mkdir -p "$root"
+          set +e
+          timeout --signal=TERM 1740s \
+            sage -python research/rank17_iv_section_endpoint_ideal_v2.py \
+              --certificate /tmp/rank17_iv_geometric_candidates_f11.json \
+              --candidate-index ${{ matrix.candidate_index }} \
+              --i4-root ${{ matrix.i4_root }} \
+              --iv-root ${{ matrix.iv_root }} \
+              --multiplication-cap 384 \
+              --output "$root/result.json" \
+            2>&1 | tee "$root/run.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > "$root/exit-status.txt"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          (cd "$root" && sha256sum -c SHA256SUMS)
+          exit "$status"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-all-f11-v2-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          path: /tmp/rank17-iv-all-f11-v2-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  collect:
+    needs: [prepare, solve]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: rank17-iv-all-f11-v2-*
+          path: /tmp/rank17-iv-all-f11-v2
+
+      - name: Build the deterministic classification
+        run: |
+          set -euo pipefail
+          python3 research/collect_rank17_iv_endpoint_artifacts.py \
+            --quotient research/data/rank17_iv_surface_geometric_quotient_f11.json \
+            --artifacts /tmp/rank17-iv-all-f11-v2 \
+            --prepare-result '${{ needs.prepare.result }}' \
+            --solve-result '${{ needs.solve.result }}' \
+            --output /tmp/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-all-geometric-surfaces-endpoint-f11-v2-summary
+          path: /tmp/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication of the classification
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json \
+            research/data/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json
+          python3 research/collect_rank17_iv_endpoint_artifacts.py \
+            --quotient research/data/rank17_iv_surface_geometric_quotient_f11.json \
+            --artifacts /tmp/rank17-iv-all-f11-v2 \
+            --prepare-result '${{ needs.prepare.result }}' \
+            --solve-result '${{ needs.solve.result }}' \
+            --output /tmp/recomputed-summary.json
+          cmp /tmp/recomputed-summary.json \
+            research/data/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json
+          git add research/data/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json
+          if git diff --cached --quiet; then
+            echo "classification already present"
+            exit 0
+          fi
+          git commit -m "Classify all geometric F11 IV section branches"
+          git push origin "HEAD:$branch"
