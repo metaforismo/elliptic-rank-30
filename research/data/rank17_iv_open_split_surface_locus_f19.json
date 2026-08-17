@@ -1,0 +1,522 @@
+{
+  "accepted_exact_configuration_count": 4,
+  "analyses": [
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "p0": 1,
+        "p1": 2,
+        "p2": 13,
+        "p3": 1,
+        "r": 14,
+        "s": 4
+      },
+      "record_sha256": "188e325d73aa9409f063b47b382cf9eee8cbb113f92c703fc9838d24aae147f5",
+      "representative_record_sha256": "2b092c8c691cb5b4720cec3764c7cea66d9db21aa960f6e7e51ab90fb3c4ef46",
+      "residual_quartic_coefficients_ascending": [
+        8,
+        5,
+        0,
+        17,
+        4
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "p0": 5,
+        "p1": 11,
+        "p2": 2,
+        "p3": 2,
+        "r": 13,
+        "s": 7
+      },
+      "record_sha256": "2c0f705fb23ee10f8c9602795c5b33f43592a59860216573c6c2a28dc472a0d4",
+      "representative_record_sha256": "b9a8e9ac6b123337d982d757a99c9e366ec64f604c6cac4e8f0fc9880e525c65",
+      "residual_quartic_coefficients_ascending": [
+        15,
+        1,
+        3,
+        12,
+        10
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "p0": 7,
+        "p1": 14,
+        "p2": 18,
+        "p3": 4,
+        "r": 12,
+        "s": 13
+      },
+      "record_sha256": "b3709d6d098d526b9aae06af29912c0343d6e1302b2f44c0307f19d969e6fb21",
+      "representative_record_sha256": "309ec7299de000a2314711c7f787481614e78bc25202f57b2a614ab59c636966",
+      "residual_quartic_coefficients_ascending": [
+        9,
+        13,
+        4,
+        10,
+        17
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": false,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": false
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        2,
+        1
+      ],
+      "parameters": {
+        "p0": 9,
+        "p1": 2,
+        "p2": 14,
+        "p3": 10,
+        "r": 3,
+        "s": 1
+      },
+      "record_sha256": "572388b7ebebca1854878d6d3f70452e40e0232844b13ea97e6e0c062ebf2056",
+      "representative_record_sha256": "fc6eef8b44e163e9a54bafaf304329029abcb11d6b636c5b3d9233ffcd9c1937",
+      "residual_quartic_coefficients_ascending": [
+        11,
+        10,
+        14,
+        12,
+        9
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "p0": 16,
+        "p1": 15,
+        "p2": 6,
+        "p3": 8,
+        "r": 5,
+        "s": 13
+      },
+      "record_sha256": "583398a77dc84560452eb18af77d920411eebd8e5b03a203b65c3f47384aa1bc",
+      "representative_record_sha256": "e960bde1e54e3d758a0cec67f7cb72ac2f85afba2d61fe3b3167d4433e8e7f5f",
+      "residual_quartic_coefficients_ascending": [
+        18,
+        9,
+        4,
+        4,
+        11
+      ]
+    }
+  ],
+  "both_tangents_split_count": 5,
+  "certificate_id": "rank17_iv_open_split_surface_locus_f19",
+  "exact_configuration": "I12 + I4 + IV + 4 I1",
+  "full_surface_count": 14,
+  "limitations": [
+    "The census is confined to the declared normalized affine chart.",
+    "A finite-field point need not lift to characteristic zero.",
+    "No height-79/12 section is imposed.",
+    "The unconditional global rank lower bound remains 29."
+  ],
+  "normalization": "e0=1 jet-sign representative",
+  "prime": 19,
+  "record_sha256": "2119279b9a34b904471af7fc00914f4ff251c826b761094b2e7ab44bf3a45c37",
+  "rejected_residual_degeneration_count": 1,
+  "representatives": [
+    {
+      "c4_coefficients_ascending": [
+        1,
+        4,
+        11,
+        16,
+        15,
+        10,
+        14,
+        4,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        1,
+        6,
+        13,
+        15,
+        16,
+        7,
+        0,
+        12,
+        14,
+        15,
+        8,
+        6,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        8,
+        11,
+        9,
+        15,
+        0,
+        15,
+        13,
+        1,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 17,
+        "delta_t12": 4,
+        "delta_t4": 8
+      },
+      "parameters": {
+        "p0": 1,
+        "p1": 2,
+        "p2": 13,
+        "p3": 1,
+        "r": 14,
+        "s": 4
+      },
+      "record_sha256": "2b092c8c691cb5b4720cec3764c7cea66d9db21aa960f6e7e51ab90fb3c4ef46",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          4,
+          15
+        ],
+        "i4_square_target": 16,
+        "iv_split": true,
+        "iv_square_roots": [
+          2,
+          17
+        ],
+        "iv_square_target": 4
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        6,
+        15,
+        8,
+        7,
+        16,
+        3,
+        13,
+        7,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        11,
+        8,
+        8,
+        13,
+        4,
+        6,
+        11,
+        17,
+        3,
+        5,
+        7,
+        1,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        15,
+        17,
+        13,
+        3,
+        10,
+        2,
+        15,
+        10,
+        10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 4,
+        "delta_t12": 10,
+        "delta_t4": 15
+      },
+      "parameters": {
+        "p0": 5,
+        "p1": 11,
+        "p2": 2,
+        "p3": 2,
+        "r": 13,
+        "s": 7
+      },
+      "record_sha256": "b9a8e9ac6b123337d982d757a99c9e366ec64f604c6cac4e8f0fc9880e525c65",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          2,
+          17
+        ],
+        "i4_square_target": 4,
+        "iv_split": true,
+        "iv_square_roots": [
+          7,
+          12
+        ],
+        "iv_square_target": 11
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        11,
+        6,
+        11,
+        9,
+        6,
+        7,
+        12,
+        13,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        1,
+        6,
+        17,
+        8,
+        11,
+        4,
+        9,
+        10,
+        7,
+        8,
+        3,
+        10,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        9,
+        15,
+        6,
+        17,
+        15,
+        8,
+        9,
+        18,
+        17,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 17,
+        "delta_t12": 17,
+        "delta_t4": 9
+      },
+      "parameters": {
+        "p0": 7,
+        "p1": 14,
+        "p2": 18,
+        "p3": 4,
+        "r": 12,
+        "s": 13
+      },
+      "record_sha256": "309ec7299de000a2314711c7f787481614e78bc25202f57b2a614ab59c636966",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          6,
+          13
+        ],
+        "i4_square_target": 17,
+        "iv_split": true,
+        "iv_square_roots": [
+          2,
+          17
+        ],
+        "iv_square_target": 4
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        9,
+        5,
+        18,
+        18,
+        12,
+        14,
+        5,
+        13,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        11,
+        6,
+        18,
+        14,
+        12,
+        3,
+        1,
+        6,
+        18,
+        12,
+        2,
+        10,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        18,
+        13,
+        0,
+        8,
+        1,
+        11,
+        16,
+        17,
+        11,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 7,
+        "delta_t12": 11,
+        "delta_t4": 18
+      },
+      "parameters": {
+        "p0": 16,
+        "p1": 15,
+        "p2": 6,
+        "p3": 8,
+        "r": 5,
+        "s": 13
+      },
+      "record_sha256": "e960bde1e54e3d758a0cec67f7cb72ac2f85afba2d61fe3b3167d4433e8e7f5f",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          3,
+          16
+        ],
+        "i4_square_target": 9,
+        "iv_split": true,
+        "iv_square_roots": [
+          9,
+          10
+        ],
+        "iv_square_target": 5
+      }
+    }
+  ],
+  "schema_version": 1,
+  "source_full_locus_sha256": "e610f1f54de1b0d9d742de740fecb5c2efa938bb3bddfe5ba5491f93dbf2bec1",
+  "truth_status": "EXHAUSTIVE split open I12+I4+IV+4I1 surface locus over F_19 inside the e0=1 normalized chart; no characteristic-zero, section, or rank-30 conclusion"
+}
