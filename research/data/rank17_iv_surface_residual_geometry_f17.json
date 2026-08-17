@@ -1,0 +1,657 @@
+{
+  "accepted_exact_configuration_count": 5,
+  "analyses": [
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "e0": 1,
+        "p0": 5,
+        "p1": 6,
+        "p2": 5,
+        "p3": 7,
+        "r": 3,
+        "s": 13
+      },
+      "record_sha256": "168675b1e0edc7f2fececa7366183f00d9f7ac9aabf057ddf21b5e4035221afa",
+      "representative_record_sha256": "b1cf9d07ce5432d96f535002904430c843835ed86a165383fdd59b1d15c210b7",
+      "residual_quartic_coefficients_ascending": [
+        2,
+        12,
+        2,
+        16,
+        6
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "e0": 1,
+        "p0": 6,
+        "p1": 6,
+        "p2": 16,
+        "p3": 8,
+        "r": 0,
+        "s": 6
+      },
+      "record_sha256": "3cfad10a1fe6c5f2b7d0398adc83580fd7e5527ff1a485e306e0404a554a1113",
+      "representative_record_sha256": "8936a96cbe96180607c3f1a3def23217657c76cae8a225b1c2724a6a057d77d8",
+      "residual_quartic_coefficients_ascending": [
+        1,
+        3,
+        14,
+        8,
+        12
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "e0": 1,
+        "p0": 7,
+        "p1": 1,
+        "p2": 3,
+        "p3": 5,
+        "r": 4,
+        "s": 1
+      },
+      "record_sha256": "22f0981badd812ad86b3e34a826bf329d7b1899d80f554f6a4b694a5a1ab9019",
+      "representative_record_sha256": "114fa86e96603244a0141a6bb14bf46b7c881fc75a8ebda89cbc02069df027e2",
+      "residual_quartic_coefficients_ascending": [
+        13,
+        11,
+        10,
+        16,
+        2
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "e0": 1,
+        "p0": 10,
+        "p1": 13,
+        "p2": 9,
+        "p3": 12,
+        "r": 5,
+        "s": 4
+      },
+      "record_sha256": "20bee941d7ca840fded2b8d1e6fa4e5897dcecd4d718080b9790ee0e99025927",
+      "representative_record_sha256": "55449ac02887159b3255cd23820fd5414d2d690abb155c31d42bdbed4121a5f1",
+      "residual_quartic_coefficients_ascending": [
+        2,
+        11,
+        13,
+        11,
+        13
+      ]
+    },
+    {
+      "accepted_exact_fibre_configuration": true,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": true
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        1
+      ],
+      "parameters": {
+        "e0": 1,
+        "p0": 12,
+        "p1": 2,
+        "p2": 7,
+        "p3": 7,
+        "r": 1,
+        "s": 3
+      },
+      "record_sha256": "0de7f6c3df68dbd0a31801cea69762bc3e547a2ae5353a270fe087236d02c507",
+      "representative_record_sha256": "924f35bffff36f50001b477d1ebbc64ae5e808a9117c0662e3ceab7e0ba96448",
+      "residual_quartic_coefficients_ascending": [
+        6,
+        4,
+        10,
+        7,
+        8
+      ]
+    }
+  ],
+  "certificate_id": "rank17_iv_surface_residual_geometry_f17",
+  "exact_configuration": "I12 + I4 + IV + 4 I1",
+  "input_geometric_surface_count": 5,
+  "limitations": [
+    "The certificate is confined to the normalized finite-field chart.",
+    "A finite-field surface need not lift to characteristic zero.",
+    "No height-79/12 section is imposed.",
+    "The unconditional global rank lower bound remains 29."
+  ],
+  "prime": 17,
+  "record_sha256": "79d3bbeb02e693b11c505ae3373b1e4aef5821dd63f5f0ad0a487297117681b5",
+  "rejected_degenerate_count": 0,
+  "representatives": [
+    {
+      "c4_coefficients_ascending": [
+        8,
+        9,
+        1,
+        11,
+        16,
+        6,
+        3,
+        13,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        6,
+        8,
+        14,
+        9,
+        4,
+        2,
+        4,
+        3,
+        0,
+        4,
+        2,
+        11,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        2,
+        4,
+        0,
+        4,
+        10,
+        8,
+        8,
+        9,
+        6,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 8,
+        "delta_t12": 6,
+        "delta_t4": 2
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 5,
+        "p1": 6,
+        "p2": 5,
+        "p3": 7,
+        "r": 3,
+        "s": 13
+      },
+      "record_sha256": "b1cf9d07ce5432d96f535002904430c843835ed86a165383fdd59b1d15c210b7",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          6,
+          11
+        ],
+        "i4_square_target": 2,
+        "iv_square_roots": [
+          1,
+          16
+        ],
+        "iv_square_target": 1
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        2,
+        4,
+        7,
+        16,
+        4,
+        11,
+        0,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        12,
+        2,
+        13,
+        14,
+        14,
+        3,
+        4,
+        2,
+        3,
+        3,
+        5,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        16,
+        8,
+        0,
+        2,
+        15,
+        3,
+        11,
+        12,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 8,
+        "delta_t12": 12,
+        "delta_t4": 1
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 6,
+        "p1": 6,
+        "p2": 16,
+        "p3": 8,
+        "r": 0,
+        "s": 6
+      },
+      "record_sha256": "8936a96cbe96180607c3f1a3def23217657c76cae8a225b1c2724a6a057d77d8",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          4,
+          13
+        ],
+        "i4_square_target": 16,
+        "iv_square_roots": [
+          1,
+          16
+        ],
+        "iv_square_target": 1
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        15,
+        14,
+        9,
+        8,
+        5,
+        11,
+        4,
+        1,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        3,
+        11,
+        3,
+        12,
+        1,
+        12,
+        4,
+        6,
+        10,
+        12,
+        0,
+        10,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        13,
+        10,
+        10,
+        7,
+        1,
+        8,
+        9,
+        8,
+        2,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 13,
+        "delta_t12": 2,
+        "delta_t4": 13
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 7,
+        "p1": 1,
+        "p2": 3,
+        "p3": 5,
+        "r": 4,
+        "s": 1
+      },
+      "record_sha256": "114fa86e96603244a0141a6bb14bf46b7c881fc75a8ebda89cbc02069df027e2",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          8,
+          9
+        ],
+        "i4_square_target": 13,
+        "iv_square_roots": [
+          5,
+          12
+        ],
+        "iv_square_target": 8
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        15,
+        5,
+        9,
+        15,
+        0,
+        14,
+        5,
+        4,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        14,
+        7,
+        1,
+        16,
+        9,
+        12,
+        3,
+        11,
+        2,
+        15,
+        5,
+        6,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        2,
+        3,
+        15,
+        0,
+        5,
+        7,
+        13,
+        10,
+        13,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 16,
+        "delta_t12": 13,
+        "delta_t4": 2
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 10,
+        "p1": 13,
+        "p2": 9,
+        "p3": 12,
+        "r": 5,
+        "s": 4
+      },
+      "record_sha256": "55449ac02887159b3255cd23820fd5414d2d690abb155c31d42bdbed4121a5f1",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          2,
+          15
+        ],
+        "i4_square_target": 4,
+        "iv_square_roots": [
+          6,
+          11
+        ],
+        "iv_square_target": 2
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        8,
+        14,
+        2,
+        9,
+        9,
+        4,
+        1,
+        3,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        11,
+        14,
+        6,
+        11,
+        9,
+        12,
+        1,
+        9,
+        11,
+        14,
+        7,
+        13,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        6,
+        14,
+        13,
+        1,
+        13,
+        8,
+        13,
+        9,
+        8,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 13,
+        "delta_t12": 8,
+        "delta_t4": 6
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 12,
+        "p1": 2,
+        "p2": 7,
+        "p3": 7,
+        "r": 1,
+        "s": 3
+      },
+      "record_sha256": "924f35bffff36f50001b477d1ebbc64ae5e808a9117c0662e3ceab7e0ba96448",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          7,
+          10
+        ],
+        "i4_square_target": 15,
+        "iv_square_roots": [
+          5,
+          12
+        ],
+        "iv_square_target": 8
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "schema_version": 1,
+  "source_geometric_quotient_sha256": "afa775e3a880f5ea1634bc3eaf1f2544d7d032d63c830447684d6b624a30d6a6",
+  "truth_status": "EXACT residual-discriminant filtering over F_17; no characteristic-zero, section, or rank-30 conclusion"
+}

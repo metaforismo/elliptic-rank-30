@@ -1,0 +1,56 @@
+{
+  "accepted_exact_configuration_count": 0,
+  "analyses": [
+    {
+      "accepted_exact_fibre_configuration": false,
+      "checks": {
+        "fixed_factor_divides": true,
+        "residual_coprime_to_c4": true,
+        "residual_degree": 4,
+        "residual_degree_four": true,
+        "residual_squarefree": false
+      },
+      "gcd_residual_c4": [
+        1
+      ],
+      "gcd_residual_derivative": [
+        5,
+        1
+      ],
+      "parameters": {
+        "e0": 1,
+        "p0": 10,
+        "p1": 7,
+        "p2": 6,
+        "p3": 10,
+        "r": 5,
+        "s": 6
+      },
+      "record_sha256": "96f439ef829dcb427ad122b0b55ae435d4deb45de41511801e0906121d193abd",
+      "representative_record_sha256": "57da1e090e0ba2c8059086ba8629bfa4d44e8be8463b957ff341119b5d3e6593",
+      "residual_quartic_coefficients_ascending": [
+        5,
+        8,
+        3,
+        3,
+        10
+      ]
+    }
+  ],
+  "certificate_id": "rank17_iv_surface_residual_geometry_f13",
+  "exact_configuration": "I12 + I4 + IV + 4 I1",
+  "input_geometric_surface_count": 1,
+  "limitations": [
+    "The certificate is confined to the normalized finite-field chart.",
+    "A finite-field surface need not lift to characteristic zero.",
+    "No height-79/12 section is imposed.",
+    "The unconditional global rank lower bound remains 29."
+  ],
+  "prime": 13,
+  "record_sha256": "5e1e8f8325de531abf08bddee8f02a0572b4504561bffeb74b2fb3b438fd7d58",
+  "rejected_degenerate_count": 1,
+  "representatives": [],
+  "schema_version": 1,
+  "source_geometric_quotient_sha256": "3260a5aa4b69821f39148155a63e1917f30e76a052ffa6c07906280284d29a7f",
+  "truth_status": "EXACT residual-discriminant filtering over F_13; no characteristic-zero, section, or rank-30 conclusion"
+}
