@@ -1,0 +1,117 @@
+name: Certify rank-17 IV residual geometry over three primes
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-residual-geometry-three-primes.yml"
+      - "research/rank17_iv_surface_geometric_quotient.py"
+      - "research/rank17_iv_surface_residual_geometry.py"
+      - "research/data/rank17_iv_surfaces_f11_v2.json"
+      - "research/data/rank17_iv_surfaces_f13_v2.json"
+      - "research/data/rank17_iv_surfaces_f17_v2.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute the sign quotients and residual quartics
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-residual
+          for prime in 11 13 17; do
+            python3 research/rank17_iv_surface_geometric_quotient.py \
+              --input "research/data/rank17_iv_surfaces_f${prime}_v2.json" \
+              --output "/tmp/rank17-iv-residual/quotient-f${prime}.json"
+            python3 research/rank17_iv_surface_residual_geometry.py \
+              --quotient "/tmp/rank17-iv-residual/quotient-f${prime}.json" \
+              --output "/tmp/rank17-iv-residual/residual-f${prime}.json"
+            python3 research/rank17_iv_surface_residual_geometry.py \
+              --quotient "/tmp/rank17-iv-residual/quotient-f${prime}.json" \
+              --compare "/tmp/rank17-iv-residual/residual-f${prime}.json"
+          done
+
+      - name: Verify the exact configuration boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-residual')
+          expected_inputs = {11: 4, 13: 1, 17: 5}
+          summary = {}
+          for prime, expected in expected_inputs.items():
+              data = json.loads((root / f'residual-f{prime}.json').read_text())
+              assert data['prime'] == prime
+              assert data['input_geometric_surface_count'] == expected
+              assert (
+                  data['accepted_exact_configuration_count']
+                  + data['rejected_degenerate_count']
+                  == expected
+              )
+              assert len(data['representatives']) == data['accepted_exact_configuration_count']
+              for record in data['analyses']:
+                  accepted = record['accepted_exact_fibre_configuration']
+                  checks = record['checks']
+                  assert accepted == all((
+                      checks['fixed_factor_divides'],
+                      checks['residual_degree_four'],
+                      checks['residual_squarefree'],
+                      checks['residual_coprime_to_c4'],
+                  ))
+              summary[prime] = {
+                  'accepted': data['accepted_exact_configuration_count'],
+                  'rejected': data['rejected_degenerate_count'],
+                  'record_sha256': data['record_sha256'],
+              }
+          print(summary)
+          PY
+          sha256sum /tmp/rank17-iv-residual/residual-f*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-residual-geometry-three-primes
+          path: /tmp/rank17-iv-residual
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-residual/residual-f11.json /tmp/publish-residual-f11.json
+          cp /tmp/rank17-iv-residual/residual-f13.json /tmp/publish-residual-f13.json
+          cp /tmp/rank17-iv-residual/residual-f17.json /tmp/publish-residual-f17.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          for prime in 11 13 17; do
+            cp "/tmp/publish-residual-f${prime}.json" \
+              "research/data/rank17_iv_surface_residual_geometry_f${prime}.json"
+          done
+          git add research/data/rank17_iv_surface_residual_geometry_f*.json
+          if git diff --cached --quiet; then
+            echo "residual geometry certificates already current"
+            exit 0
+          fi
+          git commit -m "Certify the residual geometry of the additive-IV surfaces"
+          git push origin "HEAD:$branch"
