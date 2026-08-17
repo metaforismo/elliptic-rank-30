@@ -1,0 +1,89 @@
+name: Certify rank-17 IV surfaces over F11
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_surface_locus_finite_field.c"
+      - "research/rank17_iv_surface_locus_finite_field.py"
+      - "research/rank17_iv_surface_locus_certificate.py"
+      - ".github/workflows/certify-rank17-iv-surfaces-f11-fast.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile the exhaustive enumerator
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_finite_field.c \
+            -o /tmp/rank17-iv-surface-enumerator
+
+      - name: Run the F11 chart twice and compare every byte
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-surface-enumerator 11 > /tmp/f11-a.json
+          /tmp/rank17-iv-surface-enumerator 11 > /tmp/f11-b.json
+          cmp /tmp/f11-a.json /tmp/f11-b.json
+          sha256sum /tmp/f11-a.json /tmp/f11-b.json
+
+      - name: Cross-check the complete accepted set over F5 in Python
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-surface-enumerator 5 > /tmp/f5.json
+          python3 research/rank17_iv_surface_locus_certificate.py \
+            --production /tmp/f11-a.json \
+            --small-prime /tmp/f5.json \
+            --output research/data/rank17_iv_surfaces_f11.json
+          python3 research/rank17_iv_surface_locus_certificate.py \
+            --production /tmp/f11-b.json \
+            --small-prime /tmp/f5.json \
+            --compare research/data/rank17_iv_surfaces_f11.json
+
+      - name: Verify the truth boundary and hashes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("research/data/rank17_iv_surfaces_f11.json")
+          data = json.loads(path.read_text())
+          assert data["prime"] == 11
+          assert data["visited_parameter_tuples"] == 2 * 10 * 11**5
+          assert data["candidate_count"] == len(data["candidates"])
+          assert data["independent_small_prime_cross_check"][
+              "accepted_tuple_sets_identical"
+          ] is True
+          assert "no characteristic-zero" in data["truth_status"]
+          assert "rank-30" in data["truth_status"]
+          print({
+              "candidate_count": data["candidate_count"],
+              "certificate_sha256": data["certificate_sha256"],
+          })
+          PY
+          sha256sum research/data/rank17_iv_surfaces_f11.json
+
+      - name: Commit only the canonical surface certificate
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/rank17_iv_surfaces_f11.json
+          git diff --cached --quiet && { echo "surface certificate delta missing" >&2; exit 1; }
+          git commit -m "Certify the normalized split IV surface locus over F11"
+          git push
