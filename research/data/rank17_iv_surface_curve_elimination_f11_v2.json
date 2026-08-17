@@ -1,0 +1,48 @@
+{
+  "best_plane_equation": null,
+  "certificate_id": "rank17_iv_surface_curve_elimination_f11_v2",
+  "classification": "SURFACE_CURVE_ELIMINATION_INCOMPLETE",
+  "completed_projection_count": 0,
+  "limitations": [
+    "A single-prime eliminant is not yet a polynomial over Q.",
+    "The three projections need not be birational.",
+    "Split square conditions and section equations are not included."
+  ],
+  "prime": 11,
+  "projections": [
+    {
+      "elapsed_seconds": null,
+      "error": null,
+      "exit_status": 124,
+      "plane_basis": [],
+      "projection": "p0-r",
+      "result_sha256": "a496b5e12dd8806226d215b7bd4a2bfed801d49eb16a9a4923c4c0f4d17e8682",
+      "status": "groebner_started",
+      "surface_krull_dimension": null
+    },
+    {
+      "elapsed_seconds": null,
+      "error": null,
+      "exit_status": 124,
+      "plane_basis": [],
+      "projection": "p0-s",
+      "result_sha256": "a68643488b131dc27c8baf3d614a218e0595ae887a32b8cce93ebc54235b3f07",
+      "status": "groebner_started",
+      "surface_krull_dimension": null
+    },
+    {
+      "elapsed_seconds": null,
+      "error": null,
+      "exit_status": 124,
+      "plane_basis": [],
+      "projection": "r-s",
+      "result_sha256": "3dd6e3ac1cb71da37bb9049cfb6b6a6a1cb5bb89c54a50960a113ef654c6654f",
+      "status": "groebner_started",
+      "surface_krull_dimension": null
+    }
+  ],
+  "record_sha256": "6d3aeee56070cc2c7eae5ac2590abed4b00acf0e3fb44afc0d419fa6eaca1c48",
+  "schema_version": 2,
+  "truth_status": "EXACT modular elimination where completed; timeout or failure is not an obstruction; no characteristic-zero, section, or rank-30 conclusion",
+  "workflow_result": "failure"
+}
