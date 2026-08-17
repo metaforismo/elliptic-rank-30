@@ -1,0 +1,108 @@
+name: Certify full rank-17 IV surface locus over F23
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-full-locus-f23.yml"
+      - "research/rank17_iv_surface_locus_all_finite_field.c"
+      - "research/rank17_iv_surface_locus_all_certificate.py"
+      - "research/rank17_iv_surface_locus_finite_field_v2.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compile the full-locus enumerator
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -march=x86-64-v3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_all_finite_field.c \
+            -o /tmp/rank17-iv-full-enumerator
+
+      - name: Exhaust F7 for the independent Python implementation check
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-f23
+          /tmp/rank17-iv-full-enumerator 7 > /tmp/rank17-iv-f23/f7.json
+
+      - name: Exhaust all 141599546 normalized F23 tuples twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/rank17-iv-full-enumerator 23 > /tmp/rank17-iv-f23/f23-a.json
+          /tmp/rank17-iv-full-enumerator 23 > /tmp/rank17-iv-f23/f23-b.json
+          cmp /tmp/rank17-iv-f23/f23-a.json /tmp/rank17-iv-f23/f23-b.json
+
+      - name: Build and replay the exact census certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_locus_all_certificate.py \
+            --production /tmp/rank17-iv-f23/f23-a.json \
+            --small-prime /tmp/rank17-iv-f23/f7.json \
+            --output /tmp/rank17-iv-f23/full-f23.json
+          python3 research/rank17_iv_surface_locus_all_certificate.py \
+            --production /tmp/rank17-iv-f23/f23-b.json \
+            --small-prime /tmp/rank17-iv-f23/f7.json \
+            --compare /tmp/rank17-iv-f23/full-f23.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/rank17-iv-f23/full-f23.json').read_text())
+          assert data['prime'] == 23
+          assert data['visited_parameter_tuples'] == 141599546
+          assert data['candidate_count'] == len(data['records'])
+          assert sum(data['split_category_counts'].values()) == data['candidate_count']
+          assert data['independent_small_prime_cross_check']['tuple_sets_identical'] is True
+          print({
+              'candidate_count': data['candidate_count'],
+              'split_category_counts': data['split_category_counts'],
+              'projection_point_counts': data['projection_point_counts'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-f23/*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-full-surface-locus-f23
+          path: /tmp/rank17-iv-f23
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-f23/full-f23.json /tmp/publish-full-f23.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-full-f23.json \
+            research/data/rank17_iv_full_surface_locus_f23.json
+          git add research/data/rank17_iv_full_surface_locus_f23.json
+          if git diff --cached --quiet; then
+            echo "F23 full locus already current"
+            exit 0
+          fi
+          git commit -m "Certify the full additive-IV surface locus over F23"
+          git push origin "HEAD:$branch"
