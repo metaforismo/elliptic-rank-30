@@ -1,0 +1,180 @@
+name: Probe sparse rank-17 IV incidence with msolve
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/probe-rank17-iv-sparse-msolve-p11-s0-q1.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  solve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build the exact sparse F11 system
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-sparse
+          docker run --rm \
+            -v "$PWD:/repo" \
+            -w /repo \
+            sagemath/sagemath:10.9 \
+            sage -python research/rank17_iv_section_sparse_system.py \
+              --certificate research/data/rank17_iv_surfaces_f11_v2.json \
+              --candidate-index 0 \
+              --q 1 \
+              --i4-root 4 \
+              --iv-root 3 \
+              --msolve-input /repo/.rank17-iv-sparse-input.ms \
+              --metadata /repo/.rank17-iv-sparse-metadata.json
+          mv .rank17-iv-sparse-input.ms /tmp/rank17-iv-sparse/input.ms
+          mv .rank17-iv-sparse-metadata.json /tmp/rank17-iv-sparse/metadata.json
+
+      - name: Download the official msolve 0.10.1 binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://msolve.lip6.fr/downloads/v0.10.1/msolve-0.10.1_linux_intel_x86.zip'
+          curl --fail --location --retry 3 --output /tmp/msolve.zip "$url"
+          sha256sum /tmp/msolve.zip | tee /tmp/rank17-iv-sparse/msolve-archive.sha256
+          mkdir -p /tmp/msolve-dist
+          unzip -q /tmp/msolve.zip -d /tmp/msolve-dist
+          bin="$(find /tmp/msolve-dist -type f -name msolve | head -n 1)"
+          test -n "$bin"
+          chmod +x "$bin"
+          printf '%s\n' "$bin" > /tmp/rank17-iv-sparse/msolve-path.txt
+          "$bin" -h > /tmp/rank17-iv-sparse/msolve-help.txt 2>&1 || true
+
+      - name: Compute the deterministic leading ideal
+        shell: bash
+        run: |
+          set -uo pipefail
+          bin="$(cat /tmp/rank17-iv-sparse/msolve-path.txt)"
+          start="$(date +%s)"
+          timeout --signal=TERM --kill-after=30s 1800s \
+            "$bin" -g 1 \
+              -f /tmp/rank17-iv-sparse/input.ms \
+              -o /tmp/rank17-iv-sparse/output.ms \
+              > /tmp/rank17-iv-sparse/stdout.log \
+              2> /tmp/rank17-iv-sparse/stderr.log
+          rc=$?
+          end="$(date +%s)"
+          printf '%s\n' "$rc" > /tmp/rank17-iv-sparse/exit-code.txt
+          printf '%s\n' "$((end-start))" > /tmp/rank17-iv-sparse/elapsed-seconds.txt
+          exit 0
+
+      - name: Build a fail-closed result record
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-sparse')
+          metadata = json.loads((root / 'metadata.json').read_text())
+          exit_code = int((root / 'exit-code.txt').read_text().strip())
+          elapsed = int((root / 'elapsed-seconds.txt').read_text().strip())
+          output_path = root / 'output.ms'
+          output = output_path.read_text(errors='replace') if output_path.exists() else ''
+          if exit_code == 124:
+              classification = 'TIMEOUT_INCOMPLETE'
+          elif exit_code != 0:
+              classification = 'MSOLVE_ERROR_INCOMPLETE'
+          elif '[-1]' in output:
+              classification = 'EMPTY_OVER_ALGEBRAIC_CLOSURE'
+          elif '#Leading ideal data' in output:
+              classification = 'LEADING_IDEAL_COMPUTED'
+          elif output.lstrip().startswith('[1,'):
+              classification = 'POSITIVE_DIMENSION_REPORTED'
+          else:
+              classification = 'UNCLASSIFIED_COMPLETED_OUTPUT'
+
+          files = {}
+          for path in sorted(root.iterdir()):
+              if path.is_file():
+                  files[path.name] = {
+                      'bytes': path.stat().st_size,
+                      'sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
+                  }
+          result = {
+              'schema_version': 1,
+              'truth_status': (
+                  'Exact sparse polynomial-system probe over F_11; the '
+                  'resultant(D,X) filter is postponed; no p-adic, '
+                  'characteristic-zero, or rank-30 conclusion.'
+              ),
+              'classification': classification,
+              'exit_code': exit_code,
+              'elapsed_seconds': elapsed,
+              'metadata': metadata,
+              'msolve_archive_sha256_line': (
+                  root / 'msolve-archive.sha256'
+              ).read_text().strip(),
+              'output_prefix': output[:4000],
+              'output_suffix': output[-4000:] if output else '',
+              'files': files,
+              'limitations': [
+                  'Only candidate 0, q=1, and the selected (+,+) tangent roots are tested.',
+                  'The resultant(D,X) nonminimality filter is not included in the ideal.',
+                  'A timeout or solver error has no mathematical meaning.',
+                  'A modular solution algebra is not a rational section over Q.'
+              ],
+          }
+          raw = json.dumps(result, sort_keys=True, separators=(',', ':')).encode()
+          result['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          (root / 'result.json').write_text(
+              json.dumps(result, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps({
+              'classification': classification,
+              'elapsed_seconds': elapsed,
+              'exit_code': exit_code,
+              'record_sha256': result['record_sha256'],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Preserve and commit the exact probe record
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-sparse/result.json /tmp/result.json
+          if [ -f /tmp/rank17-iv-sparse/output.ms ]; then
+            if [ "$(stat -c %s /tmp/rank17-iv-sparse/output.ms)" -le 2000000 ]; then
+              cp /tmp/rank17-iv-sparse/output.ms /tmp/output.ms
+            else
+              {
+                head -n 200 /tmp/rank17-iv-sparse/output.ms
+                echo '--- OUTPUT TRUNCATED; SHA-256 IS IN result.json ---'
+                tail -n 200 /tmp/rank17-iv-sparse/output.ms
+              } > /tmp/output.ms
+            fi
+          else
+            : > /tmp/output.ms
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/result.json \
+            research/data/rank17_iv_sparse_msolve_p11_s0_q1_plus_plus.json
+          cp /tmp/output.ms \
+            research/data/rank17_iv_sparse_msolve_p11_s0_q1_plus_plus_leading.txt
+          git add research/data/rank17_iv_sparse_msolve_p11_s0_q1_plus_plus*
+          git commit -m "Record the first sparse msolve IV incidence probe"
+          git push origin "HEAD:$branch"
