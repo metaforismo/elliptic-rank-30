@@ -1,0 +1,72 @@
+name: Enumerate rank-17 IV surfaces over F11
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_surface_locus_finite_field.py"
+      - ".github/workflows/enumerate-rank17-iv-surfaces-f11.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  enumerate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Exhaust the normalized surface chart
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_locus_finite_field.py \
+            --prime 11 \
+            --output research/data/rank17_iv_surfaces_f11.json
+          python3 research/rank17_iv_surface_locus_finite_field.py \
+            --prime 11 \
+            --compare research/data/rank17_iv_surfaces_f11.json
+
+      - name: Validate the certificate boundary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("research/data/rank17_iv_surfaces_f11.json")
+          data = json.loads(path.read_text())
+          assert data["prime"] == 11
+          assert data["visited_parameter_tuples"] == 2 * 10 * 11**5
+          assert data["candidate_count"] == len(data["candidates"])
+          assert "no characteristic-zero" in data["truth_status"]
+          for candidate in data["candidates"]:
+              checks = candidate["exact_fibre_checks"]
+              assert checks["delta_t4"] != 0
+              assert checks["delta_t12"] != 0
+              assert checks["c6_quadratic_coefficient_at_one"] != 0
+              split = candidate["split_tangent_checks"]
+              assert split["i4_square_roots"]
+              assert split["iv_square_roots"]
+          print({
+              "candidate_count": data["candidate_count"],
+              "certificate_sha256": data["certificate_sha256"],
+          })
+          PY
+
+      - name: Preserve only the exact enumeration
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add research/data/rank17_iv_surfaces_f11.json
+          git diff --cached --quiet && { echo "surface certificate delta missing" >&2; exit 1; }
+          git commit -m "Certify the normalized IV surface locus over F11"
+          git push
