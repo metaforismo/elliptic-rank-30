@@ -1,0 +1,363 @@
+name: Probe all geometric rank-17 IV surfaces over F11
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      can_run: ${{ steps.matrix.outputs.can_run }}
+      matrix: ${{ steps.matrix.outputs.matrix }}
+      geometric_surface_count: ${{ steps.matrix.outputs.geometric_surface_count }}
+      expected_branch_count: ${{ steps.matrix.outputs.expected_branch_count }}
+      quotient_sha256: ${{ steps.matrix.outputs.quotient_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: matrix
+        name: Build the two sign-orbit branches per geometric surface
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          path = Path(
+              "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+          )
+          data = json.loads(path.read_text())
+          representatives = data["representatives"]
+          count = len(representatives)
+          print(f"geometric_surface_count={count}")
+          print(f"expected_branch_count={2 * count}")
+          print(f"quotient_sha256={data['record_sha256']}")
+          if count > 128:
+              print("can_run=false")
+              include = [{
+                  "candidate_index": -1,
+                  "i4_root": 0,
+                  "iv_root": 0,
+              }]
+          elif count == 0:
+              print("can_run=false")
+              include = [{
+                  "candidate_index": -1,
+                  "i4_root": 0,
+                  "iv_root": 0,
+              }]
+          else:
+              print("can_run=true")
+              include = []
+              for index, candidate in enumerate(representatives):
+                  i4_roots = candidate[
+                      "split_tangent_checks"
+                  ]["i4_square_roots"]
+                  iv_roots = candidate[
+                      "split_tangent_checks"
+                  ]["iv_square_roots"]
+                  if len(i4_roots) != 2 or len(iv_roots) != 2:
+                      raise AssertionError((index, i4_roots, iv_roots))
+                  rho = int(i4_roots[0])
+                  for eta in iv_roots:
+                      include.append({
+                          "candidate_index": index,
+                          "i4_root": rho,
+                          "iv_root": int(eta),
+                      })
+              if len(include) != 2 * count:
+                  raise AssertionError((len(include), count))
+          print("matrix=" + json.dumps(
+              {"include": include}, separators=(",", ":")
+          ))
+          PY
+
+      - name: Build a candidate-compatible quotient view
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          source = json.loads(Path(
+              "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+          ).read_text())
+          payload = {
+              "schema_version": source["schema_version"],
+              "certificate_sha256": source["record_sha256"],
+              "prime": source["prime"],
+              "candidate_count": source["geometric_surface_count"],
+              "candidates": source["representatives"],
+          }
+          Path("/tmp/rank17_iv_geometric_candidates_f11.json").write_text(
+              json.dumps(payload, indent=2, sort_keys=True) + "\n"
+          )
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-geometric-candidates-f11
+          path: /tmp/rank17_iv_geometric_candidates_f11.json
+          if-no-files-found: error
+          retention-days: 1
+
+  solve:
+    needs: prepare
+    if: needs.prepare.outputs.can_run == 'true'
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 32
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: rank17-iv-geometric-candidates-f11
+          path: /tmp
+
+      - name: Compute one geometric surface/sign-orbit branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-all-f11-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          mkdir -p "$root"
+          set +e
+          timeout --signal=TERM 1740s \
+            sage -python research/rank17_iv_section_endpoint_ideal_v2.py \
+              --certificate /tmp/rank17_iv_geometric_candidates_f11.json \
+              --candidate-index ${{ matrix.candidate_index }} \
+              --i4-root ${{ matrix.i4_root }} \
+              --iv-root ${{ matrix.iv_root }} \
+              --multiplication-cap 384 \
+              --output "$root/result.json" \
+            2>&1 | tee "$root/run.log"
+          status=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$status" > "$root/exit-status.txt"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          (cd "$root" && sha256sum -c SHA256SUMS)
+          exit "$status"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-all-f11-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          path: /tmp/rank17-iv-all-f11-${{ matrix.candidate_index }}-${{ matrix.i4_root }}-${{ matrix.iv_root }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  collect:
+    needs: [prepare, solve]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          pattern: rank17-iv-all-f11-*
+          path: /tmp/rank17-iv-all-f11
+
+      - name: Build the exhaustive fail-closed modular classification
+        env:
+          PREPARE_RESULT: ${{ needs.prepare.result }}
+          SOLVE_RESULT: ${{ needs.solve.result }}
+          GEOMETRIC_SURFACE_COUNT: ${{ needs.prepare.outputs.geometric_surface_count }}
+          EXPECTED_BRANCH_COUNT: ${{ needs.prepare.outputs.expected_branch_count }}
+          QUOTIENT_SHA256: ${{ needs.prepare.outputs.quotient_sha256 }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from __future__ import annotations
+
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+
+          quotient_path = Path(
+              "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+          )
+          quotient = json.loads(quotient_path.read_text())
+          root = Path("/tmp/rank17-iv-all-f11")
+          branches = []
+          if root.exists():
+              for result_path in sorted(root.rglob("result.json")):
+                  directory = result_path.parent
+                  result = json.loads(result_path.read_text())
+                  parts = directory.name.rsplit("-", 3)
+                  coordinates = {
+                      "candidate_index": None,
+                      "i4_root": None,
+                      "iv_root": None,
+                  }
+                  if len(parts) == 4:
+                      try:
+                          coordinates = {
+                              "candidate_index": int(parts[1]),
+                              "i4_root": int(parts[2]),
+                              "iv_root": int(parts[3]),
+                          }
+                      except ValueError:
+                          pass
+                  for key in coordinates:
+                      if result.get(key) is not None:
+                          coordinates[key] = result[key]
+                  basis_path = directory / "groebner-basis.txt"
+                  basis_text = basis_path.read_text() if basis_path.exists() else None
+                  exit_path = directory / "exit-status.txt"
+                  exit_status = (
+                      int(exit_path.read_text().strip())
+                      if exit_path.exists() and exit_path.read_text().strip()
+                      else None
+                  )
+                  branches.append({
+                      **coordinates,
+                      "status": result.get("status", "missing_status"),
+                      "exit_status": exit_status,
+                      "krull_dimension": result.get("krull_dimension"),
+                      "quotient_dimension": result.get("quotient_dimension"),
+                      "primitive_etale_coordinate": result.get(
+                          "primitive_etale_coordinate"
+                      ),
+                      "multiplication_coordinates": result.get(
+                          "multiplication_coordinates", []
+                      ),
+                      "groebner_basis_is_unit": (
+                          basis_text.strip() == "1" if basis_text is not None else None
+                      ),
+                      "result_sha256": hashlib.sha256(
+                          result_path.read_bytes()
+                      ).hexdigest(),
+                      "basis_sha256": (
+                          hashlib.sha256(basis_path.read_bytes()).hexdigest()
+                          if basis_path.exists() else None
+                      ),
+                      "error": result.get("error"),
+                  })
+          branches.sort(key=lambda item: (
+              item["candidate_index"] if item["candidate_index"] is not None else -1,
+              item["i4_root"] if item["i4_root"] is not None else -1,
+              item["iv_root"] if item["iv_root"] is not None else -1,
+          ))
+
+          surface_count = quotient["geometric_surface_count"]
+          expected = 2 * surface_count
+          empty = [
+              item for item in branches
+              if item["groebner_basis_is_unit"] is True
+              or (
+                  isinstance(item["krull_dimension"], int)
+                  and item["krull_dimension"] < 0
+              )
+              or item["quotient_dimension"] == 0
+          ]
+          finite = [
+              item for item in branches
+              if item["krull_dimension"] == 0
+              and isinstance(item["quotient_dimension"], int)
+              and item["quotient_dimension"] > 0
+          ]
+          positive = [
+              item for item in branches
+              if isinstance(item["krull_dimension"], int)
+              and item["krull_dimension"] > 0
+          ]
+          incomplete = [
+              item for item in branches
+              if item["status"] != "completed"
+              or item["exit_status"] not in (0, None)
+          ]
+
+          if surface_count == 0:
+              classification = "NO_GEOMETRIC_SPLIT_IV_SURFACE_OVER_F11"
+          elif finite:
+              classification = "AT_LEAST_ONE_FINITE_SECTION_ALGEBRA_FOUND"
+          elif positive:
+              classification = "AT_LEAST_ONE_POSITIVE_DIMENSIONAL_SECTION_LOCUS"
+          elif len(branches) == expected and len(empty) == expected and not incomplete:
+              classification = "EVERY_GEOMETRIC_F11_SECTION_BRANCH_EMPTY"
+          elif surface_count > 128:
+              classification = "TOO_MANY_SURFACES_FOR_SINGLE_MATRIX_RUN"
+          else:
+              classification = "ALL_SURFACE_BRANCH_CLASSIFICATION_INCOMPLETE"
+
+          payload = {
+              "schema_version": 1,
+              "certificate_id": "rank17_iv_all_geometric_surfaces_endpoint_f11",
+              "truth_status": (
+                  "EXACT F11 endpoint-reduced section classification where completed; "
+                  "no p-adic, characteristic-zero, rational-section, or rank-30 conclusion"
+              ),
+              "geometric_quotient_sha256": quotient["record_sha256"],
+              "geometric_surface_count": surface_count,
+              "expected_sign_orbit_branch_count": expected,
+              "observed_branch_count": len(branches),
+              "classification": classification,
+              "empty_branch_count": len(empty),
+              "finite_nonempty_branch_count": len(finite),
+              "positive_dimensional_branch_count": len(positive),
+              "incomplete_branch_count": len(incomplete),
+              "workflow_needs": {
+                  "prepare": os.environ.get("PREPARE_RESULT"),
+                  "solve": os.environ.get("SOLVE_RESULT"),
+              },
+              "branches": branches,
+              "limitations": [
+                  "This covers the normalized monic D chart over F11 only.",
+                  "The simultaneous section-negation symmetry is quotiented by fixing one I4 root and testing both relative IV signs.",
+                  "A finite modular algebra is not a Q-rational point.",
+                  "A timeout or failed branch remains mathematically open.",
+                  "The unconditional global rank lower bound remains 29.",
+              ],
+          }
+          raw = json.dumps(
+              payload, sort_keys=True, separators=(",", ":")
+          ).encode()
+          payload["record_sha256"] = hashlib.sha256(raw).hexdigest()
+          output = Path(
+              "research/data/rank17_iv_all_geometric_surfaces_endpoint_f11.json"
+          )
+          output.parent.mkdir(parents=True, exist_ok=True)
+          output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+          print(json.dumps({
+              "classification": classification,
+              "surfaces": surface_count,
+              "observed": len(branches),
+              "empty": len(empty),
+              "finite": len(finite),
+              "positive": len(positive),
+              "incomplete": len(incomplete),
+              "record_sha256": payload["record_sha256"],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Commit only the permanent all-surface classification
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+metaforismo@users.noreply.github.com"
+          git add research/data/rank17_iv_all_geometric_surfaces_endpoint_f11.json
+          git diff --cached --quiet && {
+            echo "all-surface classification delta missing" >&2
+            exit 1
+          }
+          git commit -m "Classify all geometric F11 IV section branches"
+          git push
