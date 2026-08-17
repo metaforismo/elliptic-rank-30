@@ -1,0 +1,85 @@
+name: Certify rank-17 IV surface quotient over F17
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surfaces_f17_v2.json"
+      - ".github/workflows/certify-rank17-iv-surface-quotient-f17.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify every exact jet-sign orbit
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f17_v2.json \
+            --output /tmp/rank17_iv_surface_geometric_quotient_f17.json
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f17_v2.json \
+            --compare /tmp/rank17_iv_surface_geometric_quotient_f17.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              "/tmp/rank17_iv_surface_geometric_quotient_f17.json"
+          ).read_text())
+          assert data["prime"] == 17
+          assert data["raw_candidate_count"] == 10
+          assert data["geometric_surface_count"] == 5
+          assert 2 * data["geometric_surface_count"] == data["raw_candidate_count"]
+          assert all(
+              candidate["parameters"]["e0"] == 1
+              for candidate in data["representatives"]
+          )
+          print({
+              "raw": data["raw_candidate_count"],
+              "geometric": data["geometric_surface_count"],
+              "record_sha256": data["record_sha256"],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-surface-geometric-quotient-f17
+          path: /tmp/rank17_iv_surface_geometric_quotient_f17.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17_iv_surface_geometric_quotient_f17.json /tmp/publish-f17-quotient.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-f17-quotient.json \
+            research/data/rank17_iv_surface_geometric_quotient_f17.json
+          python3 research/rank17_iv_surface_geometric_quotient.py \
+            --input research/data/rank17_iv_surfaces_f17_v2.json \
+            --compare research/data/rank17_iv_surface_geometric_quotient_f17.json
+          git add research/data/rank17_iv_surface_geometric_quotient_f17.json
+          if git diff --cached --quiet; then
+            echo "F17 quotient already present"
+            exit 0
+          fi
+          git commit -m "Quotient the F17 IV surfaces by jet sign"
+          git push origin "HEAD:$branch"
