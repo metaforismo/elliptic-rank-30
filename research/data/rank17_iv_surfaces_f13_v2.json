@@ -1,0 +1,235 @@
+{
+  "candidate_count": 2,
+  "candidates": [
+    {
+      "c4_coefficients_ascending": [
+        9,
+        10,
+        0,
+        11,
+        4,
+        6,
+        5,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        12,
+        7,
+        7,
+        0,
+        3,
+        1,
+        7,
+        5,
+        0,
+        5,
+        8,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        5,
+        1,
+        1,
+        6,
+        2,
+        0,
+        12,
+        2,
+        10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 7,
+        "delta_t12": 10,
+        "delta_t4": 5
+      },
+      "parameters": {
+        "e0": 1,
+        "p0": 10,
+        "p1": 7,
+        "p2": 6,
+        "p3": 10,
+        "r": 5,
+        "s": 6
+      },
+      "record_sha256": "57da1e090e0ba2c8059086ba8629bfa4d44e8be8463b957ff341119b5d3e6593",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          3,
+          10
+        ],
+        "i4_square_target": 9,
+        "iv_square_roots": [
+          5,
+          8
+        ],
+        "iv_square_target": 12
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        9,
+        10,
+        0,
+        11,
+        4,
+        6,
+        5,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        12,
+        7,
+        7,
+        0,
+        3,
+        1,
+        7,
+        5,
+        0,
+        5,
+        8,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        5,
+        1,
+        1,
+        6,
+        2,
+        0,
+        12,
+        2,
+        10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 7,
+        "delta_t12": 10,
+        "delta_t4": 5
+      },
+      "parameters": {
+        "e0": 12,
+        "p0": 3,
+        "p1": 6,
+        "p2": 7,
+        "p3": 3,
+        "r": 5,
+        "s": 6
+      },
+      "record_sha256": "806442c327bae1c3e06ca76d242ac2d4f39391e0511b603d908e5eae6a3213eb",
+      "split_tangent_checks": {
+        "i4_square_roots": [
+          3,
+          10
+        ],
+        "i4_square_target": 9,
+        "iv_square_roots": [
+          5,
+          8
+        ],
+        "iv_square_target": 12
+      },
+      "surface_equations": {
+        "c4_at_one": 0,
+        "c4_derivative_at_one": 0,
+        "c6_at_one": 0,
+        "c6_derivative_at_one": 0,
+        "i4_cube_jet": [
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "certificate_id": "rank17_iv_surface_locus_f13",
+  "certificate_sha256": "53691a0e431b92ac91a8cb97901fd9af66fba87ff9741f34bb62697ee0c37829",
+  "implementation": {
+    "certificate_builder": "research/rank17_iv_surface_locus_certificate_v2.py",
+    "enumerator": "research/rank17_iv_surface_locus_finite_field.c",
+    "independent_verifier": "research/rank17_iv_surface_locus_finite_field_v2.py"
+  },
+  "independent_small_prime_cross_check": {
+    "accepted_tuple_sets_identical": true,
+    "candidate_count": 0,
+    "prime": 5,
+    "python_certificate_sha256": "682aecdcb85d6d3daf448bb178733c44f15858bd884f69ba6494d10ba3d254cf",
+    "visited_parameter_tuples": 25000
+  },
+  "limitations": [
+    "Only the declared affine normalization and both e0 signs are covered.",
+    "No section variables are imposed by this certificate.",
+    "Finite-field points may fail to lift, or may lift only over number fields.",
+    "The global unconditional rank lower bound remains 29."
+  ],
+  "normalization": {
+    "c4_degree": 8,
+    "c6_degree": 12,
+    "fixed_fibres": {
+      "I12": "t=infinity",
+      "I4": "t=0",
+      "IV": "t=1"
+    },
+    "leading_c4": 1,
+    "leading_c6": 1,
+    "surface_parameters": [
+      "e0",
+      "p0",
+      "p1",
+      "p2",
+      "p3",
+      "r",
+      "s"
+    ]
+  },
+  "prime": 13,
+  "schema_version": 2,
+  "truth_status": "EXHAUSTIVE normalized split I12+I4+IV surface enumeration over F_13; no characteristic-zero, rational-section, or rank-30 conclusion",
+  "visited_parameter_tuples": 8911032
+}
