@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/probe-rank17-local-standard-basis.yml"
+      - "research/rank17_section_local_branch_f7.py"
 
 permissions:
   contents: read
@@ -12,12 +13,12 @@ permissions:
 jobs:
   probe:
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
+    timeout-minutes: 40
     container:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Compute an exact local standard basis over F7
+      - name: Compute the Jacobian-preconditioned local standard basis over F7
         shell: bash
         run: |
           set -euo pipefail
@@ -32,14 +33,18 @@ jobs:
           import traceback
           from pathlib import Path
 
-          from sage.all import GF, PolynomialRing, version
+          from sage.all import GF, Matrix, PolynomialRing, vector
           from sage.libs.singular.function_factory import singular_function
+          from sage.version import version
 
           OUT = Path('/tmp/rank17-local-standard-basis')
           result = {
               'status': 'started',
-              'truth_status': 'exact local standard-basis computation over F_7; no characteristic-zero claim',
-              'sage_version': str(version()),
+              'truth_status': (
+                  'exact Jacobian-preconditioned local standard-basis '
+                  'computation over F_7; no characteristic-zero claim'
+              ),
+              'sage_version': str(version),
               'singular_order': 'ds / negative degree reverse lexicographic',
           }
 
@@ -52,50 +57,135 @@ jobs:
               assert spec.loader is not None
               spec.loader.exec_module(module)
 
-              names = [f'd_{name}' for name in module.VARIABLES]
-              ring = PolynomialRing(GF(7), names=names, order='negdegrevlex')
-              deltas = list(ring.gens())
-              shifted = [GF(7)(value) + delta for value, delta in zip(module.SEED, deltas, strict=True)]
+              field = GF(7)
+              names = [f'z{i}' for i in range(14)] + ['b', 'w', 't']
+              ring = PolynomialRing(field, names=names, order='negdegrevlex')
+              generators = list(ring.gens())
+              z = vector(ring, generators[:14])
+              b, w, t = generators[14:]
+
+              jacobian = module.jacobian_at_seed()
+              pivot_rows = module.PIVOT_ROWS
+              pivot_columns = module.PIVOT_COLUMNS
+              free_columns = [14, 15, 16]
+              A = Matrix(
+                  field,
+                  [[jacobian[row][column] for column in pivot_columns]
+                   for row in pivot_rows],
+              )
+              B = Matrix(
+                  field,
+                  [[jacobian[row][column] for column in free_columns]
+                   for row in pivot_rows],
+              )
+              if A.rank() != 14:
+                  raise AssertionError('the selected pivot Jacobian is singular')
+
+              # Local coordinates adapted to the certified tangent cone:
+              #   t = d_y2,
+              #   w = d_y2 + d_y3,
+              #   b = d_y1 - 2*w.
+              free_deviations = vector(ring, [b + 2*w, t, w - t])
+
+              # z is exactly the linear part of the fourteen pivot equations.
+              # Hence p = A^{-1}(z-Bf) gives a linear polynomial coordinate
+              # change in which those equations have distinct leading terms z_i.
+              pivot_deviations = A.inverse() * (z - B * free_deviations)
+              deviations = list(pivot_deviations) + list(free_deviations)
+              shifted = [
+                  ring(module.SEED[index]) + deviations[index]
+                  for index in range(17)
+              ]
               equations = [ring(polynomial) for polynomial in module.equations(shifted)]
-              if len(equations) != 19 or any(polynomial(*([GF(7)(0)] * 17)) != 0 for polynomial in equations):
-                  raise AssertionError('shifted incidence ideal is malformed')
+              if len(equations) != 19:
+                  raise AssertionError('unexpected incidence-equation count')
+              origin = [field(0)] * 17
+              if any(polynomial(*origin) != 0 for polynomial in equations):
+                  raise AssertionError('the transformed incidence ideal misses the origin')
+
+              linear_matrix = []
+              for row in pivot_rows:
+                  linear_matrix.append([
+                      equations[row].monomial_coefficient(variable)
+                      for variable in generators
+                  ])
+              expected = Matrix(field, 14, 17, lambda i, j: 1 if i == j else 0)
+              if Matrix(field, linear_matrix) != expected:
+                  raise AssertionError('Jacobian preconditioning did not produce the identity block')
 
               ideal = ring.ideal(equations)
-              started = time.time()
               std = singular_function('std')
               dim_function = singular_function('dim')
               vdim_function = singular_function('vdim')
+              started = time.time()
               basis = std(ideal)
               elapsed = time.time() - started
               dimension = int(dim_function(basis))
-              vector_space_dimension = int(vdim_function(basis)) if dimension == 0 else None
+              vector_space_dimension = (
+                  int(vdim_function(basis)) if dimension == 0 else None
+              )
 
               basis_polynomials = [ring(polynomial) for polynomial in basis]
-              leading_monomials = [str(polynomial.lm()) for polynomial in basis_polynomials]
               basis_text = '\n'.join(str(polynomial) for polynomial in basis_polynomials) + '\n'
-              (OUT / 'local-standard-basis.txt').write_text(basis_text)
+              (OUT / 'preconditioned-local-standard-basis.txt').write_text(basis_text)
+              pure_residual = [
+                  polynomial
+                  for polynomial in basis_polynomials
+                  if not (set(polynomial.variables()) & set(generators[:14]))
+              ]
+              pure_text = '\n'.join(str(polynomial) for polynomial in pure_residual) + '\n'
+              (OUT / 'pure-b-w-t-standard-basis.txt').write_text(pure_text)
+
+              leading_monomials = [str(polynomial.lm()) for polynomial in basis_polynomials]
+              pure_leading_monomials = [str(polynomial.lm()) for polynomial in pure_residual]
+              expected_linear_leads = {str(variable) for variable in generators[:14]}
+              observed_linear_leads = {
+                  str(polynomial.lm())
+                  for polynomial in basis_polynomials
+                  if polynomial.total_degree() >= 1 and polynomial.lm().degree() == 1
+              }
+              if not expected_linear_leads.issubset(observed_linear_leads):
+                  raise AssertionError(
+                      ('the standard basis lost a pivot leading variable',
+                       sorted(expected_linear_leads - observed_linear_leads))
+                  )
 
               result.update({
                   'status': 'completed',
                   'variable_names': names,
-                  'seed': module.SEED,
+                  'coordinate_change': {
+                      'free_coordinates': {
+                          'b': 'd_y1-2*(d_y2+d_y3)',
+                          'w': 'd_y2+d_y3',
+                          't': 'd_y2',
+                      },
+                      'pivot_jacobian_A': [[int(value) for value in row] for row in A.rows()],
+                      'free_jacobian_B': [[int(value) for value in row] for row in B.rows()],
+                      'pivot_deviations': [str(value) for value in pivot_deviations],
+                  },
                   'equation_count': len(equations),
                   'equation_degrees': [int(polynomial.degree()) for polynomial in equations],
                   'standard_basis_count': len(basis_polynomials),
+                  'pure_b_w_t_basis_count': len(pure_residual),
                   'local_krull_dimension': dimension,
                   'local_vector_space_dimension': vector_space_dimension,
                   'leading_monomials': leading_monomials,
+                  'pure_b_w_t_leading_monomials': pure_leading_monomials,
                   'basis_sha256': hashlib.sha256(basis_text.encode()).hexdigest(),
+                  'pure_basis_sha256': hashlib.sha256(pure_text.encode()).hexdigest(),
                   'elapsed_seconds': elapsed,
               })
               if dimension == 0:
                   result['mathematical_consequence'] = (
-                      'The incidence scheme is supported only at the closed point in the local ring. '
-                      'The nonzero tangent direction is nilpotent and does not define a reduced local branch.'
+                      'The incidence scheme is zero-dimensional at the modular point; '
+                      'the tangent direction is nilpotent unless a separate component '
+                      'was lost by the chosen localization.'
                   )
               else:
                   result['mathematical_consequence'] = (
-                      'The local incidence scheme has positive dimension; further radical/normalization analysis is required.'
+                      'The local incidence scheme has positive dimension.  Its reduced '
+                      'component must be isolated and normalized before any p-adic or '
+                      'characteristic-zero promotion.'
                   )
           except Exception as exc:
               result.update({
@@ -111,7 +201,8 @@ jobs:
               key: result.get(key)
               for key in (
                   'status', 'local_krull_dimension', 'local_vector_space_dimension',
-                  'standard_basis_count', 'elapsed_seconds', 'record_sha256', 'error'
+                  'standard_basis_count', 'pure_b_w_t_basis_count',
+                  'elapsed_seconds', 'record_sha256', 'error'
               )
           }, indent=2, sort_keys=True), flush=True)
           if result['status'] == 'error':
