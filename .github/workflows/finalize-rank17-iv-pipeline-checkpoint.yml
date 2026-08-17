@@ -1,0 +1,68 @@
+name: Finalize rank-17 IV pipeline checkpoint
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surfaces_f11_v2.json"
+      - "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+      - "research/data/rank17_iv_all_geometric_surfaces_endpoint_f11_v2.json"
+      - "research/data/rank17_iv_surface_curve_elimination_f11_v2.json"
+      - "research/data/rank17_iv_surfaces_f13_v2.json"
+      - "research/data/rank17_iv_surface_geometric_quotient_f13.json"
+      - "research/data/rank17_iv_surface_crt_f11_f13_bounded.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build a preview from the triggering checkout
+        run: |
+          set -euo pipefail
+          python3 research/finalize_rank17_iv_pipeline_checkpoint.py \
+            --data-root research/data \
+            --json-output /tmp/RANK17_IV_PIPELINE_CHECKPOINT.json \
+            --markdown-output /tmp/RANK17_IV_PIPELINE_CHECKPOINT.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-pipeline-checkpoint-preview
+          path: |
+            /tmp/RANK17_IV_PIPELINE_CHECKPOINT.json
+            /tmp/RANK17_IV_PIPELINE_CHECKPOINT.md
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Regenerate after resetting to the newest remote branch
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          python3 research/finalize_rank17_iv_pipeline_checkpoint.py \
+            --data-root research/data \
+            --json-output research/data/RANK17_IV_PIPELINE_CHECKPOINT.json \
+            --markdown-output research/data/RANK17_IV_PIPELINE_CHECKPOINT.md
+          git add \
+            research/data/RANK17_IV_PIPELINE_CHECKPOINT.json \
+            research/data/RANK17_IV_PIPELINE_CHECKPOINT.md
+          if git diff --cached --quiet; then
+            echo "checkpoint already current"
+            exit 0
+          fi
+          git commit -m "Update the additive-IV research checkpoint"
+          git push origin "HEAD:$branch"
