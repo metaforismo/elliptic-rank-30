@@ -1,0 +1,123 @@
+name: Reconstruct bounded rank-17 IV surfaces from F11 and F13
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/rank17_iv_surface_geometric_quotient_f11.json"
+      - "research/data/rank17_iv_surface_geometric_quotient_f13.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - id: ready
+        name: Require both exact quotient certificates
+        run: |
+          if [[ -f research/data/rank17_iv_surface_geometric_quotient_f11.json \
+             && -f research/data/rank17_iv_surface_geometric_quotient_f13.json ]]; then
+            echo 'value=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'value=false' >> "$GITHUB_OUTPUT"
+            echo 'waiting for the other prime; no reconstruction attempted'
+          fi
+
+      - name: Install the pinned exact polynomial dependency
+        if: steps.ready.outputs.value == 'true'
+        run: python3 -m pip install 'sympy==1.14.0'
+
+      - name: Run the bounded reconstruction twice
+        if: steps.ready.outputs.value == 'true'
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_crt_reconstruction.py \
+            --f11 research/data/rank17_iv_surface_geometric_quotient_f11.json \
+            --f13 research/data/rank17_iv_surface_geometric_quotient_f13.json \
+            --bound 8 \
+            --combination-cap 200000 \
+            --output /tmp/rank17_iv_surface_crt_f11_f13_bounded.json
+          python3 research/rank17_iv_surface_crt_reconstruction.py \
+            --f11 research/data/rank17_iv_surface_geometric_quotient_f11.json \
+            --f13 research/data/rank17_iv_surface_geometric_quotient_f13.json \
+            --bound 8 \
+            --combination-cap 200000 \
+            --compare /tmp/rank17_iv_surface_crt_f11_f13_bounded.json
+
+      - name: Validate the bounded claim boundary
+        if: steps.ready.outputs.value == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              "/tmp/rank17_iv_surface_crt_f11_f13_bounded.json"
+          ).read_text())
+          assert data["modulus"] == 143
+          assert data["rational_numerator_denominator_bound"] == 8
+          assert data["surface_pair_count"] == (
+              data["f11_geometric_surface_count"]
+              * data["f13_geometric_surface_count"]
+          )
+          assert data["exact_q_surface_count"] == len(data["exact_q_surfaces"])
+          assert "declared bounds" in data["truth_status"]
+          assert "no section" in data["truth_status"]
+          for surface in data["exact_q_surfaces"]:
+              assert surface["five_surface_equations"] == ["0"] * 5
+              assert surface["discriminant"]["residual_squarefree"] is True
+              assert surface["discriminant"]["residual_coprime_to_c4"] is True
+          print({
+              "pairs": data["surface_pair_count"],
+              "exact_q_surfaces": data["exact_q_surface_count"],
+              "record_sha256": data["record_sha256"],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: steps.ready.outputs.value == 'true'
+        with:
+          name: rank17-iv-surface-crt-f11-f13-bounded
+          path: /tmp/rank17_iv_surface_crt_f11_f13_bounded.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication
+        if: steps.ready.outputs.value == 'true'
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/rank17_iv_surface_crt_f11_f13_bounded.json \
+            research/data/rank17_iv_surface_crt_f11_f13_bounded.json
+          python3 research/rank17_iv_surface_crt_reconstruction.py \
+            --f11 research/data/rank17_iv_surface_geometric_quotient_f11.json \
+            --f13 research/data/rank17_iv_surface_geometric_quotient_f13.json \
+            --bound 8 \
+            --combination-cap 200000 \
+            --compare research/data/rank17_iv_surface_crt_f11_f13_bounded.json
+          git add research/data/rank17_iv_surface_crt_f11_f13_bounded.json
+          if git diff --cached --quiet; then
+            echo "bounded CRT certificate already present"
+            exit 0
+          fi
+          git commit -m "Reconstruct bounded Q-valued IV surfaces from F11 and F13"
+          git push origin "HEAD:$branch"
