@@ -137,7 +137,7 @@ def symbolic_certificate() -> dict[str, object]:
         },
         "logical_implication": {
             "assumptions": [
-                "characteristic does not divide 12",
+                "characteristic zero",
                 "A and B are monic of degrees 6 and 10",
                 "A(0)=p0^2, B(0)=p0^3, p0!=0",
                 "C=c3*t^3+c4*t^4 with c3*c4*B(1)!=0",

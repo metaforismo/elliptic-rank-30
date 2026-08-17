@@ -91,7 +91,9 @@ nonzero.
 
 ## Converse
 
-Assume the characteristic does not divide `12`, and
+Assume characteristic zero, and
+
+The finite-field replays below verify `H=t^4R_4` directly; they do not invoke this characteristic-zero degree argument.
 
 \[
 A(0)=p_0^2,\qquad B(0)=p_0^3,\qquad p_0\ne0.
