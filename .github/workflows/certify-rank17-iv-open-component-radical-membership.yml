@@ -1,0 +1,104 @@
+name: Certify the open additive-IV component by radical membership
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-open-component-radical-membership.yml"
+      - "research/rank17_iv_open_component_radical_membership_sage.py"
+      - "research/rank17_iv_three_variable_open_elimination_sage.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prove both Rabinowitsch unit-ideal tests over QQ
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-open-radical-membership
+          mkdir -p "$root"
+          sage -python research/rank17_iv_open_component_radical_membership_sage.py \
+            --output "$root/certificate.json"
+          cat "$root/certificate.json"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          cd "$root"
+          sha256sum -c SHA256SUMS
+
+      - name: Validate the exact truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              '/tmp/rank17-iv-open-radical-membership/certificate.json'
+          ).read_text())
+          assert data['solved_a'] is False
+          assert data['solved_b'] is False
+          assert data['unconditional_global_rank_lower_bound'] == 29
+          assert data['residuals_contained_in_J'] is True
+          assert data['component']['plane_resultant_irreducible_over_QQ'] is True
+          assert data['radical_membership']['R1']['rabinowitsch_unit_ideal'] is True
+          assert data['radical_membership']['R2']['rabinowitsch_unit_ideal'] is True
+          assert data['set_theoretic_consequence'] == (
+              'V(I_open)=V(R1,R2)_open over the algebraic closure of Q.'
+          )
+          assert 'CERTIFIED over QQ' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'consequence': data['set_theoretic_consequence'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-open-component-radical-membership
+          path: /tmp/rank17-iv-open-radical-membership
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-open-radical-membership/certificate.json /tmp/publish.json
+          cp /tmp/rank17-iv-open-radical-membership/radical-membership-R1.txt /tmp/publish-r1.txt
+          cp /tmp/rank17-iv-open-radical-membership/radical-membership-R2.txt /tmp/publish-r2.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/publish.json research/data/rank17_iv_open_component_radical_membership.json
+          cp /tmp/publish-r1.txt research/data/rank17_iv_open_component_radical_membership_R1.txt
+          cp /tmp/publish-r2.txt research/data/rank17_iv_open_component_radical_membership_R2.txt
+          git add \
+            research/data/rank17_iv_open_component_radical_membership.json \
+            research/data/rank17_iv_open_component_radical_membership_R1.txt \
+            research/data/rank17_iv_open_component_radical_membership_R2.txt
+          if git diff --cached --quiet; then
+            echo "open IV radical-membership certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the unique open additive-IV component over Q"
+          git push origin "HEAD:$branch"
