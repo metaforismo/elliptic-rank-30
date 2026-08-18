@@ -1,0 +1,350 @@
+{
+  "partition": [
+    {
+      "candidate_count": 3,
+      "p0_end_exclusive": 5,
+      "p0_start_inclusive": 1,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p01-04.json",
+      "sha256": "b6dc0460c124a4bb8cd0923d9d664cc1f169fe417f02c2a034db830bb15f60ce",
+      "split_category_counts": {
+        "both": 1,
+        "i4_only": 0,
+        "iv_only": 2,
+        "neither": 0
+      },
+      "visited_parameter_tuples": 82044596
+    },
+    {
+      "candidate_count": 3,
+      "p0_end_exclusive": 9,
+      "p0_start_inclusive": 5,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p05-08.json",
+      "sha256": "12cbcf9332b7e5737321671f340e9c929bebde19ec6a1ac869bcddc24ef7c1d5",
+      "split_category_counts": {
+        "both": 0,
+        "i4_only": 2,
+        "iv_only": 1,
+        "neither": 0
+      },
+      "visited_parameter_tuples": 82044596
+    },
+    {
+      "candidate_count": 3,
+      "p0_end_exclusive": 13,
+      "p0_start_inclusive": 9,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p09-12.json",
+      "sha256": "3d68884eff3e861500135121ea6308be23334e30f9d51e88adb9e1a8f9657b14",
+      "split_category_counts": {
+        "both": 2,
+        "i4_only": 1,
+        "iv_only": 0,
+        "neither": 0
+      },
+      "visited_parameter_tuples": 82044596
+    },
+    {
+      "candidate_count": 1,
+      "p0_end_exclusive": 17,
+      "p0_start_inclusive": 13,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p13-16.json",
+      "sha256": "00e827643798de07a5730f6afbf5fb92d8753fe71f2fb60e4f7c1e264d186f48",
+      "split_category_counts": {
+        "both": 1,
+        "i4_only": 0,
+        "iv_only": 0,
+        "neither": 0
+      },
+      "visited_parameter_tuples": 82044596
+    },
+    {
+      "candidate_count": 5,
+      "p0_end_exclusive": 21,
+      "p0_start_inclusive": 17,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p17-20.json",
+      "sha256": "9dcbca56f3af77e467a2adb76225b7cca342e687177c475be25c0d33a1b88f20",
+      "split_category_counts": {
+        "both": 2,
+        "i4_only": 2,
+        "iv_only": 0,
+        "neither": 1
+      },
+      "visited_parameter_tuples": 82044596
+    },
+    {
+      "candidate_count": 3,
+      "p0_end_exclusive": 25,
+      "p0_start_inclusive": 21,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p21-24.json",
+      "sha256": "9a0abeae2c30467b4932636da6ada7cb39779771767096a4867f10069f185045",
+      "split_category_counts": {
+        "both": 1,
+        "i4_only": 1,
+        "iv_only": 1,
+        "neither": 0
+      },
+      "visited_parameter_tuples": 82044596
+    },
+    {
+      "candidate_count": 5,
+      "p0_end_exclusive": 29,
+      "p0_start_inclusive": 25,
+      "path": "/tmp/rank17-iv-f29-shards/f29-p25-28.json",
+      "sha256": "ad3c13f664a70baec303fff883eb1103e1985981a525a261a6860bc1e5e75e0d",
+      "split_category_counts": {
+        "both": 3,
+        "i4_only": 0,
+        "iv_only": 1,
+        "neither": 1
+      },
+      "visited_parameter_tuples": 82044596
+    }
+  ],
+  "prime": 29,
+  "production": {
+    "candidate_count": 23,
+    "normalization": "e0=1 jet-sign representative",
+    "prime": 29,
+    "split_category_counts": {
+      "both": 10,
+      "i4_only": 6,
+      "iv_only": 5,
+      "neither": 2
+    },
+    "tuples": [
+      [
+        3,
+        13,
+        24,
+        0,
+        16,
+        17,
+        1,
+        1
+      ],
+      [
+        4,
+        5,
+        3,
+        28,
+        6,
+        22,
+        0,
+        1
+      ],
+      [
+        4,
+        18,
+        24,
+        28,
+        25,
+        0,
+        0,
+        1
+      ],
+      [
+        5,
+        9,
+        6,
+        23,
+        6,
+        5,
+        0,
+        1
+      ],
+      [
+        8,
+        6,
+        15,
+        8,
+        21,
+        15,
+        1,
+        0
+      ],
+      [
+        8,
+        7,
+        20,
+        0,
+        12,
+        25,
+        1,
+        0
+      ],
+      [
+        10,
+        12,
+        4,
+        14,
+        25,
+        14,
+        1,
+        0
+      ],
+      [
+        12,
+        7,
+        26,
+        12,
+        6,
+        0,
+        1,
+        1
+      ],
+      [
+        12,
+        23,
+        23,
+        6,
+        12,
+        16,
+        1,
+        1
+      ],
+      [
+        15,
+        16,
+        25,
+        6,
+        0,
+        6,
+        1,
+        1
+      ],
+      [
+        17,
+        24,
+        26,
+        22,
+        21,
+        20,
+        1,
+        0
+      ],
+      [
+        18,
+        10,
+        22,
+        21,
+        22,
+        7,
+        1,
+        0
+      ],
+      [
+        18,
+        22,
+        17,
+        8,
+        25,
+        6,
+        1,
+        1
+      ],
+      [
+        19,
+        12,
+        14,
+        22,
+        11,
+        1,
+        1,
+        1
+      ],
+      [
+        20,
+        26,
+        18,
+        25,
+        1,
+        7,
+        0,
+        0
+      ],
+      [
+        21,
+        11,
+        6,
+        10,
+        15,
+        3,
+        1,
+        1
+      ],
+      [
+        21,
+        22,
+        8,
+        14,
+        3,
+        19,
+        1,
+        0
+      ],
+      [
+        23,
+        1,
+        13,
+        17,
+        12,
+        21,
+        0,
+        1
+      ],
+      [
+        25,
+        12,
+        4,
+        6,
+        0,
+        8,
+        0,
+        1
+      ],
+      [
+        26,
+        9,
+        22,
+        22,
+        28,
+        19,
+        1,
+        1
+      ],
+      [
+        26,
+        22,
+        4,
+        23,
+        19,
+        14,
+        1,
+        1
+      ],
+      [
+        27,
+        27,
+        11,
+        2,
+        12,
+        27,
+        1,
+        1
+      ],
+      [
+        28,
+        25,
+        23,
+        26,
+        14,
+        3,
+        0,
+        0
+      ]
+    ],
+    "visited_parameter_tuples": 574312172
+  },
+  "record_sha256": "09e68f038d61c628678ff17cf90023b744c3db12cfbb51c565712f8260b8be7a",
+  "schema_version": 1,
+  "truth_status": "EXACT merge of a complete disjoint F_29 p0-shard exhaustion; no characteristic-zero, section, or rank-30 conclusion"
+}

@@ -1,0 +1,2189 @@
+{
+  "candidate_count": 23,
+  "certificate_id": "rank17_iv_full_surface_locus_f29",
+  "independent_small_prime_cross_check": {
+    "candidate_count": 2,
+    "prime": 7,
+    "split_category_counts": {
+      "both": 0,
+      "i4_only": 1,
+      "iv_only": 0,
+      "neither": 1
+    },
+    "tuple_sets_identical": true,
+    "visited_parameter_tuples": 100842
+  },
+  "limitations": [
+    "The residual quartic squarefreeness/coprimality open conditions are not imposed because this certificate targets the Zariski surface locus.",
+    "The finite-field locus may contain points that do not lift to characteristic zero.",
+    "No section equations are imposed.",
+    "The unconditional global rank lower bound remains 29."
+  ],
+  "normalization": "e0=1 jet-sign representative",
+  "prime": 29,
+  "projection_point_counts": {
+    "p0-r": 23,
+    "p0-s": 23,
+    "r-s": 23
+  },
+  "projection_points": {
+    "p0-r": [
+      [
+        3,
+        16
+      ],
+      [
+        4,
+        6
+      ],
+      [
+        4,
+        25
+      ],
+      [
+        5,
+        6
+      ],
+      [
+        8,
+        12
+      ],
+      [
+        8,
+        21
+      ],
+      [
+        10,
+        25
+      ],
+      [
+        12,
+        6
+      ],
+      [
+        12,
+        12
+      ],
+      [
+        15,
+        0
+      ],
+      [
+        17,
+        21
+      ],
+      [
+        18,
+        22
+      ],
+      [
+        18,
+        25
+      ],
+      [
+        19,
+        11
+      ],
+      [
+        20,
+        1
+      ],
+      [
+        21,
+        3
+      ],
+      [
+        21,
+        15
+      ],
+      [
+        23,
+        12
+      ],
+      [
+        25,
+        0
+      ],
+      [
+        26,
+        19
+      ],
+      [
+        26,
+        28
+      ],
+      [
+        27,
+        12
+      ],
+      [
+        28,
+        14
+      ]
+    ],
+    "p0-s": [
+      [
+        3,
+        17
+      ],
+      [
+        4,
+        0
+      ],
+      [
+        4,
+        22
+      ],
+      [
+        5,
+        5
+      ],
+      [
+        8,
+        15
+      ],
+      [
+        8,
+        25
+      ],
+      [
+        10,
+        14
+      ],
+      [
+        12,
+        0
+      ],
+      [
+        12,
+        16
+      ],
+      [
+        15,
+        6
+      ],
+      [
+        17,
+        20
+      ],
+      [
+        18,
+        6
+      ],
+      [
+        18,
+        7
+      ],
+      [
+        19,
+        1
+      ],
+      [
+        20,
+        7
+      ],
+      [
+        21,
+        3
+      ],
+      [
+        21,
+        19
+      ],
+      [
+        23,
+        21
+      ],
+      [
+        25,
+        8
+      ],
+      [
+        26,
+        14
+      ],
+      [
+        26,
+        19
+      ],
+      [
+        27,
+        27
+      ],
+      [
+        28,
+        3
+      ]
+    ],
+    "r-s": [
+      [
+        0,
+        6
+      ],
+      [
+        0,
+        8
+      ],
+      [
+        1,
+        7
+      ],
+      [
+        3,
+        19
+      ],
+      [
+        6,
+        0
+      ],
+      [
+        6,
+        5
+      ],
+      [
+        6,
+        22
+      ],
+      [
+        11,
+        1
+      ],
+      [
+        12,
+        16
+      ],
+      [
+        12,
+        21
+      ],
+      [
+        12,
+        25
+      ],
+      [
+        12,
+        27
+      ],
+      [
+        14,
+        3
+      ],
+      [
+        15,
+        3
+      ],
+      [
+        16,
+        17
+      ],
+      [
+        19,
+        14
+      ],
+      [
+        21,
+        15
+      ],
+      [
+        21,
+        20
+      ],
+      [
+        22,
+        7
+      ],
+      [
+        25,
+        0
+      ],
+      [
+        25,
+        6
+      ],
+      [
+        25,
+        14
+      ],
+      [
+        28,
+        19
+      ]
+    ]
+  },
+  "record_sha256": "6e056feef677641b5ceabf9426296ad6c7da6b06446ba4cc5d69de34f8a3250c",
+  "records": [
+    {
+      "c4_coefficients_ascending": [
+        9,
+        20,
+        23,
+        15,
+        3,
+        12,
+        16,
+        17,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        27,
+        3,
+        23,
+        12,
+        12,
+        1,
+        16,
+        5,
+        3,
+        11,
+        20,
+        11,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        27,
+        14,
+        6,
+        10,
+        10,
+        0,
+        5,
+        14,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 14,
+        "delta_t12": 1,
+        "delta_t4": 27
+      },
+      "parameters": {
+        "p0": 3,
+        "p1": 13,
+        "p2": 24,
+        "p3": 0,
+        "r": 16,
+        "s": 17
+      },
+      "record_sha256": "0dd531335d131bfecc0a99e58580a62e557629da2605dcaf468f212162183562",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          7,
+          22
+        ],
+        "i4_square_target": 20,
+        "iv_split": true,
+        "iv_square_roots": [
+          1,
+          28
+        ],
+        "iv_square_target": 1
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        16,
+        11,
+        20,
+        22,
+        28,
+        19,
+        6,
+        22,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        6,
+        8,
+        9,
+        2,
+        20,
+        19,
+        12,
+        23,
+        26,
+        13,
+        2,
+        4,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        25,
+        21,
+        11,
+        27,
+        22,
+        13,
+        22,
+        6,
+        27,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 8,
+        "delta_t12": 27,
+        "delta_t4": 25
+      },
+      "parameters": {
+        "p0": 4,
+        "p1": 5,
+        "p2": 3,
+        "p3": 28,
+        "r": 6,
+        "s": 22
+      },
+      "record_sha256": "ae3c8993a03cf870911ccf371a8b6b45ff8ee9061881cba41895e4ddfc702799",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 17,
+        "iv_split": true,
+        "iv_square_roots": [
+          10,
+          19
+        ],
+        "iv_square_target": 13
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        16,
+        28,
+        23,
+        15,
+        27,
+        10,
+        25,
+        0,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        6,
+        23,
+        23,
+        28,
+        11,
+        10,
+        24,
+        7,
+        3,
+        15,
+        23,
+        0,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        4,
+        10,
+        23,
+        11,
+        9,
+        9,
+        12,
+        24,
+        14,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 11,
+        "delta_t12": 14,
+        "delta_t4": 4
+      },
+      "parameters": {
+        "p0": 4,
+        "p1": 18,
+        "p2": 24,
+        "p3": 28,
+        "r": 25,
+        "s": 0
+      },
+      "record_sha256": "3153165d909af7c4fc02b990bbbfadd6fb6eb10124b89269a61084a0d5d198d8",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 17,
+        "iv_split": true,
+        "iv_square_roots": [
+          6,
+          23
+        ],
+        "iv_square_target": 7
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        25,
+        3,
+        25,
+        19,
+        1,
+        2,
+        6,
+        5,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        9,
+        8,
+        12,
+        14,
+        23,
+        17,
+        15,
+        24,
+        2,
+        5,
+        22,
+        22,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        5,
+        16,
+        28,
+        20,
+        11,
+        9,
+        0,
+        2,
+        25,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 26,
+        "delta_t12": 25,
+        "delta_t4": 5
+      },
+      "parameters": {
+        "p0": 5,
+        "p1": 9,
+        "p2": 6,
+        "p3": 23,
+        "r": 6,
+        "s": 5
+      },
+      "record_sha256": "bbbd787a748879b66503d7ec8a000e1c8cba74e89ff02e10ba0d879ddddd1849",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 14,
+        "iv_split": true,
+        "iv_square_roots": [
+          8,
+          21
+        ],
+        "iv_square_target": 6
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        6,
+        9,
+        15,
+        18,
+        23,
+        8,
+        21,
+        15,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        19,
+        21,
+        3,
+        11,
+        13,
+        11,
+        13,
+        8,
+        27,
+        21,
+        18,
+        8,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        24,
+        21,
+        0,
+        0,
+        1,
+        5,
+        26,
+        25,
+        14,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 22,
+        "delta_t12": 14,
+        "delta_t4": 24
+      },
+      "parameters": {
+        "p0": 8,
+        "p1": 6,
+        "p2": 15,
+        "p3": 8,
+        "r": 21,
+        "s": 15
+      },
+      "record_sha256": "afb3bea0866ace569b9dfcda01d772a1c34df916147cb40bb3db70c3266322f9",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          11,
+          18
+        ],
+        "i4_square_target": 5,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 14
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        6,
+        25,
+        21,
+        19,
+        8,
+        28,
+        12,
+        25,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        19,
+        10,
+        28,
+        16,
+        9,
+        15,
+        6,
+        3,
+        10,
+        10,
+        24,
+        23,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        2,
+        2,
+        7,
+        26,
+        3,
+        15,
+        25,
+        10,
+        26,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 4,
+        "delta_t12": 26,
+        "delta_t4": 2
+      },
+      "parameters": {
+        "p0": 8,
+        "p1": 7,
+        "p2": 20,
+        "p3": 0,
+        "r": 12,
+        "s": 25
+      },
+      "record_sha256": "d262ee882d9b24c2058b1208e8860e2af11650cbe761bd4fafd144aa2aae8401",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          11,
+          18
+        ],
+        "i4_square_target": 5,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 21
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        13,
+        8,
+        21,
+        28,
+        14,
+        21,
+        25,
+        14,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        14,
+        4,
+        10,
+        21,
+        16,
+        28,
+        25,
+        10,
+        8,
+        21,
+        24,
+        21,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        19,
+        9,
+        6,
+        0,
+        27,
+        17,
+        20,
+        14,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 23,
+        "delta_t12": 4,
+        "delta_t4": 19
+      },
+      "parameters": {
+        "p0": 10,
+        "p1": 12,
+        "p2": 4,
+        "p3": 14,
+        "r": 25,
+        "s": 14
+      },
+      "record_sha256": "8d9b207fab79e0fec3b71b97c616585a792353d50552f474a486ef4d26eb19cb",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          12,
+          17
+        ],
+        "i4_square_target": 28,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 12
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        28,
+        23,
+        6,
+        14,
+        21,
+        17,
+        6,
+        0,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        17,
+        8,
+        4,
+        13,
+        9,
+        4,
+        28,
+        25,
+        16,
+        11,
+        9,
+        0,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        26,
+        0,
+        12,
+        28,
+        22,
+        24,
+        0,
+        0,
+        4,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 19,
+        "delta_t12": 4,
+        "delta_t4": 26
+      },
+      "parameters": {
+        "p0": 12,
+        "p1": 7,
+        "p2": 26,
+        "p3": 12,
+        "r": 6,
+        "s": 0
+      },
+      "record_sha256": "30a4847b8a328b667a0e5d118b4e67b163cbdd433f6e78a1d94853091f64ab00",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          14,
+          15
+        ],
+        "i4_square_target": 22,
+        "iv_split": true,
+        "iv_square_roots": [
+          7,
+          22
+        ],
+        "iv_square_target": 20
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        28,
+        1,
+        8,
+        13,
+        27,
+        10,
+        12,
+        16,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        17,
+        18,
+        9,
+        9,
+        16,
+        9,
+        20,
+        5,
+        0,
+        19,
+        27,
+        24,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        17,
+        26,
+        18,
+        2,
+        18,
+        6,
+        12,
+        1,
+        16,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 26,
+        "delta_t12": 16,
+        "delta_t4": 17
+      },
+      "parameters": {
+        "p0": 12,
+        "p1": 23,
+        "p2": 23,
+        "p3": 6,
+        "r": 12,
+        "s": 16
+      },
+      "record_sha256": "9d161234ebc7a69f0861a7830befc9f1a47dfec18ea5822a5723eb0592e350f3",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          14,
+          15
+        ],
+        "i4_square_target": 22,
+        "iv_split": true,
+        "iv_square_roots": [
+          8,
+          21
+        ],
+        "iv_square_target": 6
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        22,
+        16,
+        20,
+        23,
+        25,
+        3,
+        0,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        11,
+        12,
+        4,
+        8,
+        3,
+        21,
+        27,
+        3,
+        27,
+        20,
+        28,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        9,
+        7,
+        2,
+        18,
+        7,
+        18,
+        20,
+        3,
+        3,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 19,
+        "delta_t12": 3,
+        "delta_t4": 9
+      },
+      "parameters": {
+        "p0": 15,
+        "p1": 16,
+        "p2": 25,
+        "p3": 6,
+        "r": 0,
+        "s": 6
+      },
+      "record_sha256": "a7d92bdc7810c60f1bc52267a0045cd21af5dadcb26d9276419a4c99cc6d865d",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          10,
+          19
+        ],
+        "i4_square_target": 13,
+        "iv_split": true,
+        "iv_square_roots": [
+          7,
+          22
+        ],
+        "iv_square_target": 20
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        28,
+        4,
+        10,
+        24,
+        4,
+        4,
+        21,
+        20,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        12,
+        15,
+        8,
+        5,
+        18,
+        1,
+        10,
+        25,
+        3,
+        24,
+        22,
+        1,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        14,
+        10,
+        18,
+        3,
+        22,
+        12,
+        3,
+        0,
+        5,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 4,
+        "delta_t12": 5,
+        "delta_t4": 14
+      },
+      "parameters": {
+        "p0": 17,
+        "p1": 24,
+        "p2": 26,
+        "p3": 22,
+        "r": 21,
+        "s": 20
+      },
+      "record_sha256": "f70968fb2db421512a02c6b7281e55e7b3a412413aeec7dfdd1feba7c95ddda7",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          6,
+          23
+        ],
+        "i4_square_target": 7,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 21
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        5,
+        12,
+        22,
+        7,
+        2,
+        9,
+        22,
+        7,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        3,
+        5,
+        17,
+        19,
+        17,
+        27,
+        15,
+        12,
+        10,
+        26,
+        26,
+        25,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        3,
+        23,
+        0,
+        16,
+        0,
+        27,
+        4,
+        23,
+        20,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 23,
+        "delta_t12": 20,
+        "delta_t4": 3
+      },
+      "parameters": {
+        "p0": 18,
+        "p1": 10,
+        "p2": 22,
+        "p3": 21,
+        "r": 22,
+        "s": 7
+      },
+      "record_sha256": "c5dd7918abd8311d6bf17ea1cb904ecf252d63e23441b7db7c9af50dcb9f71c6",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          2,
+          27
+        ],
+        "i4_square_target": 4,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 12
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        5,
+        9,
+        23,
+        21,
+        13,
+        13,
+        25,
+        6,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        3,
+        11,
+        1,
+        4,
+        26,
+        7,
+        28,
+        16,
+        0,
+        17,
+        22,
+        9,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        10,
+        15,
+        8,
+        2,
+        18,
+        0,
+        20,
+        13,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 26,
+        "delta_t12": 13,
+        "delta_t4": 1
+      },
+      "parameters": {
+        "p0": 18,
+        "p1": 22,
+        "p2": 17,
+        "p3": 8,
+        "r": 25,
+        "s": 6
+      },
+      "record_sha256": "37d28a60e95bdcfd756f83ac87e3c82a56f5d88063ca5291e05525a042198c80",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          2,
+          27
+        ],
+        "i4_square_target": 4,
+        "iv_split": true,
+        "iv_square_roots": [
+          8,
+          21
+        ],
+        "iv_square_target": 6
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        13,
+        21,
+        9,
+        12,
+        19,
+        0,
+        11,
+        1,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        15,
+        4,
+        25,
+        17,
+        10,
+        0,
+        21,
+        15,
+        5,
+        10,
+        6,
+        16,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        26,
+        0,
+        4,
+        10,
+        14,
+        19,
+        15,
+        10,
+        18,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 17,
+        "delta_t12": 18,
+        "delta_t4": 26
+      },
+      "parameters": {
+        "p0": 19,
+        "p1": 12,
+        "p2": 14,
+        "p3": 22,
+        "r": 11,
+        "s": 1
+      },
+      "record_sha256": "3c2e50dae57eeaaf05c5ccc7c8461e2f40eaed4eb0d16037eae487ab3cb1c0fa",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          1,
+          28
+        ],
+        "i4_square_target": 1,
+        "iv_split": true,
+        "iv_square_roots": [
+          13,
+          16
+        ],
+        "iv_square_target": 24
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        23,
+        25,
+        4,
+        22,
+        8,
+        25,
+        1,
+        7,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        25,
+        25,
+        13,
+        3,
+        11,
+        0,
+        23,
+        8,
+        26,
+        5,
+        9,
+        25,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        22,
+        21,
+        15,
+        21,
+        11,
+        2,
+        2,
+        8,
+        14,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 20,
+        "delta_t12": 14,
+        "delta_t4": 22
+      },
+      "parameters": {
+        "p0": 20,
+        "p1": 26,
+        "p2": 18,
+        "p3": 25,
+        "r": 1,
+        "s": 7
+      },
+      "record_sha256": "9257119838107feb3bdf7d9782569efc8a5b1bdd49ace781aa9d80bdf7140bfb",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 27,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 18
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        6,
+        27,
+        25,
+        1,
+        12,
+        26,
+        15,
+        3,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        10,
+        24,
+        17,
+        25,
+        25,
+        26,
+        23,
+        5,
+        9,
+        4,
+        15,
+        19,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        26,
+        16,
+        0,
+        20,
+        10,
+        6,
+        21,
+        2,
+        15,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 2,
+        "delta_t12": 15,
+        "delta_t4": 26
+      },
+      "parameters": {
+        "p0": 21,
+        "p1": 11,
+        "p2": 6,
+        "p3": 10,
+        "r": 15,
+        "s": 3
+      },
+      "record_sha256": "ce1fb9ac5b1b2afa61176c292ac8d91bb7fd77c6b6def66ea19076b4caa1464f",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          13,
+          16
+        ],
+        "i4_square_target": 24,
+        "iv_split": true,
+        "iv_square_roots": [
+          5,
+          24
+        ],
+        "iv_square_target": 25
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        6,
+        25,
+        8,
+        12,
+        11,
+        2,
+        3,
+        19,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        10,
+        19,
+        12,
+        16,
+        7,
+        8,
+        24,
+        27,
+        9,
+        14,
+        13,
+        14,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        17,
+        13,
+        18,
+        15,
+        17,
+        16,
+        15,
+        24,
+        10,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 9,
+        "delta_t12": 10,
+        "delta_t4": 17
+      },
+      "parameters": {
+        "p0": 21,
+        "p1": 22,
+        "p2": 8,
+        "p3": 14,
+        "r": 3,
+        "s": 19
+      },
+      "record_sha256": "00b6853ed2fcbe71646a052a2da44712750cc7390ecd091b2c153346d974d658",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          13,
+          16
+        ],
+        "i4_square_target": 24,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 11
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        7,
+        17,
+        19,
+        25,
+        21,
+        22,
+        12,
+        21,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        16,
+        21,
+        23,
+        6,
+        16,
+        25,
+        7,
+        0,
+        7,
+        22,
+        13,
+        17,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        24,
+        14,
+        12,
+        2,
+        12,
+        4,
+        26,
+        9,
+        13,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 21,
+        "delta_t12": 13,
+        "delta_t4": 24
+      },
+      "parameters": {
+        "p0": 23,
+        "p1": 1,
+        "p2": 13,
+        "p3": 17,
+        "r": 12,
+        "s": 21
+      },
+      "record_sha256": "79fba016fd69f7b60eeb785ced713b5089a160235578bbf885c769a543c5781f",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 18,
+        "iv_split": true,
+        "iv_square_roots": [
+          4,
+          25
+        ],
+        "iv_square_target": 16
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        16,
+        20,
+        25,
+        19,
+        7,
+        20,
+        0,
+        8,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        23,
+        25,
+        1,
+        23,
+        4,
+        16,
+        26,
+        12,
+        9,
+        27,
+        24,
+        12,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        7,
+        28,
+        17,
+        2,
+        0,
+        8,
+        19,
+        9,
+        26,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 11,
+        "delta_t12": 26,
+        "delta_t4": 7
+      },
+      "parameters": {
+        "p0": 25,
+        "p1": 12,
+        "p2": 4,
+        "p3": 6,
+        "r": 0,
+        "s": 8
+      },
+      "record_sha256": "e2e3a1428a6be4ab2b78c571c850ffe1c5c2a563eb3331344f0a727b7c23540f",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 12,
+        "iv_split": true,
+        "iv_square_roots": [
+          6,
+          23
+        ],
+        "iv_square_target": 7
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        9,
+        4,
+        7,
+        3,
+        10,
+        6,
+        28,
+        19,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        2,
+        11,
+        10,
+        21,
+        2,
+        12,
+        2,
+        7,
+        6,
+        21,
+        7,
+        14,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        20,
+        13,
+        24,
+        28,
+        17,
+        4,
+        8,
+        7,
+        24,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 21,
+        "delta_t12": 24,
+        "delta_t4": 20
+      },
+      "parameters": {
+        "p0": 26,
+        "p1": 9,
+        "p2": 22,
+        "p3": 22,
+        "r": 28,
+        "s": 19
+      },
+      "record_sha256": "f4e98df7bf92df7f79e89a92b988c631cd40685c7075a204959cc844a28ca502",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          3,
+          26
+        ],
+        "i4_square_target": 9,
+        "iv_split": true,
+        "iv_square_roots": [
+          4,
+          25
+        ],
+        "iv_square_target": 16
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        9,
+        13,
+        25,
+        9,
+        5,
+        21,
+        19,
+        14,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        2,
+        14,
+        15,
+        28,
+        19,
+        28,
+        0,
+        15,
+        0,
+        16,
+        15,
+        21,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        9,
+        19,
+        11,
+        2,
+        0,
+        12,
+        27,
+        6,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 3,
+        "delta_t12": 1,
+        "delta_t4": 9
+      },
+      "parameters": {
+        "p0": 26,
+        "p1": 22,
+        "p2": 4,
+        "p3": 23,
+        "r": 19,
+        "s": 14
+      },
+      "record_sha256": "e21f4b435a8080aba3408a4ccbf8a87e762c4fc4d5d4d000d1dad10fc125dc76",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          3,
+          26
+        ],
+        "i4_square_target": 9,
+        "iv_split": true,
+        "iv_square_roots": [
+          9,
+          20
+        ],
+        "iv_square_target": 23
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        4,
+        8,
+        18,
+        6,
+        9,
+        2,
+        12,
+        27,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        21,
+        5,
+        21,
+        19,
+        25,
+        23,
+        9,
+        3,
+        16,
+        0,
+        5,
+        26,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        26,
+        20,
+        26,
+        11,
+        23,
+        22,
+        4,
+        0,
+        13,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 12,
+        "delta_t12": 13,
+        "delta_t4": 26
+      },
+      "parameters": {
+        "p0": 27,
+        "p1": 27,
+        "p2": 11,
+        "p3": 2,
+        "r": 12,
+        "s": 27
+      },
+      "record_sha256": "50d35ea174d341ec8c26b8709dc269bda43ac9dca4d148ba22e70d8229d90818",
+      "split_tangent_checks": {
+        "i4_split": true,
+        "i4_square_roots": [
+          8,
+          21
+        ],
+        "i4_square_target": 6,
+        "iv_split": true,
+        "iv_square_roots": [
+          11,
+          18
+        ],
+        "iv_square_target": 5
+      }
+    },
+    {
+      "c4_coefficients_ascending": [
+        1,
+        8,
+        28,
+        25,
+        26,
+        10,
+        14,
+        3,
+        1
+      ],
+      "c6_coefficients_ascending": [
+        28,
+        17,
+        21,
+        15,
+        4,
+        6,
+        8,
+        1,
+        12,
+        14,
+        28,
+        19,
+        1
+      ],
+      "discriminant_coefficients_ascending": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        7,
+        28,
+        22,
+        5,
+        1,
+        22,
+        4,
+        26,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "exact_fibre_checks": {
+        "c6_quadratic_coefficient_at_one": 22,
+        "delta_t12": 26,
+        "delta_t4": 1
+      },
+      "parameters": {
+        "p0": 28,
+        "p1": 25,
+        "p2": 23,
+        "p3": 26,
+        "r": 14,
+        "s": 3
+      },
+      "record_sha256": "8716f62bb09435241bffd921512c777787c026bc0a704d35d4d6b378661e16a6",
+      "split_tangent_checks": {
+        "i4_split": false,
+        "i4_square_roots": [],
+        "i4_square_target": 3,
+        "iv_split": false,
+        "iv_square_roots": [],
+        "iv_square_target": 14
+      }
+    }
+  ],
+  "schema_version": 1,
+  "split_category_counts": {
+    "both": 10,
+    "i4_only": 6,
+    "iv_only": 5,
+    "neither": 2
+  },
+  "truth_status": "EXHAUSTIVE normalized I12+I4+IV surface locus over F_29 before split-square filtering; no characteristic-zero, section, or rank-30 conclusion",
+  "visited_parameter_tuples": 574312172
+}
