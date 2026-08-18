@@ -1,0 +1,1240 @@
+{
+  "analyses": [
+    {
+      "maximum_total_degree": 6,
+      "prime": 11,
+      "projections": {
+        "p0-r": {
+          "point_count": 7,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 21,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "p0-s": {
+          "point_count": 7,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 21,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "r-s": {
+          "point_count": 7,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 21,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        }
+      },
+      "record_sha256": "1994d830c4e152b5a547a759e251c90b4db1973fc21a3ffe00d56d5336dac82e",
+      "source_record_sha256": "16dce97d71df7fc3546fb0b75c92105b7710a0a6a479808aefe50da23ee69c6e",
+      "surface_count": 7
+    },
+    {
+      "maximum_total_degree": 6,
+      "prime": 13,
+      "projections": {
+        "p0-r": {
+          "point_count": 7,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 21,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "p0-s": {
+          "point_count": 7,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 21,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "r-s": {
+          "point_count": 7,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 7,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 7,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 21,
+              "point_count": 7,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        }
+      },
+      "record_sha256": "9fb53d2e2001b651885df7ca0ee11ebbe451c7d5226cd95b4ff6f819362db21c",
+      "source_record_sha256": "464288d3422c44d7bd9695dfa599a26a2a51a94ee2c3dcccdc41d1c123ed890a",
+      "surface_count": 7
+    },
+    {
+      "maximum_total_degree": 6,
+      "prime": 17,
+      "projections": {
+        "p0-r": {
+          "point_count": 12,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 12,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 12,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 12,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 12,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 12,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 12,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 9,
+              "point_count": 12,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 12,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 16,
+              "point_count": 12,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "p0-s": {
+          "point_count": 12,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 12,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 12,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 12,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 12,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 12,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 12,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 9,
+              "point_count": 12,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 12,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 16,
+              "point_count": 12,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "r-s": {
+          "point_count": 13,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 13,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 13,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 13,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 13,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 2,
+              "point_count": 13,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 13,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 8,
+              "point_count": 13,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 13,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 15,
+              "point_count": 13,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        }
+      },
+      "record_sha256": "55c21237016d86643457b39d28fed93dc27da1501b16cf71353a4ba3f4cc92ea",
+      "source_record_sha256": "b22dd883bf65791800b638020f2b101ba89d119e3e1e23e1991fee1a9692973c",
+      "surface_count": 13
+    },
+    {
+      "maximum_total_degree": 6,
+      "prime": 19,
+      "projections": {
+        "p0-r": {
+          "point_count": 14,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 1,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 7,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "p0-s": {
+          "point_count": 14,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 1,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 7,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "r-s": {
+          "point_count": 14,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 14,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 1,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 7,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 14,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 14,
+              "point_count": 14,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        }
+      },
+      "record_sha256": "40c3023eedc58fc764521b938db0e4ee921859cd8093662413b4e7466e006cc0",
+      "source_record_sha256": "e610f1f54de1b0d9d742de740fecb5c2efa938bb3bddfe5ba5491f93dbf2bec1",
+      "surface_count": 14
+    },
+    {
+      "maximum_total_degree": 6,
+      "prime": 23,
+      "projections": {
+        "p0-r": {
+          "point_count": 19,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 15,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 19,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 2,
+              "point_count": 19,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 19,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 9,
+              "point_count": 19,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "p0-s": {
+          "point_count": 18,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 18,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 18,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 18,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 15,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 18,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 18,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 3,
+              "point_count": 18,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 18,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 10,
+              "point_count": 18,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "r-s": {
+          "point_count": 19,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 15,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 19,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 19,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 2,
+              "point_count": 19,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 19,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 9,
+              "point_count": 19,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        }
+      },
+      "record_sha256": "745cbdf8d2c254d4dc2726e26aa20e628a4d04e5a88badaf81c6f5f747413f9a",
+      "source_record_sha256": "8cec4131f616c18e3b7967d2fbb3135c16f70c6f7bb3a89b931258ec5af89d5a",
+      "surface_count": 19
+    },
+    {
+      "maximum_total_degree": 6,
+      "prime": 29,
+      "projections": {
+        "p0-r": {
+          "point_count": 23,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 15,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 21,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 23,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 5,
+              "point_count": 23,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "p0-s": {
+          "point_count": 23,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 15,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 21,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 23,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 5,
+              "point_count": 23,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        },
+        "r-s": {
+          "point_count": 23,
+          "rank_profile": [
+            {
+              "full_column_rank": true,
+              "matrix_rank": 3,
+              "monomial_count": 3,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 1
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 6,
+              "monomial_count": 6,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 2
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 10,
+              "monomial_count": 10,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 3
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 15,
+              "monomial_count": 15,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 4
+            },
+            {
+              "full_column_rank": true,
+              "matrix_rank": 21,
+              "monomial_count": 21,
+              "no_common_relation_of_degree_at_most_d": true,
+              "nullity": 0,
+              "point_count": 23,
+              "sample_sufficient_for_detection": true,
+              "total_degree": 5
+            },
+            {
+              "full_column_rank": false,
+              "matrix_rank": 23,
+              "monomial_count": 28,
+              "no_common_relation_of_degree_at_most_d": false,
+              "nullity": 5,
+              "point_count": 23,
+              "sample_sufficient_for_detection": false,
+              "total_degree": 6
+            }
+          ]
+        }
+      },
+      "record_sha256": "03a52d0ce9bbcba6e892c2bd3f7657b6c701be5b9538b0b27eb3c54c398dd564",
+      "source_record_sha256": "6e056feef677641b5ceabf9426296ad6c7da6b06446ba4cc5d69de34f8a3250c",
+      "surface_count": 23
+    }
+  ],
+  "certificate_id": "rank17_iv_surface_projection_evaluation_ranks",
+  "logical_boundary": [
+    "Full column rank means no nonzero polynomial in the chosen monomial space vanishes on the entire recorded point set.",
+    "It does not exclude a lower-degree equation for one proper component of a reducible locus.",
+    "A modular relation at one prime is not an equation over Q.",
+    "No section equations are imposed.",
+    "The unconditional global rank lower bound remains 29."
+  ],
+  "maximum_total_degree": 6,
+  "record_sha256": "8a8681eda89030cc50421691e88a2f37ca5102f7f8ee3f6f9db12847b1d1b822",
+  "schema_version": 1,
+  "truth_status": "EXACT finite-field evaluation-matrix ranks for full-locus coordinate projections; full rank excludes only a polynomial containing every recorded component at that prime and does not prove irreducibility, a characteristic-zero obstruction, a section, or rank 30"
+}
