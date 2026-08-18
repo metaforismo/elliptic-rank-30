@@ -1,0 +1,230 @@
+name: Certify full rank-17 IV surface locus over F29 by exact shards
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-full-locus-f29-sharded.yml"
+      - "research/rank17_iv_surface_locus_all_finite_field.c"
+      - "research/rank17_iv_surface_locus_all_shard.c"
+      - "research/rank17_iv_surface_locus_merge_shards.py"
+      - "research/rank17_iv_surface_locus_all_certificate.py"
+      - "research/rank17_iv_surface_locus_finite_field_v2.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  shard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: p01-04
+            start: 1
+            end: 5
+          - label: p05-08
+            start: 5
+            end: 9
+          - label: p09-12
+            start: 9
+            end: 13
+          - label: p13-16
+            start: 13
+            end: 17
+          - label: p17-20
+            start: 17
+            end: 21
+          - label: p21-24
+            start: 21
+            end: 25
+          - label: p25-28
+            start: 25
+            end: 29
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile the exact sharded enumerator
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -march=x86-64-v3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_all_shard.c \
+            -o /tmp/rank17-iv-full-shard
+
+      - name: Exhaust this p0 interval twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-f29-${{ matrix.label }}
+          mkdir -p "$root"
+          /tmp/rank17-iv-full-shard 29 \
+            ${{ matrix.start }} ${{ matrix.end }} \
+            > "$root/a.json"
+          /tmp/rank17-iv-full-shard 29 \
+            ${{ matrix.start }} ${{ matrix.end }} \
+            > "$root/b.json"
+          cmp "$root/a.json" "$root/b.json"
+          cp "$root/a.json" "/tmp/f29-${{ matrix.label }}.json"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('/tmp/f29-${{ matrix.label }}.json')
+          data = json.loads(path.read_text())
+          assert data['prime'] == 29
+          assert data['p0_start_inclusive'] == ${{ matrix.start }}
+          assert data['p0_end_exclusive'] == ${{ matrix.end }}
+          assert data['visited_parameter_tuples'] == (
+              ${{ matrix.end }} - ${{ matrix.start }}
+          ) * 29**5
+          assert data['candidate_count'] == len(data['tuples'])
+          assert sum(data['split_category_counts'].values()) == data['candidate_count']
+          assert all(
+              ${{ matrix.start }} <= values[0] < ${{ matrix.end }}
+              for values in data['tuples']
+          )
+          print({
+              'label': '${{ matrix.label }}',
+              'visited': data['visited_parameter_tuples'],
+              'candidates': data['candidate_count'],
+              'categories': data['split_category_counts'],
+          })
+          PY
+          sha256sum "$root/a.json" "$root/b.json" \
+            "/tmp/f29-${{ matrix.label }}.json"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-f29-shard-${{ matrix.label }}
+          path: /tmp/f29-${{ matrix.label }}.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+  merge-and-certify:
+    needs: shard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rank17-iv-f29-shard-*
+          path: /tmp/rank17-iv-f29-shards
+          merge-multiple: true
+
+      - name: Merge the disjoint exact partition
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(find /tmp/rank17-iv-f29-shards -type f -name 'f29-*.json' | wc -l)" -eq 7
+          args=()
+          while IFS= read -r path; do
+            args+=(--shard "$path")
+          done < <(find /tmp/rank17-iv-f29-shards \
+            -type f -name 'f29-*.json' | sort)
+          mkdir -p /tmp/rank17-iv-f29-certified
+          python3 research/rank17_iv_surface_locus_merge_shards.py \
+            "${args[@]}" \
+            --output /tmp/rank17-iv-f29-certified/merge-certificate.json \
+            --production-output /tmp/rank17-iv-f29-certified/production.json
+          python3 research/rank17_iv_surface_locus_merge_shards.py \
+            "${args[@]}" \
+            --output /tmp/rank17-iv-f29-certified/merge-replay.json \
+            --production-output /tmp/rank17-iv-f29-certified/production-replay.json \
+            --compare /tmp/rank17-iv-f29-certified/merge-certificate.json
+          cmp /tmp/rank17-iv-f29-certified/merge-certificate.json \
+              /tmp/rank17-iv-f29-certified/merge-replay.json
+          cmp /tmp/rank17-iv-f29-certified/production.json \
+              /tmp/rank17-iv-f29-certified/production-replay.json
+
+      - name: Independently cross-check the implementation over F7
+        shell: bash
+        run: |
+          set -euo pipefail
+          gcc -std=c17 -O3 -Wall -Wextra -Werror \
+            research/rank17_iv_surface_locus_all_finite_field.c \
+            -o /tmp/rank17-iv-full-enumerator
+          /tmp/rank17-iv-full-enumerator 7 \
+            > /tmp/rank17-iv-f29-certified/f7.json
+
+      - name: Build and replay the exact full-locus certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 research/rank17_iv_surface_locus_all_certificate.py \
+            --production /tmp/rank17-iv-f29-certified/production.json \
+            --small-prime /tmp/rank17-iv-f29-certified/f7.json \
+            --output /tmp/rank17-iv-f29-certified/full-f29.json
+          python3 research/rank17_iv_surface_locus_all_certificate.py \
+            --production /tmp/rank17-iv-f29-certified/production-replay.json \
+            --small-prime /tmp/rank17-iv-f29-certified/f7.json \
+            --compare /tmp/rank17-iv-f29-certified/full-f29.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-f29-certified')
+          merged = json.loads((root / 'merge-certificate.json').read_text())
+          full = json.loads((root / 'full-f29.json').read_text())
+          assert merged['prime'] == 29
+          assert len(merged['partition']) == 7
+          assert merged['production']['visited_parameter_tuples'] == 574312172
+          assert full['prime'] == 29
+          assert full['visited_parameter_tuples'] == 574312172
+          assert full['candidate_count'] == len(full['records'])
+          assert sum(full['split_category_counts'].values()) == full['candidate_count']
+          assert full['independent_small_prime_cross_check']['tuple_sets_identical'] is True
+          print({
+              'candidate_count': full['candidate_count'],
+              'split_category_counts': full['split_category_counts'],
+              'projection_point_counts': full['projection_point_counts'],
+              'merge_sha256': merged['record_sha256'],
+              'full_sha256': full['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-f29-certified/*.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-full-surface-locus-f29-certified
+          path: /tmp/rank17-iv-f29-certified
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-f29-certified/full-f29.json /tmp/publish-full-f29.json
+          cp /tmp/rank17-iv-f29-certified/merge-certificate.json /tmp/publish-merge-f29.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-full-f29.json \
+            research/data/rank17_iv_full_surface_locus_f29.json
+          cp /tmp/publish-merge-f29.json \
+            research/data/rank17_iv_full_surface_locus_f29_merge.json
+          git add \
+            research/data/rank17_iv_full_surface_locus_f29.json \
+            research/data/rank17_iv_full_surface_locus_f29_merge.json
+          if git diff --cached --quiet; then
+            echo "F29 full-locus certificates already current"
+            exit 0
+          fi
+          git commit -m "Certify the sharded additive-IV surface locus over F29"
+          git push origin "HEAD:$branch"
