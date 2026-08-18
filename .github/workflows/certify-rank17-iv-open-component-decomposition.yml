@@ -1,0 +1,105 @@
+name: Certify the determinant-open additive-IV component decomposition
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/rank17_iv_open_component_decomposition.py"
+      - ".github/workflows/certify-rank17-iv-open-component-decomposition.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute the exact projection decomposition twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-open-component
+          mkdir -p "$root/a" "$root/b"
+          python3 research/rank17_iv_open_component_decomposition.py \
+            --output "$root/a/certificate.json" \
+            --markdown-output "$root/a/certificate.md"
+          python3 research/rank17_iv_open_component_decomposition.py \
+            --output "$root/b/certificate.json" \
+            --markdown-output "$root/b/certificate.md"
+          cmp "$root/a/certificate.json" "$root/b/certificate.json"
+          cmp "$root/a/certificate.md" "$root/b/certificate.md"
+          python3 research/rank17_iv_open_component_decomposition.py \
+            --compare "$root/a/certificate.json"
+
+      - name: Validate the exact truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              '/tmp/rank17-iv-open-component/a/certificate.json'
+          ).read_text())
+          assert data['solved_a'] is False
+          assert data['solved_b'] is False
+          assert data['unconditional_global_rank_lower_bound'] == 29
+          assert data['resultants']['common_factorization'] == 'F * G5^2'
+          assert data['resultants']['cofactor_gcd'] == '1'
+          assert len(data['isolated_rational_residual_points']) == 2
+          assert all(
+              item['classification'] == 'DEGENERATE_IDENTICALLY_ZERO_DISCRIMINANT'
+              for item in data['isolated_rational_residual_points']
+          )
+          assert 'zero-dimensional' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'consequence': data['mathematical_consequence'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          cd /tmp/rank17-iv-open-component/a
+          sha256sum certificate.json certificate.md > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-open-component-decomposition
+          path: /tmp/rank17-iv-open-component/a
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-open-component/a/certificate.json /tmp/publish.json
+          cp /tmp/rank17-iv-open-component/a/certificate.md /tmp/publish.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish.json research/data/rank17_iv_open_component_decomposition.json
+          cp /tmp/publish.md research/data/rank17_iv_open_component_decomposition.md
+          git add \
+            research/data/rank17_iv_open_component_decomposition.json \
+            research/data/rank17_iv_open_component_decomposition.md
+          if git diff --cached --quiet; then
+            echo "open component decomposition certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the determinant-open IV component decomposition"
+          git push origin "HEAD:$branch"
