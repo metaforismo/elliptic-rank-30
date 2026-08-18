@@ -1,0 +1,126 @@
+name: Certify rank-17 IV surface projection ranks
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-surface-projection-ranks.yml"
+      - "research/rank17_iv_surface_projection_rank.py"
+      - "research/data/rank17_iv_full_surface_locus_f11.json"
+      - "research/data/rank17_iv_full_surface_locus_f13.json"
+      - "research/data/rank17_iv_full_surface_locus_f17.json"
+      - "research/data/rank17_iv_full_surface_locus_f19.json"
+      - "research/data/rank17_iv_full_surface_locus_f23.json"
+      - "research/data/rank17_iv_full_surface_locus_f29.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute and replay exact projection ranks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-projection-ranks
+          python3 research/rank17_iv_surface_projection_rank.py \
+            --maximum-degree 6 \
+            --census research/data/rank17_iv_full_surface_locus_f11.json \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --census research/data/rank17_iv_full_surface_locus_f29.json \
+            --output /tmp/rank17-iv-projection-ranks/result.json
+          python3 research/rank17_iv_surface_projection_rank.py \
+            --maximum-degree 6 \
+            --census research/data/rank17_iv_full_surface_locus_f11.json \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --census research/data/rank17_iv_full_surface_locus_f29.json \
+            --compare /tmp/rank17-iv-projection-ranks/result.json
+
+      - name: Validate the new degree exclusions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/rank17-iv-projection-ranks/result.json').read_text())
+          by_prime = {item['prime']: item for item in data['analyses']}
+          assert sorted(by_prime) == [11, 13, 17, 19, 23, 29]
+          rs23 = by_prime[23]['projections']['r-s']['rank_profile']
+          assert rs23[3] == {
+              'total_degree': 4,
+              'point_count': 19,
+              'monomial_count': 15,
+              'matrix_rank': 15,
+              'nullity': 0,
+              'full_column_rank': True,
+              'sample_sufficient_for_detection': True,
+              'no_common_relation_of_degree_at_most_d': True,
+          }
+          rs29 = by_prime[29]['projections']['r-s']['rank_profile']
+          assert rs29[4] == {
+              'total_degree': 5,
+              'point_count': 23,
+              'monomial_count': 21,
+              'matrix_rank': 21,
+              'nullity': 0,
+              'full_column_rank': True,
+              'sample_sufficient_for_detection': True,
+              'no_common_relation_of_degree_at_most_d': True,
+          }
+          assert 'does not prove irreducibility' in data['truth_status']
+          assert 'rank 30' in data['truth_status']
+          print({
+              'F23_no_common_degree_le_4': True,
+              'F29_no_common_degree_le_5': True,
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-projection-ranks/result.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-surface-projection-ranks
+          path: /tmp/rank17-iv-projection-ranks/result.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-projection-ranks/result.json /tmp/publish-projection-ranks.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-projection-ranks.json \
+            research/data/rank17_iv_surface_projection_ranks.json
+          git add research/data/rank17_iv_surface_projection_ranks.json
+          if git diff --cached --quiet; then
+            echo "projection-rank certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the IV surface projection ranks through F29"
+          git push origin "HEAD:$branch"
