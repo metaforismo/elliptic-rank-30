@@ -1,0 +1,125 @@
+name: Certify the rational additive-IV split obstruction
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-rational-component-split-obstruction.yml"
+      - "research/rank17_iv_rational_component_split_obstruction.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record the exact symbolic environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sympy
+          print({"sympy_version": sympy.__version__})
+          PY
+
+      - name: Recompute the rational component and split obstruction twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-rational-split-obstruction
+          mkdir -p "$root/a" "$root/b"
+          python3 research/rank17_iv_rational_component_split_obstruction.py \
+            --output "$root/a/certificate.json" \
+            --markdown-output "$root/a/certificate.md"
+          python3 research/rank17_iv_rational_component_split_obstruction.py \
+            --output "$root/b/certificate.json" \
+            --markdown-output "$root/b/certificate.md"
+          cmp "$root/a/certificate.json" "$root/b/certificate.json"
+          cmp "$root/a/certificate.md" "$root/b/certificate.md"
+          python3 research/rank17_iv_rational_component_split_obstruction.py \
+            --compare "$root/a/certificate.json"
+
+      - name: Validate the mathematical truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              '/tmp/rank17-iv-rational-split-obstruction/a/certificate.json'
+          ).read_text())
+          assert data['solved_a'] is False
+          assert data['solved_b'] is False
+          assert data['unconditional_global_rank_lower_bound'] == 29
+          assert data['plane_component']['irreducible_over_Q'] is True
+          assert data['plane_component']['resultant_z_equals_quintic'] is True
+          assert data['plane_component']['parametrization_identities_verified'] == [
+              'F=0', 'R1=0', 'R2=0'
+          ]
+          assert data['logarithmic_derivative_reconstruction'][
+              'differential_equation_zero_over_Qw'
+          ] is True
+          assert data['split_square_classes'][
+              'positive_set_intersection'
+          ] == 'EmptySet'
+          assert 'one irreducible' in data['truth_status']
+          assert 'entire saturated' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          assert any(
+              'does not yet prove' in item for item in data['limitations']
+          )
+          print({
+              'consequence': data['mathematical_consequence'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          cd /tmp/rank17-iv-rational-split-obstruction/a
+          sha256sum certificate.json certificate.md > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-rational-component-split-obstruction
+          path: /tmp/rank17-iv-rational-split-obstruction/a
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-rational-split-obstruction/a/certificate.json \
+            /tmp/publish-certificate.json
+          cp /tmp/rank17-iv-rational-split-obstruction/a/certificate.md \
+            /tmp/publish-certificate.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/publish-certificate.json \
+            research/data/rank17_iv_rational_component_split_obstruction.json
+          cp /tmp/publish-certificate.md \
+            research/data/rank17_iv_rational_component_split_obstruction.md
+          git add \
+            research/data/rank17_iv_rational_component_split_obstruction.json \
+            research/data/rank17_iv_rational_component_split_obstruction.md
+          if git diff --cached --quiet; then
+            echo "rational component split obstruction already current"
+            exit 0
+          fi
+          git commit -m "Certify the split obstruction on the rational IV component"
+          git push origin "HEAD:$branch"
