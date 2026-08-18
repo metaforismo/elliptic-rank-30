@@ -1,0 +1,104 @@
+name: Finalize the exact additive-IV branch closure
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/finalize-rank17-iv-branch-closure.yml"
+      - "research/finalize_rank17_iv_branch_closure.py"
+      - "research/data/rank17_iv_singular_determinant_obstruction.json"
+      - "research/data/rank17_iv_open_component_radical_membership.json"
+      - "research/data/rank17_iv_rational_component_split_obstruction.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  finalize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute the combined proof object twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-branch-closure
+          mkdir -p "$root/a" "$root/b"
+          for copy in a b; do
+            python3 research/finalize_rank17_iv_branch_closure.py \
+              --singular research/data/rank17_iv_singular_determinant_obstruction.json \
+              --open research/data/rank17_iv_open_component_radical_membership.json \
+              --split research/data/rank17_iv_rational_component_split_obstruction.json \
+              --output "$root/$copy/certificate.json" \
+              --markdown-output "$root/$copy/certificate.md"
+          done
+          cmp "$root/a/certificate.json" "$root/b/certificate.json"
+          cmp "$root/a/certificate.md" "$root/b/certificate.md"
+          python3 research/finalize_rank17_iv_branch_closure.py \
+            --singular research/data/rank17_iv_singular_determinant_obstruction.json \
+            --open research/data/rank17_iv_open_component_radical_membership.json \
+            --split research/data/rank17_iv_rational_component_split_obstruction.json \
+            --compare "$root/a/certificate.json"
+
+      - name: Validate the theorem boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/rank17-iv-branch-closure/a/certificate.json').read_text())
+          assert data['solved_a'] is False
+          assert data['solved_b'] is False
+          assert data['unconditional_global_rank_lower_bound'] == 29
+          assert data['classification'] == 'ADDITIVE_IV_SPLIT_REALIZATION_CLOSED_OVER_Q'
+          assert len(data['proof_chain']) == 3
+          assert 'no nondegenerate surface' in data['truth_status']
+          assert 'semistable I3' in data['truth_status']
+          assert 'rank 30' in data['truth_status']
+          print({
+              'classification': data['classification'],
+              'consequence': data['mathematical_consequence'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          cd /tmp/rank17-iv-branch-closure/a
+          sha256sum certificate.json certificate.md > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-branch-closure
+          path: /tmp/rank17-iv-branch-closure/a
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-branch-closure/a/certificate.json /tmp/publish.json
+          cp /tmp/rank17-iv-branch-closure/a/certificate.md /tmp/publish.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/publish.json research/data/RANK17_IV_BRANCH_CLOSURE.json
+          cp /tmp/publish.md research/data/RANK17_IV_BRANCH_CLOSURE.md
+          git add research/data/RANK17_IV_BRANCH_CLOSURE.json research/data/RANK17_IV_BRANCH_CLOSURE.md
+          if git diff --cached --quiet; then
+            echo "additive-IV branch closure already current"
+            exit 0
+          fi
+          git commit -m "Close the split additive-IV rank-17 branch over Q"
+          git push origin "HEAD:$branch"
