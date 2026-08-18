@@ -1,0 +1,139 @@
+name: Certify rank-17 IV logarithmic-derivative three-variable model v2
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-log-derivative-three-variable-v2.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Record the bad-prime boundary of this coordinate chart
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import sympy as sp
+          assert sp.factorint(28512) == {2: 5, 3: 4, 11: 1}
+          print('the leading recurrence coefficient is 28512=2^5*3^4*11')
+          print('F11 remains valid for the original locus but is excluded from this chart')
+          PY
+
+      - name: Exhaust the reduced p-cubed chart at five good primes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-three-variable-v2
+          python3 research/rank17_iv_log_derivative_three_variable.py \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --census research/data/rank17_iv_full_surface_locus_f29.json \
+            --output /tmp/rank17-iv-three-variable-v2/result.json
+          python3 research/rank17_iv_log_derivative_three_variable.py \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --census research/data/rank17_iv_full_surface_locus_f29.json \
+            --compare /tmp/rank17-iv-three-variable-v2/result.json
+
+      - name: Validate the exact finite-field equivalence boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/rank17-iv-three-variable-v2/result.json').read_text())
+          expected = {13: 7, 17: 13, 19: 14, 23: 19, 29: 23}
+          assert [item['prime'] for item in data['analyses']] == [13,17,19,23,29]
+          for analysis in data['analyses']:
+              prime = analysis['prime']
+              assert analysis['source_surface_count'] == expected[prime]
+              assert analysis['derived_reduced_record_count'] == expected[prime]
+              assert analysis['three_variable_keys_visited'] == prime**3
+              assert analysis['reconstructed_surface_count'] == expected[prime]
+              assert analysis['exact_surface_set_match'] is True
+              assert len(analysis['derived_records']) == expected[prime]
+              assert sum(analysis['classification_counts'].values()) == prime**3
+          assert data['reduced_variables'] == ['r2', 'r3', 'k']
+          assert 'singular determinant divisor' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'bad_chart_prime': 11,
+              'surface_counts': expected,
+              'determinant_zero_source_counts': {
+                  item['prime']: item['source_determinant_zero_count']
+                  for item in data['analyses']
+              },
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-three-variable-v2/result.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-log-derivative-three-variable-v2
+          path: /tmp/rank17-iv-three-variable-v2/result.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-three-variable-v2/result.json /tmp/publish-three-variable-v2.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-three-variable-v2.json \
+            research/data/rank17_iv_log_derivative_three_variable.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('research/data/rank17_iv_log_derivative_three_variable.json')
+          data = json.loads(path.read_text())
+          data['bad_primes_for_leading_recurrence'] = [2, 3, 11]
+          data['denominator_bad_primes'] = [2, 3, 5]
+          data['coordinate_chart_prime_boundary'] = (
+              'The original surface locus remains meaningful at F11, but the '
+              'degree-13 logarithmic-derivative recurrence has leading '
+              'coefficient 28512 and is inseparable modulo 11.'
+          )
+          raw = json.dumps(
+              {key: value for key, value in data.items() if key != 'record_sha256'},
+              sort_keys=True,
+              separators=(',', ':'),
+          ).encode()
+          import hashlib
+          data['record_sha256'] = hashlib.sha256(raw).hexdigest()
+          path.write_text(json.dumps(data, indent=2, sort_keys=True) + '\n')
+          PY
+          git add research/data/rank17_iv_log_derivative_three_variable.json
+          if git diff --cached --quiet; then
+            echo "three-variable logarithmic-derivative certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the good-prime three-variable model of the IV locus"
+          git push origin "HEAD:$branch"
