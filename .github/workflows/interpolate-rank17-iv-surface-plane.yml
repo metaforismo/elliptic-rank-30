@@ -1,0 +1,113 @@
+name: Interpolate rank-17 IV surface plane equation
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/interpolate-rank17-iv-surface-plane.yml"
+      - "research/rank17_iv_surface_plane_interpolation.py"
+      - "research/data/rank17_iv_full_surface_locus_f11.json"
+      - "research/data/rank17_iv_full_surface_locus_f13.json"
+      - "research/data/rank17_iv_full_surface_locus_f17.json"
+      - "research/data/rank17_iv_full_surface_locus_f19.json"
+      - "research/data/rank17_iv_full_surface_locus_f23.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  interpolate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Interpolate and cross-validate the r-s projection
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-plane
+          sage -python research/rank17_iv_surface_plane_interpolation.py \
+            --census research/data/rank17_iv_full_surface_locus_f11.json \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --output /tmp/rank17-iv-plane/result.json
+          sage -python research/rank17_iv_surface_plane_interpolation.py \
+            --census research/data/rank17_iv_full_surface_locus_f11.json \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --compare /tmp/rank17-iv-plane/result.json
+
+      - name: Validate the interpolation truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          sage -python - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path('/tmp/rank17-iv-plane/result.json').read_text())
+          assert sorted(int(value) for value in data['sources']) == [11,13,17,19,23]
+          q19 = data['quartic_records']['19']
+          q23 = data['quartic_records']['23']
+          assert q19 is not None
+          assert q19['sample_sufficient_for_detection'] is False
+          if q23 is not None:
+              assert q23['sample_sufficient_for_detection'] is True
+          candidate = data['integer_candidate']
+          if candidate is not None:
+              assert candidate['not_ideal_membership'] is True
+              assert candidate['classification'] in {
+                  'MULTIPRIME_INTERPOLATION_HYPOTHESIS',
+                  'CRT_INTERPOLANT_REJECTED_BY_INDEPENDENT_PRIME',
+              }
+              assert len(candidate['validation_reductions']) == 5
+          assert 'hypothesis' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'candidate': None if candidate is None else candidate['classification'],
+              'polynomial': None if candidate is None else candidate['polynomial'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-plane/result.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-surface-plane-interpolation
+          path: /tmp/rank17-iv-plane/result.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-plane/result.json /tmp/publish-plane-interpolation.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-plane-interpolation.json \
+            research/data/rank17_iv_surface_plane_interpolation.json
+          git add research/data/rank17_iv_surface_plane_interpolation.json
+          if git diff --cached --quiet; then
+            echo "surface-plane interpolation record already current"
+            exit 0
+          fi
+          git commit -m "Record the multiprime IV surface-plane interpolation"
+          git push origin "HEAD:$branch"
