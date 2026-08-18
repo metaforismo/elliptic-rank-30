@@ -57,6 +57,8 @@ jobs:
           assert data['generic_q8_branch']['resultant_factor_degrees'] == [[9, 1], [56, 1]]
           assert data['generic_q8_branch']['resultant_rational_roots'] == {}
           assert data['exceptional_q8_slope_zero']['resultant_gcd'] == '1'
+          assert data['lower_recurrence']['rank_two_minor'] == '25798901760'
+          assert data['lower_recurrence']['compatibility_ratio'] == '7/135'
           assert 'determinant-zero chart' in data['truth_status']
           assert 'rank 30' in data['truth_status']
           print({
@@ -84,7 +86,7 @@ jobs:
           cp /tmp/rank17-iv-singular-determinant/a/certificate.json /tmp/publish.json
           cp /tmp/rank17-iv-singular-determinant/a/certificate.md /tmp/publish.md
           git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.email "41898282+metaforismo@users.noreply.github.com"
           git fetch origin "$branch"
           git reset --hard "origin/$branch"
           mkdir -p research/data
