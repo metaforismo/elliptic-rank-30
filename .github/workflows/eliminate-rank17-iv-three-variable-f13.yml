@@ -1,4 +1,4 @@
-name: Eliminate rank-17 IV three-variable surface ideal over F13
+name: Eliminate the open rank-17 IV three-variable surface ideal over F13
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/eliminate-rank17-iv-three-variable-f13.yml"
       - "research/rank17_iv_three_variable_elimination_sage.py"
+      - "research/rank17_iv_three_variable_open_elimination_sage.py"
 
 permissions:
   contents: write
@@ -25,13 +26,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Compute the saturated lexicographic basis and plane projection
+      - name: Compute the determinant- and discriminant-saturated lex basis
         shell: bash
         run: |
           set -euo pipefail
           root=/tmp/rank17-iv-three-variable-f13
           mkdir -p "$root"
-          sage -python research/rank17_iv_three_variable_elimination_sage.py \
+          sage -python research/rank17_iv_three_variable_open_elimination_sage.py \
             --prime 13 \
             --census research/data/rank17_iv_full_surface_locus_f13.json \
             --output "$root/result.json"
@@ -54,15 +55,19 @@ jobs:
           ).read_text())
           assert data['status'] == 'completed'
           assert data['prime'] == 13
-          assert data['source_replay']['source_surface_count'] == 7
-          assert data['source_replay']['all_source_points_satisfy_residuals'] is True
-          assert data['source_replay']['all_source_points_avoid_determinant'] is True
+          replay = data['source_replay']
+          assert replay['source_surface_count'] == 7
+          assert replay['all_source_points_satisfy_residuals'] is True
+          assert replay['all_source_points_avoid_determinant'] is True
+          assert replay['all_source_points_avoid_zero_discriminant_boundary'] is True
+          assert all(replay['open_scalar_values'])
           assert data['saturated_krull_dimension'] == 1
           assert data['plane_basis']
           assert 'no characteristic-zero' in data['truth_status']
           assert 'rank-30' in data['truth_status']
           print({
               'dimension': data['saturated_krull_dimension'],
+              'open_scalar_degree': data['open_discriminant_scalar']['total_degree'],
               'plane_degrees': [item['total_degree'] for item in data['plane_basis']],
               'record_sha256': data['record_sha256'],
           })
@@ -70,7 +75,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: rank17-iv-three-variable-elimination-f13
+          name: rank17-iv-three-variable-open-elimination-f13
           path: /tmp/rank17-iv-three-variable-f13
           if-no-files-found: error
           compression-level: 0
@@ -82,22 +87,22 @@ jobs:
           set -euo pipefail
           branch='research/certified-modular-elimination'
           cp /tmp/rank17-iv-three-variable-f13/result.json /tmp/publish-result.json
-          cp /tmp/rank17-iv-three-variable-f13/three-variable-plane-basis-r2-r3.txt \
+          cp /tmp/rank17-iv-three-variable-f13/three-variable-open-plane-r2-r3.txt \
             /tmp/publish-plane.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin "$branch"
           git reset --hard "origin/$branch"
           cp /tmp/publish-result.json \
-            research/data/rank17_iv_three_variable_elimination_f13.json
+            research/data/rank17_iv_three_variable_open_elimination_f13.json
           cp /tmp/publish-plane.txt \
-            research/data/rank17_iv_three_variable_plane_f13.txt
+            research/data/rank17_iv_three_variable_open_plane_f13.txt
           git add \
-            research/data/rank17_iv_three_variable_elimination_f13.json \
-            research/data/rank17_iv_three_variable_plane_f13.txt
+            research/data/rank17_iv_three_variable_open_elimination_f13.json \
+            research/data/rank17_iv_three_variable_open_plane_f13.txt
           if git diff --cached --quiet; then
-            echo "F13 three-variable elimination already current"
+            echo "F13 open three-variable elimination already current"
             exit 0
           fi
-          git commit -m "Eliminate the three-variable IV surface ideal over F13"
+          git commit -m "Eliminate the open three-variable IV surface ideal over F13"
           git push origin "HEAD:$branch"
