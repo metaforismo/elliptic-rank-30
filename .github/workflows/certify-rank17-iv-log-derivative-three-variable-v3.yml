@@ -1,0 +1,104 @@
+name: Certify rank-17 IV logarithmic-derivative three-variable model v3
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-log-derivative-three-variable-v3.yml"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Exhaust the exact reduced chart with the triangular solver
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-three-variable-v3
+          mkdir -p "$root"
+          python3 research/rank17_iv_log_derivative_three_variable_fast.py \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --census research/data/rank17_iv_full_surface_locus_f29.json \
+            --output "$root/result.json"
+          python3 research/rank17_iv_log_derivative_three_variable_fast.py \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --census research/data/rank17_iv_full_surface_locus_f29.json \
+            --compare "$root/result.json"
+
+      - name: Validate exact set equality and the chart boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('/tmp/rank17-iv-three-variable-v3/result.json')
+          data = json.loads(path.read_text())
+          expected = {13: 7, 17: 13, 19: 14, 23: 19, 29: 23}
+          assert data['solver_variant'] == 'exact triangular fast replay'
+          assert data['leading_recurrence_coefficient'] == 28512
+          assert data['bad_primes_for_this_coordinate_chart'] == [2, 3, 5, 11]
+          assert data['reduced_variables'] == ['r2', 'r3', 'k']
+          assert [item['prime'] for item in data['analyses']] == sorted(expected)
+          for item in data['analyses']:
+              prime = item['prime']
+              assert item['source_surface_count'] == expected[prime]
+              assert item['derived_reduced_record_count'] == expected[prime]
+              assert item['three_variable_keys_visited'] == prime**3
+              assert item['reconstructed_surface_count'] == expected[prime]
+              assert item['exact_surface_set_match'] is True
+              assert item['source_determinant_zero_count'] == 0
+              assert len(item['derived_records']) == expected[prime]
+              assert sum(item['classification_counts'].values()) == prime**3
+          print({
+              'surface_counts': expected,
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum /tmp/rank17-iv-three-variable-v3/result.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-log-derivative-three-variable-v3
+          path: /tmp/rank17-iv-three-variable-v3/result.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-three-variable-v3/result.json /tmp/publish.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/publish.json research/data/rank17_iv_log_derivative_three_variable.json
+          git add research/data/rank17_iv_log_derivative_three_variable.json
+          if git diff --cached --quiet; then
+            echo "three-variable certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the exact three-variable model of the IV surface locus"
+          git push origin "HEAD:$branch"
