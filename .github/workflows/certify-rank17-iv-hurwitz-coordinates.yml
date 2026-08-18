@@ -1,0 +1,120 @@
+name: Certify intrinsic rank-17 IV Hurwitz coordinates
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-hurwitz-coordinates.yml"
+      - "research/rank17_iv_hurwitz_coordinates.py"
+      - "research/data/rank17_iv_full_surface_locus_f11.json"
+      - "research/data/rank17_iv_full_surface_locus_f13.json"
+      - "research/data/rank17_iv_full_surface_locus_f17.json"
+      - "research/data/rank17_iv_full_surface_locus_f19.json"
+      - "research/data/rank17_iv_full_surface_locus_f23.json"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract and replay e and lambda over five exact censuses
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-hurwitz
+          python3 research/rank17_iv_hurwitz_coordinates.py \
+            --census research/data/rank17_iv_full_surface_locus_f11.json \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --output /tmp/rank17-iv-hurwitz/result.json
+          python3 research/rank17_iv_hurwitz_coordinates.py \
+            --census research/data/rank17_iv_full_surface_locus_f11.json \
+            --census research/data/rank17_iv_full_surface_locus_f13.json \
+            --census research/data/rank17_iv_full_surface_locus_f17.json \
+            --census research/data/rank17_iv_full_surface_locus_f19.json \
+            --census research/data/rank17_iv_full_surface_locus_f23.json \
+            --compare /tmp/rank17-iv-hurwitz/result.json
+
+      - name: Validate the exact evidence boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/rank17-iv-hurwitz/result.json').read_text())
+          assert data['primes'] == [11, 13, 17, 19, 23]
+          expected_counts = {11: 7, 13: 7, 17: 13, 19: 14, 23: 19}
+          for analysis in data['analyses']:
+              prime = analysis['prime']
+              assert analysis['surface_count'] == expected_counts[prime]
+              assert len(analysis['records']) == expected_counts[prime]
+              assert sum(analysis['collision_counts'].values()) == expected_counts[prime]
+              assert analysis['hurwitz_pair_map']['source_count'] == expected_counts[prime]
+              assert (
+                  analysis['affine_e_lambda_interpolation']['finite_lambda_point_count']
+                  + analysis['affine_e_lambda_interpolation']['infinite_lambda_point_count']
+                  == expected_counts[prime]
+              )
+              for record in analysis['records']:
+                  assert record['wronskian_C_coefficients_ascending'][3] != 0
+                  assert record['wronskian_C_coefficients_ascending'][4] != 0
+                  assert record['collision_type'] in {
+                      'generic', 'lambda=0', 'lambda=1', 'lambda=infinity'
+                  }
+          assert 'does not prove' in data['truth_status']
+          assert 'rank 30' in data['truth_status']
+          print({
+              analysis['prime']: {
+                  'e': analysis['extra_point_map'],
+                  'lambda': analysis['branch_value_map'],
+                  'pair': analysis['hurwitz_pair_map'],
+                  'collisions': analysis['collision_counts'],
+              }
+              for analysis in data['analyses']
+          })
+          PY
+          sha256sum /tmp/rank17-iv-hurwitz/result.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-hurwitz-coordinates
+          path: /tmp/rank17-iv-hurwitz/result.json
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-hurwitz/result.json /tmp/publish-hurwitz.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-hurwitz.json \
+            research/data/rank17_iv_hurwitz_coordinates.json
+          git add research/data/rank17_iv_hurwitz_coordinates.json
+          if git diff --cached --quiet; then
+            echo "Hurwitz coordinate certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the intrinsic Hurwitz coordinates of the IV locus"
+          git push origin "HEAD:$branch"
