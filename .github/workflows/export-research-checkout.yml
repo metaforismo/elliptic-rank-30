@@ -26,3 +26,5 @@ jobs:
           path: elliptic-rank-30-source.zip
           if-no-files-found: error
           retention-days: 1
+
+# Snapshot trigger: 2026-08-18 projection-rank continuation.
