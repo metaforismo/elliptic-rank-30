@@ -1,0 +1,98 @@
+name: Certify rank-17 IV singular-chart rational obstruction
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-singular-chart-rational-obstruction.yml"
+      - "research/rank17_iv_singular_chart_rational_obstruction.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Derive and replay the exact singular-chart obstruction twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-singular-obstruction
+          mkdir -p "$root"
+          python3 research/rank17_iv_singular_chart_rational_obstruction.py \
+            --output "$root/result.json"
+          python3 research/rank17_iv_singular_chart_rational_obstruction.py \
+            --compare "$root/result.json"
+          cat "$root/result.json"
+          sha256sum "$root/result.json" > "$root/SHA256SUMS"
+          cd "$root"
+          sha256sum -c SHA256SUMS
+
+      - name: Validate the exact truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path(
+              '/tmp/rank17-iv-singular-obstruction/result.json'
+          ).read_text())
+          assert data['a8_zero_branch'][
+              'empty_over_algebraic_closure'
+          ] is True
+          assert data['a8_nonzero_branch']['H9_degree'] == 9
+          assert data['a8_nonzero_branch'][
+              'H9_has_rational_root'
+          ] is False
+          assert data['conclusion'][
+              'affine_D_zero_chart_has_no_Q_point'
+          ] is True
+          assert 'Projective boundary charts' in data['limitations'][1]
+          assert 'rank 30 remain unresolved' in data['truth_status']
+          print({
+              'H9_factor_degrees': data['a8_nonzero_branch'][
+                  'H9_factor_degrees'
+              ],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-singular-chart-rational-obstruction
+          path: /tmp/rank17-iv-singular-obstruction
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Publish the exact certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-iv-singular-obstruction/result.json \
+            /tmp/publish-singular-obstruction.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp /tmp/publish-singular-obstruction.json \
+            research/data/rank17_iv_singular_chart_rational_obstruction.json
+          git add research/data/rank17_iv_singular_chart_rational_obstruction.json
+          if git diff --cached --quiet; then
+            echo "singular-chart obstruction already current"
+            exit 0
+          fi
+          git commit -m "Certify the singular IV rational obstruction"
+          git push origin "HEAD:$branch"
