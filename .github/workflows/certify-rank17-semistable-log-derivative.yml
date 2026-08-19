@@ -1,0 +1,104 @@
+name: Certify rank-17 semistable logarithmic reduction
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-semistable-log-derivative.yml"
+      - "research/rank17_semistable_log_derivative_certificate.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute the exact structural certificate twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-semistable-log-derivative
+          mkdir -p "$root/a" "$root/b"
+          python3 research/rank17_semistable_log_derivative_certificate.py \
+            --output "$root/a/certificate.json"
+          python3 research/rank17_semistable_log_derivative_certificate.py \
+            --output "$root/b/certificate.json"
+          cmp "$root/a/certificate.json" "$root/b/certificate.json"
+          python3 research/rank17_semistable_log_derivative_certificate.py \
+            --compare "$root/a/certificate.json"
+
+      - name: Validate the mathematical boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path(
+              '/tmp/rank17-semistable-log-derivative/a/certificate.json'
+          ).read_text())
+          assert data['solved_a'] is False
+          assert data['solved_b'] is False
+          assert data['unconditional_global_rank_lower_bound'] == 29
+          assert data['generic_identity']['verified'] is True
+          assert data['endpoint_factorization']['L_degree'] == 2
+          assert data['endpoint_factorization']['L_leading_coefficient'] == '-12'
+          assert data['endpoint_factorization']['C_degree'] <= 4
+          assert data['compressed_surface_system']['exact_identities_verified'] == [
+              'A*L^2=U',
+              'B*L^4=V',
+              "B*L=Q0*A-3*t*(t-1)*R*A'",
+              "A^2*L=Q0*B-2*t*(t-1)*R*B'",
+              "Q0*V*L-2*t*(t-1)*R*(V'*L-4*V*L')-U^2*L^2=0",
+          ]
+          assert 'no height-79/12 section' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'L': data['endpoint_factorization']['L'],
+              'C': data['endpoint_factorization']['C'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          cd /tmp/rank17-semistable-log-derivative/a
+          sha256sum certificate.json > SHA256SUMS
+          sha256sum -c SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-semistable-logarithmic-reduction
+          path: /tmp/rank17-semistable-log-derivative/a
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Rebase-safe exact publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          cp /tmp/rank17-semistable-log-derivative/a/certificate.json \
+            /tmp/publish-semistable-log-derivative.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-semistable-log-derivative.json \
+            research/data/rank17_semistable_log_derivative_certificate.json
+          git add research/data/rank17_semistable_log_derivative_certificate.json
+          if git diff --cached --quiet; then
+            echo "semistable logarithmic certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the semistable logarithmic reduction"
+          git push origin "HEAD:$branch"
