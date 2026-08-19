@@ -1,0 +1,111 @@
+name: Certify rank-17 IV regular-chart ideal equality
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-regular-chart-ideal-equality.yml"
+      - "research/rank17_iv_regular_chart_ideal_equality_sage.py"
+      - "research/rank17_iv_three_variable_elimination_sage.py"
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    container:
+      image: sagemath/sagemath:10.9
+    strategy:
+      fail-fast: false
+      matrix:
+        prime: [13, 17]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compare the localized residual and component ideals
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="/tmp/rank17-iv-regular-${{ matrix.prime }}"
+          mkdir -p "$root"
+          sage -python research/rank17_iv_regular_chart_ideal_equality_sage.py \
+            --prime "${{ matrix.prime }}" \
+            --output "$root/result.json"
+          cat "$root/result.json"
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          cd "$root"
+          sha256sum -c SHA256SUMS
+
+      - name: Validate the exact modular boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          prime = int('${{ matrix.prime }}')
+          path = Path(f'/tmp/rank17-iv-regular-{prime}/result.json')
+          data = json.loads(path.read_text())
+          assert data['status'] == 'completed'
+          assert data['prime'] == prime
+          assert data['localized_ideals_exactly_equal'] is True
+          assert data['residual_krull_dimension'] == 1
+          assert data['component_krull_dimension'] == 1
+          assert all(
+              item['is_zero']
+              for item in data[
+                  'candidate_generators_reduce_to_zero_mod_residual'
+              ]
+          )
+          assert all(
+              item['is_zero']
+              for item in data[
+                  'residual_generators_reduce_to_zero_mod_candidate'
+              ]
+          )
+          assert 'no characteristic-zero' in data['truth_status']
+          assert 'rank-30' in data['truth_status']
+          print({
+              'prime': prime,
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-regular-chart-ideal-equality-f${{ matrix.prime }}
+          path: /tmp/rank17-iv-regular-${{ matrix.prime }}
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Publish the modular certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          branch='research/certified-modular-elimination'
+          prime='${{ matrix.prime }}'
+          cp "/tmp/rank17-iv-regular-${prime}/result.json" \
+            "/tmp/publish-regular-${prime}.json"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          cp "/tmp/publish-regular-${prime}.json" \
+            "research/data/rank17_iv_regular_chart_ideal_equality_f${prime}.json"
+          git add "research/data/rank17_iv_regular_chart_ideal_equality_f${prime}.json"
+          if git diff --cached --quiet; then
+            echo "regular-chart certificate already current"
+            exit 0
+          fi
+          git commit -m "Certify the regular IV ideal equality over F${prime}"
+          git push origin "HEAD:$branch"
