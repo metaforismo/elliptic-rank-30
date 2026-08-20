@@ -1,0 +1,38 @@
+name: Export the exact rank-17 research checkout
+
+on:
+  pull_request:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/RANK17_RESEARCH_EXPORT_TRIGGER"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Archive the exact checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-research-export
+          mkdir -p "$root"
+          tar \
+            --exclude=.git \
+            --exclude='*.pyc' \
+            --exclude='__pycache__' \
+            -czf "$root/research-checkout.tar.gz" .
+          sha256sum "$root/research-checkout.tar.gz" > "$root/SHA256SUMS"
+          cd "$root"
+          sha256sum -c SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-research-checkout
+          path: /tmp/rank17-research-export
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 2
