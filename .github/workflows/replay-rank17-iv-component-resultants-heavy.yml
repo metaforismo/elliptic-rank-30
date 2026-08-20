@@ -1,0 +1,75 @@
+name: Heavy replay of additive-IV component resultants
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  heavy-resultants:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install the pinned symbolic dependency
+        run: python -m pip install "sympy==1.14.0"
+
+      - name: Recompute all three exact resultants
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-heavy
+          mkdir -p "$root"
+          /usr/bin/time -v \
+            python research/verify_rank17_iv_component_classification.py \
+              --heavy \
+              > "$root/result.json" \
+              2> "$root/resource-usage.txt"
+          cat "$root/result.json"
+          cat "$root/resource-usage.txt"
+
+      - name: Require the exact common factor F times S squared
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path(
+              '/tmp/rank17-iv-heavy/result.json'
+          ).read_text())
+          heavy = data['heavy_replay']
+          assert heavy is not None
+          assert heavy['common_factor'] == 'F*S^2'
+          assert heavy['resultant_degrees'] == [44, 48, 52]
+          assert data['singular_chart_has_Q_point'] is False
+          assert data['split_positive_intersection'] == 'EmptySet'
+          print({
+              'common_factor': heavy['common_factor'],
+              'resultant_degrees': heavy['resultant_degrees'],
+              'record_sha256': data['record_sha256'],
+          })
+          PY
+          sha256sum \
+            /tmp/rank17-iv-heavy/result.json \
+            /tmp/rank17-iv-heavy/resource-usage.txt \
+            > /tmp/rank17-iv-heavy/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-component-resultants-heavy
+          path: /tmp/rank17-iv-heavy
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
