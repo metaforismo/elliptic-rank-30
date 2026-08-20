@@ -1,0 +1,272 @@
+name: Certify the additive-IV closure atomically
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - ".github/workflows/certify-rank17-iv-closure-atomic.yml"
+      - "research/rank17_iv_singular_determinant_obstruction.py"
+      - "research/rank17_iv_open_component_radical_membership_sage.py"
+      - "research/rank17_iv_rational_component_split_obstruction.py"
+      - "research/finalize_rank17_iv_branch_closure.py"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+concurrency:
+  group: rank17-iv-closure-atomic
+  cancel-in-progress: false
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Recompute every source certificate in one isolated evidence root
+        id: compute
+        shell: bash
+        run: |
+          set -uo pipefail
+          root=/tmp/rank17-iv-closure-atomic
+          mkdir -p "$root/singular" "$root/open" "$root/split" "$root/final"
+          : > "$root/status.tsv"
+
+          run_gate() {
+            name="$1"
+            shift
+            log="$root/$name/run.log"
+            echo "[$name] $*" | tee "$log"
+            set +e
+            "$@" >> "$log" 2>&1
+            code=$?
+            set -e
+            printf '%s\t%s\n' "$name" "$code" >> "$root/status.tsv"
+            echo "[$name] exit=$code"
+          }
+
+          set -e
+          run_gate singular \
+            sage -python research/rank17_iv_singular_determinant_obstruction.py \
+              --output "$root/singular/certificate.json" \
+              --markdown-output "$root/singular/certificate.md"
+
+          run_gate split \
+            sage -python research/rank17_iv_rational_component_split_obstruction.py \
+              --output "$root/split/certificate.json" \
+              --markdown-output "$root/split/certificate.md"
+
+          run_gate open \
+            sage -python research/rank17_iv_open_component_radical_membership_sage.py \
+              --output "$root/open/certificate.json"
+
+          singular_code=$(awk -F '\t' '$1=="singular" {print $2}' "$root/status.tsv")
+          split_code=$(awk -F '\t' '$1=="split" {print $2}' "$root/status.tsv")
+          open_code=$(awk -F '\t' '$1=="open" {print $2}' "$root/status.tsv")
+
+          if [ "$singular_code" = 0 ] && [ "$split_code" = 0 ] && [ "$open_code" = 0 ]; then
+            run_gate final \
+              sage -python research/finalize_rank17_iv_branch_closure.py \
+                --singular "$root/singular/certificate.json" \
+                --open "$root/open/certificate.json" \
+                --split "$root/split/certificate.json" \
+                --output "$root/final/certificate.json" \
+                --markdown-output "$root/final/certificate.md"
+          else
+            printf 'final\t125\n' >> "$root/status.tsv"
+            echo '[final] skipped because a source gate failed' > "$root/final/run.log"
+          fi
+
+          python3 - <<'PY'
+          from __future__ import annotations
+          import hashlib
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-closure-atomic')
+          statuses = {}
+          for line in (root / 'status.tsv').read_text().splitlines():
+              name, code = line.split('\t')
+              statuses[name] = int(code)
+
+          gates = {}
+          for name in ('singular', 'open', 'split', 'final'):
+              directory = root / name
+              certificate = directory / 'certificate.json'
+              log = directory / 'run.log'
+              log_text = log.read_text(errors='replace') if log.exists() else ''
+              item = {
+                  'exit_code': statuses.get(name, 126),
+                  'certificate_present': certificate.exists(),
+                  'log_sha256': hashlib.sha256(log_text.encode()).hexdigest(),
+                  'log_tail': log_text[-12000:],
+              }
+              if certificate.exists():
+                  raw = certificate.read_bytes()
+                  item['certificate_file_sha256'] = hashlib.sha256(raw).hexdigest()
+                  try:
+                      data = json.loads(raw)
+                      item['certificate_id'] = data.get('certificate_id')
+                      item['record_sha256'] = data.get('record_sha256')
+                  except Exception as exc:
+                      item['certificate_parse_error'] = repr(exc)
+              gates[name] = item
+
+          all_green = all(statuses.get(name) == 0 for name in ('singular','open','split','final'))
+          payload = {
+              'schema_version': 1,
+              'status_id': 'rank17_iv_closure_atomic_gate',
+              'truth_status': (
+                  'Computation status only. A green status means the four exact '
+                  'certificate builders completed in one checkout; a non-green '
+                  'status is not a mathematical obstruction. This status file '
+                  'does not change the rank-29 lower bound.'
+              ),
+              'all_green': all_green,
+              'solved_a': False,
+              'solved_b': False,
+              'unconditional_global_rank_lower_bound': 29,
+              'gates': gates,
+          }
+          body = json.dumps(payload, sort_keys=True, separators=(',', ':')).encode()
+          payload['record_sha256'] = hashlib.sha256(body).hexdigest()
+          (root / 'STATUS.json').write_text(json.dumps(payload, indent=2, sort_keys=True) + '\n')
+          print(json.dumps({
+              'all_green': all_green,
+              'exit_codes': statuses,
+              'record_sha256': payload['record_sha256'],
+          }, indent=2, sort_keys=True))
+          PY
+
+          find "$root" -type f ! -name SHA256SUMS -print0 \
+            | sort -z | xargs -0 sha256sum > "$root/SHA256SUMS"
+          cd "$root"
+          sha256sum -c SHA256SUMS
+
+      - name: Validate the combined theorem only when every gate is green
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-closure-atomic
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path('/tmp/rank17-iv-closure-atomic')
+          status = json.loads((root / 'STATUS.json').read_text())
+          if not status['all_green']:
+              print('one or more gates failed; theorem validation intentionally skipped')
+              raise SystemExit(0)
+
+          singular = json.loads((root / 'singular/certificate.json').read_text())
+          open_component = json.loads((root / 'open/certificate.json').read_text())
+          split = json.loads((root / 'split/certificate.json').read_text())
+          final = json.loads((root / 'final/certificate.json').read_text())
+
+          assert singular['generic_q8_branch']['resultant_rational_roots'] == {}
+          assert singular['exceptional_q8_slope_zero']['resultant_gcd'] == '1'
+          assert open_component['constructor']['base_field'] == 'QQ'
+          assert open_component['residuals_contained_in_J'] is True
+          assert open_component['radical_membership']['R1']['rabinowitsch_unit_ideal'] is True
+          assert open_component['radical_membership']['R2']['rabinowitsch_unit_ideal'] is True
+          assert split['split_square_classes']['positive_set_intersection'] == 'EmptySet'
+          assert final['classification'] == 'ADDITIVE_IV_SPLIT_REALIZATION_CLOSED_OVER_Q'
+          assert final['solved_a'] is False
+          assert final['solved_b'] is False
+          assert final['unconditional_global_rank_lower_bound'] == 29
+          print({
+              'classification': final['classification'],
+              'record_sha256': final['record_sha256'],
+          })
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-closure-atomic
+          path: /tmp/rank17-iv-closure-atomic
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
+
+      - name: Publish either the exact closure or a fail-closed diagnostic
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-closure-atomic
+          branch='research/certified-modular-elimination'
+          cp "$root/STATUS.json" /tmp/publish-status.json
+          all_green=$(python3 - <<'PY'
+          import json
+          print('true' if json.load(open('/tmp/rank17-iv-closure-atomic/STATUS.json'))['all_green'] else 'false')
+          PY
+          )
+
+          if [ "$all_green" = true ]; then
+            cp "$root/singular/certificate.json" /tmp/publish-singular.json
+            cp "$root/singular/certificate.md" /tmp/publish-singular.md
+            cp "$root/open/certificate.json" /tmp/publish-open.json
+            cp "$root/open/radical-membership-R1.txt" /tmp/publish-open-r1.txt
+            cp "$root/open/radical-membership-R2.txt" /tmp/publish-open-r2.txt
+            cp "$root/split/certificate.json" /tmp/publish-split.json
+            cp "$root/split/certificate.md" /tmp/publish-split.md
+            cp "$root/final/certificate.json" /tmp/publish-final.json
+            cp "$root/final/certificate.md" /tmp/publish-final.md
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin "$branch"
+          git reset --hard "origin/$branch"
+          mkdir -p research/data
+          cp /tmp/publish-status.json research/data/RANK17_IV_CLOSURE_GATE_STATUS.json
+          git add research/data/RANK17_IV_CLOSURE_GATE_STATUS.json
+
+          if [ "$all_green" = true ]; then
+            cp /tmp/publish-singular.json research/data/rank17_iv_singular_determinant_obstruction.json
+            cp /tmp/publish-singular.md research/data/rank17_iv_singular_determinant_obstruction.md
+            cp /tmp/publish-open.json research/data/rank17_iv_open_component_radical_membership.json
+            cp /tmp/publish-open-r1.txt research/data/rank17_iv_open_component_radical_membership_R1.txt
+            cp /tmp/publish-open-r2.txt research/data/rank17_iv_open_component_radical_membership_R2.txt
+            cp /tmp/publish-split.json research/data/rank17_iv_rational_component_split_obstruction.json
+            cp /tmp/publish-split.md research/data/rank17_iv_rational_component_split_obstruction.md
+            cp /tmp/publish-final.json research/data/RANK17_IV_BRANCH_CLOSURE.json
+            cp /tmp/publish-final.md research/data/RANK17_IV_BRANCH_CLOSURE.md
+            git add \
+              research/data/rank17_iv_singular_determinant_obstruction.json \
+              research/data/rank17_iv_singular_determinant_obstruction.md \
+              research/data/rank17_iv_open_component_radical_membership.json \
+              research/data/rank17_iv_open_component_radical_membership_R1.txt \
+              research/data/rank17_iv_open_component_radical_membership_R2.txt \
+              research/data/rank17_iv_rational_component_split_obstruction.json \
+              research/data/rank17_iv_rational_component_split_obstruction.md \
+              research/data/RANK17_IV_BRANCH_CLOSURE.json \
+              research/data/RANK17_IV_BRANCH_CLOSURE.md
+          fi
+
+          if git diff --cached --quiet; then
+            echo 'atomic closure evidence already current'
+          else
+            if [ "$all_green" = true ]; then
+              git commit -m 'Certify the split additive-IV branch closure over Q'
+            else
+              git commit -m 'Record the fail-closed additive-IV closure diagnostics'
+            fi
+            git push origin "HEAD:$branch"
+          fi
+
+          if [ "$all_green" != true ]; then
+            echo 'one or more exact gates failed; no closure certificate was published' >&2
+            exit 1
+          fi
