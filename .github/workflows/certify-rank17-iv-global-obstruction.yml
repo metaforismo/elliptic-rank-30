@@ -1,0 +1,101 @@
+name: Certify the global additive-IV obstruction
+
+on:
+  push:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/RANK17_IV_COMPONENT_CLASSIFICATION_FROZEN.json"
+      - "research/verify_rank17_iv_component_classification.py"
+      - "research/rank17_iv_hurwitz_purity_lemma.md"
+      - "research/rank17_iv_global_obstruction.md"
+      - ".github/workflows/certify-rank17-iv-global-obstruction.yml"
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install the exact symbolic dependency
+        run: python -m pip install "sympy==1.14.0"
+
+      - name: Replay the compact exact certificate twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/rank17-iv-global
+          python research/verify_rank17_iv_component_classification.py \
+            > /tmp/rank17-iv-global/replay-a.json
+          python research/verify_rank17_iv_component_classification.py \
+            > /tmp/rank17-iv-global/replay-b.json
+          cmp \
+            /tmp/rank17-iv-global/replay-a.json \
+            /tmp/rank17-iv-global/replay-b.json
+          cat /tmp/rank17-iv-global/replay-a.json
+
+      - name: Validate the fail-closed truth boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          result = json.loads(Path(
+              '/tmp/rank17-iv-global/replay-a.json'
+          ).read_text())
+          assert result['F_irreducible'] is True
+          assert result['S_irreducible'] is True
+          assert result['singular_chart_has_Q_point'] is False
+          assert result['split_positive_intersection'] == 'EmptySet'
+          assert result['passport_ramification_total'] == 38
+          assert result['heavy_replay'] is None
+
+          certificate = json.loads(Path(
+              'research/data/RANK17_IV_COMPONENT_CLASSIFICATION_FROZEN.json'
+          ).read_text())
+          assert certificate['solved_a'] is False
+          assert certificate['solved_b'] is False
+          assert certificate['unconditional_global_rank_lower_bound'] == 29
+          assert certificate['hurwitz_passport']['normalized_base_dimension'] == 1
+          assert certificate['singular_D_zero_chart']['no_Q_rational_affine_point'] is True
+          assert certificate['rational_F_component']['no_simultaneous_split'] is True
+          assert 'semistable I3' in ' '.join(certificate['limitations'])
+          print({
+              'record_sha256': result['record_sha256'],
+              'rank_lower_bound': 29,
+              'additive_IV_split_locus_over_Q': 'empty',
+          })
+          PY
+
+      - name: Hash the replay boundary
+        run: |
+          sha256sum \
+            research/data/RANK17_IV_COMPONENT_CLASSIFICATION_FROZEN.json \
+            research/verify_rank17_iv_component_classification.py \
+            research/rank17_iv_hurwitz_purity_lemma.md \
+            research/rank17_iv_global_obstruction.md \
+            /tmp/rank17-iv-global/replay-a.json \
+            > /tmp/rank17-iv-global/SHA256SUMS
+          cat /tmp/rank17-iv-global/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rank17-iv-global-obstruction-fast-replay
+          path: /tmp/rank17-iv-global
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 7
