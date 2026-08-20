@@ -1,0 +1,41 @@
+name: Observe the additive-IV QQ radical gate
+
+on:
+  pull_request:
+    branches:
+      - research/certified-modular-elimination
+    paths:
+      - "research/data/RANK17_IV_OPEN_RADICAL_TRIGGER"
+
+permissions:
+  contents: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    container:
+      image: sagemath/sagemath:10.9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construct the QQ ideal and run both Rabinowitsch tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-open-radical-observable
+          mkdir -p "$root"
+          sage -python research/rank17_iv_open_component_radical_membership_sage.py \
+            --output "$root/certificate.json" 2>&1 | tee "$root/run.log"
+          cat "$root/certificate.json"
+          sha256sum "$root"/*
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank17-iv-open-radical-observable
+          path: /tmp/rank17-iv-open-radical-observable
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 2
