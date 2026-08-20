@@ -1,17 +1,48 @@
 #!/usr/bin/env sage -python
-"""Exact radical-membership test for the open additive-IV surface locus.
+"""Exact radical-membership certificate for the open additive-IV surface locus.
 
-The determinant-nonzero logarithmic-derivative chart has a known rational
-component J=(R1,R2). The residual surface equations are already known to lie
-in J. To exclude every additional component and isolated point on the open
-chart, this script tests over QQ that R1 and R2 belong to the radical of the
-saturated residual ideal I by the Rabinowitsch criterion:
+This file deliberately constructs the logarithmic-derivative residual ideal
+*directly over QQ*.  It does not patch or execute a finite-field wrapper.
 
-    1 in I + (u*R1-1),   1 in I + (u*R2-1).
+Write
 
-If both exact unit-ideal tests pass, V(I)=V(J) set-theoretically on the declared
-open chart. No section or rank-30 claim follows without the separate split and
-section arguments.
+    R = r0 + r1*t + r2*t^2 + r3*t^3 + t^4,
+    P = t*R,
+    Q = P' + 3*R,
+    K = k - 12*t,
+    M = m0 + m1*t + m2*t^2 + 80*t^3,
+    N = Q^2 + M*P,
+
+and
+
+    T = N*K*((t-1)*Q - 2*P)
+        - 3*P*(t-1)*(N'*K - 2*N*K').
+
+The differential equation is
+
+    Q*T*K - 2*P*T'*K + 8*P*T*K' - (t-1)*N^2*K^2 = 0.
+
+The coefficients of its quotient by P solve m2,m1 and then m0,r1,r0.
+After removing powers of the lower determinant D, the remaining exact
+polynomials in QQ[r2,r3,k] generate the regular-chart residual ideal.
+The coefficient of t^16 in
+
+    (t-1)^2*N^3*K^2 - T^2
+
+gives, up to (-12)^8, the discriminant scalar kappa.  We localize at D*kappa.
+
+For the known rational component J=(R1,R2), the script proves:
+
+  1. every residual generator lies in J;
+  2. R1 and R2 lie in the radical of the localized residual ideal I,
+     using the Rabinowitsch tests
+
+         1 in I + (u*R1 - 1),
+         1 in I + (u*R2 - 1).
+
+Consequently V(I)=V(J) on the declared determinant- and discriminant-open
+chart over the algebraic closure of Q.  This is a surface-locus statement;
+it constructs no Mordell-Weil section and no rank-30 curve.
 """
 
 from __future__ import annotations
@@ -22,12 +53,9 @@ import json
 import time
 from pathlib import Path
 
-from sage.all import PolynomialRing, QQ
+from sage.all import Matrix, PolynomialRing, QQ, vector
 from sage.libs.singular.function_factory import singular_function
 from sage.version import version as sage_version
-
-HERE = Path(__file__).resolve().parent
-IMPLEMENTATION = HERE / "rank17_iv_three_variable_open_elimination_sage.py"
 
 
 def canonical_hash(value: object) -> str:
@@ -36,36 +64,175 @@ def canonical_hash(value: object) -> str:
     ).hexdigest()
 
 
-def load_constructor():
-    source = IMPLEMENTATION.read_text(encoding="utf-8")
-    replacements = [
-        (
-            "from sage.all import GF, PolynomialRing",
-            "from sage.all import GF, PolynomialRing, QQ",
+def exact_remove_factor(polynomial, factor):
+    """Remove the largest exact nonnegative power of factor."""
+    value = polynomial
+    power = 0
+    while value:
+        quotient, remainder = value.quo_rem(factor)
+        if remainder:
+            break
+        value = quotient
+        power += 1
+    return value, power
+
+
+def construct_open_model_over_qq() -> dict[str, object]:
+    base = PolynomialRing(
+        QQ,
+        names=("r2", "r3", "k"),
+        order="degrevlex",
+    )
+    r2, r3, k = base.gens()
+    fraction = base.fraction_field()
+    time_ring = PolynomialRing(fraction, "t")
+    t = time_ring.gen()
+    s = t - 1
+
+    m2 = fraction(8 * (-k + 2*r3 + 4))
+    m1 = fraction(-(
+        k**2 + 14*k*r3 + 4*k + 24*r2
+        + 13*r3**2 - 56*r3 - 80
+    )) / 3
+
+    def qbar(*, r0_value=0, r1_value=0, m0_value=0):
+        r0 = fraction(r0_value)
+        r1 = fraction(r1_value)
+        m0 = fraction(m0_value)
+        R = r0 + r1*t + r2*t**2 + r3*t**3 + t**4
+        P = t*R
+        Q = P.derivative() + 3*R
+        K = k - 12*t
+        M = m0 + m1*t + m2*t**2 + 80*t**3
+        N = Q**2 + M*P
+        T = (
+            N*K*(s*Q - 2*P)
+            - 3*P*s*(N.derivative()*K - 2*N*K.derivative())
+        )
+        E = (
+            Q*T*K - 2*P*T.derivative()*K
+            + 8*P*T*K.derivative() - s*N**2*K**2
+        )
+        quotient, remainder = E.quo_rem(P)
+        if remainder:
+            raise AssertionError("the differential equation lost its forced P factor")
+        if quotient.degree() != 13:
+            raise AssertionError(("unexpected quotient degree", quotient.degree()))
+        return quotient
+
+    degrees = (11, 10, 9)
+    zero = qbar()
+    base_values = vector(fraction, [zero[degree] for degree in degrees])
+    columns = []
+    for keyword in ("m0_value", "r1_value", "r0_value"):
+        trial = qbar(**{keyword: 1})
+        columns.append(vector(
+            fraction,
+            [trial[degree] - zero[degree] for degree in degrees],
+        ))
+    matrix = Matrix(
+        fraction,
+        3,
+        3,
+        lambda row, column: columns[column][row],
+    )
+    determinant = matrix.det()
+    if not determinant:
+        raise AssertionError("the lower recurrence determinant vanished identically")
+
+    D = base(
+        -2*k**2 - 37*k*r3 + 52*k + 108*r2
+        - 116*r3**2 + 148*r3 - 320
+    )
+    ratio = fraction(determinant) / fraction(D)
+    if ratio.numerator().total_degree() != 0 or ratio.denominator().total_degree() != 0:
+        raise AssertionError(("unexpected determinant factor", determinant, ratio))
+
+    solution = matrix.solve_right(-base_values)
+    m0, r1, r0 = solution
+    final = qbar(r0_value=r0, r1_value=r1, m0_value=m0)
+    for degree in (13, 12, 11, 10, 9):
+        if final[degree]:
+            raise AssertionError(("a solved coefficient survived", degree, final[degree]))
+
+    residuals = []
+    residual_metadata = []
+    seen = set()
+    for degree in range(8, -1, -1):
+        value = final[degree]
+        numerator = base(value.numerator())
+        denominator = base(value.denominator())
+        if not numerator:
+            continue
+        numerator, removed_power = exact_remove_factor(numerator, D)
+        numerator = numerator.monic()
+        key = str(numerator)
+        if key in seen:
+            continue
+        seen.add(key)
+        residuals.append(numerator)
+        residual_metadata.append({
+            "differential_degree": degree,
+            "total_degree": int(numerator.total_degree()),
+            "degree_r2": int(numerator.degree(r2)),
+            "degree_r3": int(numerator.degree(r3)),
+            "degree_k": int(numerator.degree(k)),
+            "term_count": len(numerator.dict()),
+            "removed_determinant_power": removed_power,
+            "original_denominator": str(denominator),
+            "sha256": hashlib.sha256(str(numerator).encode()).hexdigest(),
+        })
+    if not residuals:
+        raise AssertionError("no residual polynomial survived")
+
+    R = r0 + r1*t + r2*t**2 + r3*t**3 + t**4
+    P = t*R
+    Q = P.derivative() + 3*R
+    K = k - 12*t
+    M = m0 + m1*t + m2*t**2 + 80*t**3
+    N = Q**2 + M*P
+    T = (
+        N*K*(s*Q - 2*P)
+        - 3*P*s*(N.derivative()*K - 2*N*K.derivative())
+    )
+    J = s**2*N**3*K**2 - T**2
+    kappa_coefficient = J[16] / ((-12)**8)
+    kappa_numerator = base(kappa_coefficient.numerator())
+    kappa_denominator = base(kappa_coefficient.denominator())
+    if not kappa_numerator:
+        raise AssertionError("the open discriminant scalar vanished identically")
+    kappa_numerator, kappa_removed_power = exact_remove_factor(
+        kappa_numerator, D
+    )
+    kappa_numerator = kappa_numerator.monic()
+
+    # Replay the defining identity at the generic level.  The lower solution
+    # and residuals ensure the differential equation; this coefficient is the
+    # exact leading scalar of J=t^3*P*K^8*kappa on that locus.
+    if kappa_numerator == 0:
+        raise AssertionError("zero kappa numerator after determinant removal")
+
+    return {
+        "base": base,
+        "residuals": residuals,
+        "residual_metadata": residual_metadata,
+        "determinant": D,
+        "determinant_ratio": str(ratio),
+        "lower_solution": {
+            "m2": str(m2),
+            "m1": str(m1),
+            "m0": str(m0),
+            "r1": str(r1),
+            "r0": str(r0),
+        },
+        "kappa_numerator": kappa_numerator,
+        "kappa_denominator": kappa_denominator,
+        "kappa_removed_determinant_power": kappa_removed_power,
+        "kappa_identity": (
+            "coeff_t16((t-1)^2*N^3*K^2-T^2)=kappa*(-12)^8 "
+            "on the differential locus"
         ),
-        (
-            "    if prime in BAD_PRIMES:\n        raise ValueError((\"bad prime for this coordinate chart\", prime))",
-            "    if prime != 0 and prime in BAD_PRIMES:\n        raise ValueError((\"bad prime for this coordinate chart\", prime))",
-        ),
-        (
-            "    field = GF(prime)",
-            "    field = QQ if prime == 0 else GF(prime)",
-        ),
-        (
-            """        while True:\n            quotient, remainder = numerator.quo_rem(expected_determinant)\n            if remainder:\n                break\n            numerator = quotient\n            determinant_power += 1\n""",
-            """        while True:\n            candidate = fraction(numerator) / fraction(expected_determinant)\n            if candidate.denominator() != 1:\n                break\n            numerator = base(candidate.numerator())\n            determinant_power += 1\n""",
-        ),
-    ]
-    for old, new in replacements:
-        if source.count(old) != 1:
-            raise AssertionError(("constructor compatibility site changed", old[:80]))
-        source = source.replace(old, new)
-    namespace = {
-        "__name__": "rank17_iv_open_constructor_QQ",
-        "__file__": str(IMPLEMENTATION),
     }
-    exec(compile(source, str(IMPLEMENTATION), "exec"), namespace)
-    return namespace["construct_residuals"]
 
 
 def polynomial_record(polynomial) -> dict[str, object]:
@@ -78,8 +245,7 @@ def polynomial_record(polynomial) -> dict[str, object]:
 
 
 def compute(output: Path) -> dict[str, object]:
-    construct_residuals = load_constructor()
-    construction = construct_residuals(0)
+    construction = construct_open_model_over_qq()
     base = construction["base"]
     r2b, r3b, kb = base.gens()
 
@@ -103,7 +269,7 @@ def compute(output: Path) -> dict[str, object]:
         for polynomial in construction["residuals"]
     ]
     if any(residual_remainders):
-        raise AssertionError("a residual equation is not in the known component ideal")
+        raise AssertionError("a residual equation is not in J=(R1,R2)")
 
     resultant = R1b.resultant(R2b, r2b)
     plane = PolynomialRing(QQ, names=("k", "r3"), order="lex")
@@ -111,7 +277,7 @@ def compute(output: Path) -> dict[str, object]:
     resultant_plane = plane(str(resultant)).monic()
     factors = list(resultant_plane.factor())
     if len(factors) != 1 or int(factors[0][1]) != 1:
-        raise AssertionError("the component resultant is not irreducible over QQ")
+        raise AssertionError("the component plane resultant is not irreducible over QQ")
 
     ring = PolynomialRing(
         QQ,
@@ -120,8 +286,9 @@ def compute(output: Path) -> dict[str, object]:
     )
     u, h, r2, r3, k = ring.gens()
     embedding = base.hom([r2, r3, k], ring)
-    open_product = embedding(construction["determinant"])*embedding(
-        construction["kappa_numerator"]
+    open_product = (
+        embedding(construction["determinant"])
+        * embedding(construction["kappa_numerator"])
     )
     residuals = [embedding(value) for value in construction["residuals"]]
     saturation = h*open_product - 1
@@ -134,18 +301,22 @@ def compute(output: Path) -> dict[str, object]:
     target_results = {}
     output.parent.mkdir(parents=True, exist_ok=True)
     for name, target in targets.items():
-        initial = ring.ideal(residuals + [saturation, u*target - 1])
+        test_ideal = ring.ideal(residuals + [saturation, u*target - 1])
         started = time.time()
-        basis_raw = slimgb(initial)
+        basis_raw = slimgb(test_ideal)
         elapsed = time.time() - started
         basis = [ring(value) for value in basis_raw]
-        unit = any(value == 1 for value in basis)
+        unit = any(
+            value and int(value.total_degree()) == 0
+            for value in basis
+        )
         basis_text = "\n".join(str(value) for value in basis) + "\n"
         (output.parent / f"radical-membership-{name}.txt").write_text(
-            basis_text, encoding="utf-8"
+            basis_text,
+            encoding="utf-8",
         )
         if not unit:
-            raise AssertionError(("radical membership failed", name))
+            raise AssertionError(("Rabinowitsch unit-ideal test failed", name))
         target_results[name] = {
             "rabinowitsch_unit_ideal": True,
             "elapsed_seconds": elapsed,
@@ -154,7 +325,7 @@ def compute(output: Path) -> dict[str, object]:
         }
 
     result: dict[str, object] = {
-        "schema_version": 1,
+        "schema_version": 2,
         "certificate_id": "rank17_iv_open_component_radical_membership",
         "solved_a": False,
         "solved_b": False,
@@ -166,7 +337,22 @@ def compute(output: Path) -> dict[str, object]:
             "component J=(R1,R2). This is not by itself a rank-30 construction."
         ),
         "sage_version": str(sage_version),
-        "residual_count": len(residuals),
+        "constructor": {
+            "base_field": "QQ",
+            "method": "direct symbolic logarithmic-derivative construction",
+            "residual_count": len(residuals),
+            "residual_metadata": construction["residual_metadata"],
+            "determinant": polynomial_record(construction["determinant"]),
+            "determinant_ratio": construction["determinant_ratio"],
+            "kappa_numerator": polynomial_record(
+                construction["kappa_numerator"]
+            ),
+            "kappa_denominator": str(construction["kappa_denominator"]),
+            "kappa_removed_determinant_power": construction[
+                "kappa_removed_determinant_power"
+            ],
+            "kappa_identity": construction["kappa_identity"],
+        },
         "residuals_contained_in_J": True,
         "open_saturation_product": str(open_product),
         "component": {
@@ -188,7 +374,10 @@ def compute(output: Path) -> dict[str, object]:
         ],
     }
     result["record_sha256"] = canonical_hash(result)
-    output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    output.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     return result
 
 
@@ -198,6 +387,7 @@ def main() -> None:
     arguments = parser.parse_args()
     result = compute(arguments.output)
     print(json.dumps({
+        "constructor_base_field": result["constructor"]["base_field"],
         "radical_membership": result["radical_membership"],
         "set_theoretic_consequence": result["set_theoretic_consequence"],
         "record_sha256": result["record_sha256"],
