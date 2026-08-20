@@ -21,12 +21,23 @@ jobs:
       image: sagemath/sagemath:10.9
     steps:
       - uses: actions/checkout@v4
-      - name: Construct the QQ ideal and run both Rabinowitsch tests
+      - name: Preserve the exact tracked checkout used by the probe
         shell: bash
         run: |
           set -euo pipefail
           root=/tmp/rank17-iv-open-radical-observable
           mkdir -p "$root"
+          tar \
+            --exclude=.git \
+            --exclude='*.pyc' \
+            --exclude='__pycache__' \
+            -czf "$root/research-checkout.tar.gz" .
+          sha256sum "$root/research-checkout.tar.gz"
+      - name: Construct the QQ ideal and run both Rabinowitsch tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          root=/tmp/rank17-iv-open-radical-observable
           sage -python research/rank17_iv_open_component_radical_membership_sage.py \
             --output "$root/certificate.json" 2>&1 | tee "$root/run.log"
           cat "$root/certificate.json"
