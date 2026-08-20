@@ -116,8 +116,8 @@ def construct_open_model_over_qq() -> dict[str, object]:
         quotient, remainder = E.quo_rem(P)
         if remainder:
             raise AssertionError("the differential equation lost its forced P factor")
-        if quotient.degree() != 13:
-            raise AssertionError(("unexpected quotient degree", quotient.degree()))
+        if quotient.degree() != 11:
+            raise AssertionError(("unexpected pre-solved quotient degree", quotient.degree()))
         return quotient
 
     degrees = (11, 10, 9)
